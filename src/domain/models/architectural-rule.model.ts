@@ -132,6 +132,101 @@ export type UnreferencedCodeRule = BaseRule & {
 };
 
 /**
+ * File size rule options
+ */
+export type FileSizeRuleOptions = {
+  /** Maximum number of lines allowed */
+  max_lines: number;
+};
+
+/**
+ * File size rule - validates that files don't exceed a certain size
+ */
+export type FileSizeRule = BaseRule & {
+  /** Which roles to check for file size */
+  for: RuleFor;
+
+  /** Rule type identifier for file size validation */
+  rule: 'file_size';
+
+  /** Maximum lines allowed */
+  max_lines: number;
+};
+
+/**
+ * Test coverage rule - ensures production files have corresponding tests
+ */
+export type TestCoverageRule = BaseRule & {
+  /** Source roles that need test coverage */
+  from: RuleFrom;
+
+  /** Indicates test files are required */
+  to: { test_file: 'required' };
+
+  /** Rule type identifier for test coverage */
+  rule: 'test_coverage';
+};
+
+/**
+ * Forbidden keywords rule - prevents certain patterns in code
+ */
+export type ForbiddenKeywordsRule = BaseRule & {
+  /** Which roles to check */
+  from: RuleFrom;
+
+  /** Keywords/patterns that are forbidden */
+  contains_forbidden: string[];
+
+  /** Rule type identifier */
+  rule: 'forbidden_keywords';
+};
+
+/**
+ * Required structure rule - ensures certain directories exist
+ */
+export type RequiredStructureRule = BaseRule & {
+  /** Required directory paths */
+  required_directories: string[];
+
+  /** Rule type identifier */
+  rule: 'required_structure';
+};
+
+/**
+ * Documentation required rule
+ */
+export type DocumentationRequiredRule = BaseRule & {
+  /** Which roles to check */
+  for: RuleFor;
+
+  /** Minimum lines that trigger documentation requirement */
+  min_lines: number;
+
+  /** Whether JSDoc is required */
+  requires_jsdoc: boolean;
+
+  /** Rule type identifier */
+  rule: 'documentation_required';
+};
+
+/**
+ * Class complexity rule - prevents God objects
+ */
+export type ClassComplexityRule = BaseRule & {
+  /** Which roles to check */
+  for: RuleFor;
+
+  /** Maximum public methods allowed */
+  max_public_methods: number;
+
+  /** Maximum properties allowed */
+  max_properties: number;
+
+  /** Rule type identifier */
+  rule: 'class_complexity';
+};
+
+/**
  * Complete architectural rule (discriminated union)
  * Can be a dependency rule, naming pattern rule, or hygiene rule
  */
@@ -139,4 +234,10 @@ export type ArchitecturalRuleModel =
   | DependencyRule
   | NamingPatternRule
   | SynonymDetectionRule
-  | UnreferencedCodeRule;
+  | UnreferencedCodeRule
+  | FileSizeRule
+  | TestCoverageRule
+  | ForbiddenKeywordsRule
+  | RequiredStructureRule
+  | DocumentationRequiredRule
+  | ClassComplexityRule;

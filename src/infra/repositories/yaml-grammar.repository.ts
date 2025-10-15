@@ -164,6 +164,57 @@ export class YamlGrammarRepository implements IGrammarRepository {
         if (rule.options?.ignore_patterns && !Array.isArray(rule.options.ignore_patterns)) {
           throw new Error(`Invalid rule '${rule.name}': options.ignore_patterns must be an array in ${filePath}`);
         }
+      } else if (rule.rule === 'file_size') {
+        // File size rule validation
+        if (!rule.for || !rule.for.role) {
+          throw new Error(`Invalid rule '${rule.name}': file_size rules must have 'for.role' in ${filePath}`);
+        }
+        if (typeof rule.max_lines !== 'number' || rule.max_lines <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': file_size rules must have 'max_lines' as a positive number in ${filePath}`);
+        }
+      } else if (rule.rule === 'test_coverage') {
+        // Test coverage rule validation
+        if (!rule.from || !rule.from.role) {
+          throw new Error(`Invalid rule '${rule.name}': test_coverage rules must have 'from.role' in ${filePath}`);
+        }
+        if (!rule.to || !rule.to.test_file) {
+          throw new Error(`Invalid rule '${rule.name}': test_coverage rules must have 'to.test_file' in ${filePath}`);
+        }
+      } else if (rule.rule === 'forbidden_keywords') {
+        // Forbidden keywords rule validation
+        if (!rule.from || !rule.from.role) {
+          throw new Error(`Invalid rule '${rule.name}': forbidden_keywords rules must have 'from.role' in ${filePath}`);
+        }
+        if (!Array.isArray(rule.contains_forbidden) || rule.contains_forbidden.length === 0) {
+          throw new Error(`Invalid rule '${rule.name}': forbidden_keywords rules must have 'contains_forbidden' as a non-empty array in ${filePath}`);
+        }
+      } else if (rule.rule === 'required_structure') {
+        // Required structure rule validation
+        if (!Array.isArray(rule.required_directories) || rule.required_directories.length === 0) {
+          throw new Error(`Invalid rule '${rule.name}': required_structure rules must have 'required_directories' as a non-empty array in ${filePath}`);
+        }
+      } else if (rule.rule === 'documentation_required') {
+        // Documentation required rule validation
+        if (!rule.for || !rule.for.role) {
+          throw new Error(`Invalid rule '${rule.name}': documentation_required rules must have 'for.role' in ${filePath}`);
+        }
+        if (typeof rule.min_lines !== 'number' || rule.min_lines <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': documentation_required rules must have 'min_lines' as a positive number in ${filePath}`);
+        }
+        if (typeof rule.requires_jsdoc !== 'boolean') {
+          throw new Error(`Invalid rule '${rule.name}': documentation_required rules must have 'requires_jsdoc' as a boolean in ${filePath}`);
+        }
+      } else if (rule.rule === 'class_complexity') {
+        // Class complexity rule validation
+        if (!rule.for || !rule.for.role) {
+          throw new Error(`Invalid rule '${rule.name}': class_complexity rules must have 'for.role' in ${filePath}`);
+        }
+        if (typeof rule.max_public_methods !== 'number' || rule.max_public_methods <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': class_complexity rules must have 'max_public_methods' as a positive number in ${filePath}`);
+        }
+        if (typeof rule.max_properties !== 'number' || rule.max_properties <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': class_complexity rules must have 'max_properties' as a positive number in ${filePath}`);
+        }
       } else if (['allowed', 'forbidden', 'required'].includes(rule.rule)) {
         // Dependency rule validation
         if (!rule.from || !rule.from.role) {
@@ -177,7 +228,7 @@ export class YamlGrammarRepository implements IGrammarRepository {
         }
       } else {
         throw new Error(
-          `Invalid rule '${rule.name}': rule type must be 'allowed', 'forbidden', 'required', 'naming_pattern', 'find_synonyms', or 'detect_unreferenced' in ${filePath}`
+          `Invalid rule '${rule.name}': rule type must be 'allowed', 'forbidden', 'required', 'naming_pattern', 'find_synonyms', 'detect_unreferenced', 'file_size', 'test_coverage', 'forbidden_keywords', 'required_structure', 'documentation_required', or 'class_complexity' in ${filePath}`
         );
       }
     }
@@ -233,6 +284,61 @@ export class YamlGrammarRepository implements IGrammarRepository {
                 }
               : undefined,
             rule: 'detect_unreferenced' as const,
+          };
+        } else if (rule.rule === 'file_size') {
+          return {
+            ...baseRule,
+            for: {
+              role: rule.for.role,
+            },
+            max_lines: rule.max_lines,
+            rule: 'file_size' as const,
+          };
+        } else if (rule.rule === 'test_coverage') {
+          return {
+            ...baseRule,
+            from: {
+              role: rule.from.role,
+            },
+            to: {
+              test_file: rule.to.test_file,
+            },
+            rule: 'test_coverage' as const,
+          };
+        } else if (rule.rule === 'forbidden_keywords') {
+          return {
+            ...baseRule,
+            from: {
+              role: rule.from.role,
+            },
+            contains_forbidden: rule.contains_forbidden,
+            rule: 'forbidden_keywords' as const,
+          };
+        } else if (rule.rule === 'required_structure') {
+          return {
+            ...baseRule,
+            required_directories: rule.required_directories,
+            rule: 'required_structure' as const,
+          };
+        } else if (rule.rule === 'documentation_required') {
+          return {
+            ...baseRule,
+            for: {
+              role: rule.for.role,
+            },
+            min_lines: rule.min_lines,
+            requires_jsdoc: rule.requires_jsdoc,
+            rule: 'documentation_required' as const,
+          };
+        } else if (rule.rule === 'class_complexity') {
+          return {
+            ...baseRule,
+            for: {
+              role: rule.for.role,
+            },
+            max_public_methods: rule.max_public_methods,
+            max_properties: rule.max_properties,
+            rule: 'class_complexity' as const,
           };
         } else {
           // Dependency rule
