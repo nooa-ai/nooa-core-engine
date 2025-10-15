@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-10-15T01:34:52.853Z",
+  "iterations": 5,
+  "results": [
+    {
+      "iteration": 1,
+      "timestamp": "2025-10-15T01:34:53.637Z",
+      "analysisTime": 428,
+      "rulesTriggered": 1,
+      "totalViolations": 11,
+      "errors": 0,
+      "warnings": 0,
+      "info": 11,
+      "memoryBytes": 229425152,
+      "memoryMB": 219,
+      "realTime": 770,
+      "userTime": 1160,
+      "sysTime": 200
+    },
+    {
+      "iteration": 2,
+      "timestamp": "2025-10-15T01:34:54.415Z",
+      "analysisTime": 522,
+      "rulesTriggered": 1,
+      "totalViolations": 11,
+      "errors": 0,
+      "warnings": 0,
+      "info": 11,
+      "memoryBytes": 229244928,
+      "memoryMB": 219,
+      "realTime": 770,
+      "userTime": 1200,
+      "sysTime": 220
+    },
+    {
+      "iteration": 3,
+      "timestamp": "2025-10-15T01:34:55.080Z",
+      "analysisTime": 403,
+      "rulesTriggered": 1,
+      "totalViolations": 11,
+      "errors": 0,
+      "warnings": 0,
+      "info": 11,
+      "memoryBytes": 234012672,
+      "memoryMB": 223,
+      "realTime": 650,
+      "userTime": 1180,
+      "sysTime": 190
+    },
+    {
+      "iteration": 4,
+      "timestamp": "2025-10-15T01:34:55.722Z",
+      "analysisTime": 389,
+      "rulesTriggered": 1,
+      "totalViolations": 11,
+      "errors": 0,
+      "warnings": 0,
+      "info": 11,
+      "memoryBytes": 229703680,
+      "memoryMB": 219,
+      "realTime": 630,
+      "userTime": 1160,
+      "sysTime": 170
+    },
+    {
+      "iteration": 5,
+      "timestamp": "2025-10-15T01:34:56.417Z",
+      "analysisTime": 423,
+      "rulesTriggered": 1,
+      "totalViolations": 11,
+      "errors": 0,
+      "warnings": 0,
+      "info": 11,
+      "memoryBytes": 228327424,
+      "memoryMB": 218,
+      "realTime": 680,
+      "userTime": 1200,
+      "sysTime": 210
+    }
+  ],
+  "statistics": {
+    "analysisTime": {
+      "min": 389,
+      "max": 522,
+      "mean": 433,
+      "median": 423,
+      "stdDev": 47
+    },
+    "realTime": {
+      "min": 630,
+      "max": 770,
+      "mean": 700,
+      "median": 680,
+      "stdDev": 59
+    },
+    "memory": {
+      "min": 218,
+      "max": 223,
+      "mean": 220,
+      "median": 219,
+      "stdDev": 2
+    }
+  },
+  "projectInfo": {
+    "files": 22,
+    "linesOfCode": 1920,
+    "roles": 10,
+    "rules": 15
+  }
+}
