@@ -133,46 +133,74 @@ export class TSMorphParserAdapter implements ICodeParser {
    * @returns Array of relative file paths that this file depends on
    */
   private extractDependencies(sourceFile: SourceFile, projectPath: string): string[] {
-    const dependencies: string[] = [];
+    const dependencies = new Set<string>();
 
-    // Get all import declarations
+    // Collect dependencies declared via imports
     const importDeclarations = sourceFile.getImportDeclarations();
-
     for (const importDecl of importDeclarations) {
       const moduleSpecifier = importDecl.getModuleSpecifierValue();
-
-      // Only process relative imports (project files, not external libraries)
-      if (moduleSpecifier.startsWith('.') || moduleSpecifier.startsWith('/')) {
-        try {
-          // Resolve the import to an absolute path
-          const sourceFileDir = path.dirname(sourceFile.getFilePath());
-          let resolvedPath = path.resolve(sourceFileDir, moduleSpecifier);
-
-          // Try to find the actual file (handling .ts, .tsx extensions)
-          const possibleExtensions = ['', '.ts', '.tsx', '.d.ts', '/index.ts', '/index.tsx'];
-          let actualPath: string | null = null;
-
-          for (const ext of possibleExtensions) {
-            const testPath = resolvedPath + ext;
-            const foundFile = sourceFile.getProject().getSourceFile(testPath);
-            if (foundFile) {
-              actualPath = testPath;
-              break;
-            }
-          }
-
-          if (actualPath) {
-            const relativePath = this.getRelativePath(actualPath, projectPath);
-            dependencies.push(relativePath);
-          }
-        } catch (error) {
-          // Ignore errors in resolving imports (might be aliased paths, etc.)
-          continue;
-        }
-      }
+      this.tryAddDependency(sourceFile, projectPath, moduleSpecifier, dependencies);
     }
 
-    return dependencies;
+    // Collect dependencies declared via re-export statements (e.g. export * from './foo')
+    const exportDeclarations = sourceFile.getExportDeclarations();
+    for (const exportDecl of exportDeclarations) {
+      const moduleSpecifier = exportDecl.getModuleSpecifierValue();
+      if (!moduleSpecifier) {
+        continue; // Skip bare exports: `export { Foo }`
+      }
+
+      this.tryAddDependency(sourceFile, projectPath, moduleSpecifier, dependencies);
+    }
+
+    return Array.from(dependencies);
+  }
+
+  /**
+   * Attempts to resolve a module specifier and add it to the dependency set
+   *
+   * @param sourceFile - File that declares the dependency
+   * @param projectPath - Root path of the project
+   * @param moduleSpecifier - Declared module path (relative string)
+   * @param dependencies - Accumulator for resolved dependencies
+   */
+  private tryAddDependency(
+    sourceFile: SourceFile,
+    projectPath: string,
+    moduleSpecifier: string,
+    dependencies: Set<string>
+  ): void {
+    if (!moduleSpecifier) return;
+
+    if (!(moduleSpecifier.startsWith('.') || moduleSpecifier.startsWith('/'))) {
+      return; // Ignore external packages/aliases for now
+    }
+
+    try {
+      const sourceFileDir = path.dirname(sourceFile.getFilePath());
+      const basePath = path.resolve(sourceFileDir, moduleSpecifier);
+      const candidateFiles = [
+        '',
+        '.ts',
+        '.tsx',
+        '.d.ts',
+        '/index.ts',
+        '/index.tsx',
+      ].map((ext) => basePath + ext);
+
+      for (const candidate of candidateFiles) {
+        const foundFile = sourceFile.getProject().getSourceFile(candidate);
+        if (!foundFile) {
+          continue;
+        }
+
+        const relativePath = this.getRelativePath(foundFile.getFilePath(), projectPath);
+        dependencies.add(relativePath);
+        break;
+      }
+    } catch {
+      // Ignore resolution errors: aliases or missing files are handled elsewhere
+    }
   }
 
   /**
