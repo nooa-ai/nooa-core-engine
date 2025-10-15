@@ -9,8 +9,9 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const yaml = require('yaml');
 
-const BENCHMARK_DIR = path.join(__dirname, 'docs', 'whitepaper', 'benchmark');
+const BENCHMARK_DIR = path.join(__dirname, 'docs', 'whitepaper-version-1-2-0', 'benchmark');
 const ITERATIONS = 5;
 
 // Cores para output
@@ -73,6 +74,42 @@ function calculateStats(values) {
   };
 }
 
+function getProjectInfo() {
+  // Count TypeScript files
+  const findCmd = 'find . -name "*.ts" -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/.git/*" -not -path "*/.stryker-tmp/*" -not -path "*/coverage/*" -type f';
+  const filesOutput = execSync(findCmd, { cwd: __dirname, encoding: 'utf-8' });
+  const files = filesOutput.trim().split('\n').filter(f => f).length;
+
+  // Count lines of code
+  const wcCmd = 'find . -name "*.ts" -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/.git/*" -not -path "*/.stryker-tmp/*" -not -path "*/coverage/*" -type f -exec cat {} \\; | wc -l';
+  const linesOutput = execSync(wcCmd, { cwd: __dirname, encoding: 'utf-8' });
+  const linesOfCode = parseInt(linesOutput.trim());
+
+  // Read grammar file
+  let roles = 0;
+  let rules = 0;
+  try {
+    const grammarPath = fs.existsSync(path.join(__dirname, 'nooa.grammar.yaml'))
+      ? path.join(__dirname, 'nooa.grammar.yaml')
+      : path.join(__dirname, 'nooa.grammar.yml');
+
+    const grammarContent = fs.readFileSync(grammarPath, 'utf-8');
+    const grammar = yaml.parse(grammarContent);
+
+    roles = grammar.roles ? Object.keys(grammar.roles).length : 0;
+    rules = grammar.rules ? grammar.rules.length : 0;
+  } catch (error) {
+    log(`  ⚠️  Could not read grammar file: ${error.message}`, 'yellow');
+  }
+
+  return {
+    files,
+    linesOfCode,
+    roles,
+    rules,
+  };
+}
+
 async function runBenchmarks() {
   log('\n🔬 Iniciando Benchmarks do Nooa Core Engine...', 'bright');
   log('═══════════════════════════════════════════════════\n', 'blue');
@@ -92,14 +129,20 @@ async function runBenchmarks() {
 
     try {
       // Run with time measurement
-      const output = execSync(
-        '/usr/bin/time -l npm start . 2>&1',
-        {
-          cwd: __dirname,
-          encoding: 'utf-8',
-          maxBuffer: 10 * 1024 * 1024
-        }
-      );
+      let output;
+      try {
+        output = execSync(
+          '/usr/bin/time -l npm start . 2>&1',
+          {
+            cwd: __dirname,
+            encoding: 'utf-8',
+            maxBuffer: 10 * 1024 * 1024
+          }
+        );
+      } catch (execError) {
+        // Capture output even when command exits with error (violations found)
+        output = execError.stdout || execError.stderr || '';
+      }
 
       const nooaMetrics = parseBenchmarkOutput(output);
       const systemMetrics = parseMemoryOutput(output);
@@ -129,6 +172,10 @@ async function runBenchmarks() {
   const realTimes = results.map(r => r.realTime).filter(v => v !== null);
   const memoryUsages = results.map(r => r.memoryMB).filter(v => v !== null);
 
+  // Get project info dynamically
+  log('📊 Coletando informações do projeto...', 'cyan');
+  const projectInfo = getProjectInfo();
+
   const stats = {
     timestamp,
     iterations: ITERATIONS,
@@ -138,12 +185,7 @@ async function runBenchmarks() {
       realTime: calculateStats(realTimes),
       memory: calculateStats(memoryUsages),
     },
-    projectInfo: {
-      files: 22,
-      linesOfCode: 1920,
-      roles: 10,
-      rules: 15,
-    },
+    projectInfo,
   };
 
   // Save JSON
