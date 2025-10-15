@@ -1,0 +1,208 @@
+version: 1.1
+language: typescript
+
+# Nooa Core Engine - Self-Validating Grammar
+# This grammar validates the Nooa Core Engine itself against Clean Architecture principles
+# Demonstrates all v1.1 features: circular detection, required dependencies, and naming patterns
+
+roles:
+  - name: NOUN
+    path: "^src/domain/models"
+    description: "Domain Models - Pure business entities"
+
+  - name: VERB_CONTRACT
+    path: "^src/domain/usecases"
+    description: "Domain Use Cases - Business capability interfaces"
+
+  - name: VERB_IMPLEMENTATION
+    path: "^src/data/usecases"
+    description: "Data Use Cases - Application logic implementations"
+
+  - name: VERB_IMPLEMENTATION_ACTUAL
+    path: "^src/data/usecases/.*\\.usecase\\.ts$"
+    description: "Actual use case implementation files (excluding index.ts)"
+
+  - name: ADVERB_ABSTRACT
+    path: "^src/data/protocols"
+    description: "Data Protocols - Interface definitions for infrastructure"
+
+  - name: ADVERB_CONCRETE
+    path: "^src/infra"
+    description: "Infrastructure - Concrete implementations (parsers, repositories)"
+
+  - name: ADVERB_CONCRETE_ACTUAL
+    path: "^src/infra/.*(adapter|repository)\\.ts$"
+    description: "Actual infrastructure implementations (excluding index.ts)"
+
+  - name: CONTEXT
+    path: "^src/presentation/controllers"
+    description: "Presentation Controllers - External interface adapters"
+
+  - name: CONTEXT_ACTUAL
+    path: "^src/presentation/controllers/.*\\.controller\\.ts$"
+    description: "Actual controller files (excluding index.ts)"
+
+  - name: COMPOSER
+    path: "^src/main"
+    description: "Main - Composition root and dependency injection"
+
+rules:
+  - name: "Domain-Independence"
+    severity: error
+    comment: "Domain layer (models and use case interfaces) must remain pure and independent of all outer layers"
+    from:
+      role: [NOUN, VERB_CONTRACT]
+    to:
+      role: [VERB_IMPLEMENTATION, ADVERB_ABSTRACT, ADVERB_CONCRETE, CONTEXT, COMPOSER]
+    rule: "forbidden"
+
+  - name: "Data-Dependency-Inversion"
+    severity: error
+    comment: "Data layer use case implementations must depend on protocols (abstractions), never on concrete infrastructure"
+    from:
+      role: [VERB_IMPLEMENTATION]
+    to:
+      role: [ADVERB_CONCRETE]
+    rule: "forbidden"
+
+  - name: "Presentation-Isolation"
+    severity: error
+    comment: "Presentation layer must not directly depend on infrastructure implementations"
+    from:
+      role: [CONTEXT]
+    to:
+      role: [ADVERB_CONCRETE]
+    rule: "forbidden"
+
+  - name: "Protocol-Purity"
+    severity: error
+    comment: "Data protocols must remain abstract and not depend on concrete implementations"
+    from:
+      role: [ADVERB_ABSTRACT]
+    to:
+      role: [ADVERB_CONCRETE]
+    rule: "forbidden"
+
+  - name: "Data-No-Presentation"
+    severity: warning
+    comment: "Data layer should not depend on presentation layer"
+    from:
+      role: [VERB_IMPLEMENTATION, ADVERB_ABSTRACT]
+    to:
+      role: [CONTEXT]
+    rule: "forbidden"
+
+  # ============================================================================
+  # V1.1 FEATURES: Demonstrating advanced validation capabilities
+  # ============================================================================
+
+  # Feature 1: Circular Dependency Detection
+  - name: "No-Circular-Dependencies"
+    severity: error
+    comment: "Circular dependencies are the most destructive architectural flaw and must be eliminated"
+    from:
+      role: ALL
+    to:
+      circular: true
+    rule: "forbidden"
+
+  # Feature 2: Required Dependencies (Enforce Good Practices)
+  # Note: Uses _ACTUAL roles to exclude barrel export files (index.ts)
+  - name: "Use-Case-Implementations-Must-Implement-Contracts"
+    severity: error
+    comment: "Every use case implementation must depend on its corresponding domain contract"
+    from:
+      role: VERB_IMPLEMENTATION_ACTUAL
+    to:
+      role: VERB_CONTRACT
+    rule: "required"
+
+  - name: "Adapters-Must-Implement-Protocols"
+    severity: error
+    comment: "Infrastructure adapters must implement data layer protocols for proper dependency inversion"
+    from:
+      role: ADVERB_CONCRETE_ACTUAL
+    to:
+      role: ADVERB_ABSTRACT
+    rule: "required"
+
+  - name: "Controllers-Must-Use-Domain"
+    severity: error
+    comment: "Presentation controllers must orchestrate through domain use cases, not bypass them"
+    from:
+      role: CONTEXT_ACTUAL
+    to:
+      role: VERB_CONTRACT
+    rule: "required"
+
+  # Feature 3: Naming Pattern Validation
+  # Note: index.ts files are barrel exports and are exempt from naming conventions
+  - name: "Adapter-Files-Follow-Convention"
+    severity: warning
+    comment: "Infrastructure files should follow the .adapter.ts or .repository.ts naming convention"
+    for:
+      role: ADVERB_CONCRETE
+    pattern: "(\\.(adapter|repository)\\.ts|/index\\.ts)$"
+    rule: "naming_pattern"
+
+  - name: "UseCase-Files-Follow-Convention"
+    severity: warning
+    comment: "Use case implementation files should follow the .usecase.ts naming convention"
+    for:
+      role: VERB_IMPLEMENTATION
+    pattern: "(\\.usecase\\.ts|/index\\.ts)$"
+    rule: "naming_pattern"
+
+  - name: "Controller-Files-Follow-Convention"
+    severity: warning
+    comment: "Controller files should follow the .controller.ts naming convention"
+    for:
+      role: CONTEXT
+    pattern: "(\\.controller\\.ts|/index\\.ts)$"
+    rule: "naming_pattern"
+
+  # ============================================================================
+  # HYGIENE RULES: Code Quality and Maintainability
+  # ============================================================================
+
+  # Hygiene Feature 1: Synonym Detection (Prevents Code Duplication)
+  # Note: Only check actual implementation files, not barrel exports
+  - name: "Detect-Duplicate-Use-Cases"
+    severity: warning
+    comment: "Detects use cases with very similar names, suggesting potential duplication of logic"
+    for:
+      role: VERB_IMPLEMENTATION_ACTUAL
+    options:
+      similarity_threshold: 0.85
+      thesaurus:
+        - [Analyze, Validate, Check, Verify]
+        - [Load, Fetch, Get, Retrieve]
+        - [Parse, Process, Transform]
+    rule: "find_synonyms"
+
+  - name: "Detect-Duplicate-Adapters"
+    severity: warning
+    comment: "Detects adapters with very similar names, suggesting potential duplication"
+    for:
+      role: ADVERB_CONCRETE_ACTUAL
+    options:
+      similarity_threshold: 0.85
+      thesaurus:
+        - [Parser, Adapter, Repository]
+        - [Yaml, Yml, JSON]
+    rule: "find_synonyms"
+
+  # Hygiene Feature 2: Unreferenced Code Detection (Zombie Files)
+  - name: "Detect-Zombie-Files"
+    severity: info
+    comment: "Detects files that are not imported by any other file, indicating potentially dead code"
+    for:
+      role: ALL
+    options:
+      ignore_patterns:
+        - "^src/main/server\\.ts$"
+        - "/index\\.ts$"
+        - "\\.spec\\.ts$"
+        - "\\.test\\.ts$"
+    rule: "detect_unreferenced"
+

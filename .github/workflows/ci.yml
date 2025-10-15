@@ -1,0 +1,76 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build project
+      run: npm run build
+
+    - name: Self-validation (Dogfooding)
+      run: npm start .
+      continue-on-error: false
+
+    - name: Check for architectural errors
+      run: |
+        OUTPUT=$(npm start . 2>&1)
+        echo "$OUTPUT"
+        if echo "$OUTPUT" | grep -q "🔴 ERRORS"; then
+          echo "❌ Architectural errors found!"
+          exit 1
+        fi
+        echo "✅ No architectural errors found"
+
+  quality:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build
+      run: npm run build
+
+    - name: Run self-validation with full output
+      run: |
+        echo "Running Nooa Core Engine self-validation..."
+        npm start . | tee validation-output.txt
+
+    - name: Upload validation results
+      uses: actions/upload-artifact@v3
+      with:
+        name: validation-results
+        path: validation-output.txt

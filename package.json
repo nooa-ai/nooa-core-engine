@@ -1,0 +1,35 @@
+{
+  "name": "nooa-core-engine",
+  "version": "1.2.0",
+  "description": "Architectural Grammar Validator & Code Hygiene Guardian for TypeScript Projects",
+  "main": "dist/main/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main/server.js",
+    "dev": "ts-node src/main/server.ts",
+    "analyze": "npm run build && npm start"
+  },
+  "keywords": [
+    "clean-architecture",
+    "typescript",
+    "code-analysis",
+    "architectural-validation",
+    "dependency-analysis",
+    "code-hygiene",
+    "duplicate-detection",
+    "dead-code-detection",
+    "circular-dependencies",
+    "static-analysis"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ts-morph": "^21.0.1",
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
