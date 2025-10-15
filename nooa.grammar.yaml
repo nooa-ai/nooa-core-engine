@@ -14,33 +14,77 @@ roles:
     path: "^src/domain/usecases"
     description: "Domain Use Cases - Business capability interfaces"
 
-  - name: VERB_IMPLEMENTATION
-    path: "^src/data/usecases"
-    description: "Data Use Cases - Application logic implementations"
-
   - name: VERB_IMPLEMENTATION_ACTUAL
     path: "^src/data/usecases/.*\\.usecase\\.ts$"
     description: "Actual use case implementation files (excluding index.ts)"
+
+  - name: VERB_IMPLEMENTATION
+    path: "^src/data/usecases"
+    description: "Data Use Cases - Application logic implementations"
 
   - name: ADVERB_ABSTRACT
     path: "^src/data/protocols"
     description: "Data Protocols - Interface definitions for infrastructure"
 
-  - name: ADVERB_CONCRETE
-    path: "^src/infra"
-    description: "Infrastructure - Concrete implementations (parsers, repositories)"
-
   - name: ADVERB_CONCRETE_ACTUAL
     path: "^src/infra/.*(adapter|repository)\\.ts$"
     description: "Actual infrastructure implementations (excluding index.ts)"
 
-  - name: CONTEXT
-    path: "^src/presentation/controllers"
-    description: "Presentation Controllers - External interface adapters"
+  - name: ADVERB_CONCRETE
+    path: "^src/infra"
+    description: "Infrastructure - Concrete implementations (parsers, repositories, validators)"
 
   - name: CONTEXT_ACTUAL
     path: "^src/presentation/controllers/.*\\.controller\\.ts$"
     description: "Actual controller files (excluding index.ts)"
+
+  - name: CONTEXT_CONTROLLER
+    path: "^src/presentation/controllers"
+    description: "Presentation Controllers - External interface adapters"
+
+  - name: CONTEXT_MIDDLEWARE_ACTUAL
+    path: "^src/presentation/middlewares/.*\\.middleware\\.ts$"
+    description: "Actual middleware implementations (excluding index.ts)"
+
+  - name: CONTEXT_MIDDLEWARE
+    path: "^src/presentation/middlewares"
+    description: "Presentation middlewares"
+
+  - name: CONTEXT_PROTOCOL
+    path: "^src/presentation/protocols"
+    description: "Presentation protocols (HTTP contracts, validation interface)"
+
+  - name: CONTEXT_HELPER
+    path: "^src/presentation/helpers"
+    description: "Presentation helpers (HTTP helpers, response builders)"
+
+  - name: CONTEXT_ERROR
+    path: "^src/presentation/errors"
+    description: "Presentation-level error types"
+
+  - name: CONTEXT
+    path: "^src/presentation"
+    description: "Presentation layer umbrella role"
+
+  - name: VALIDATION_IMPLEMENTATION_ACTUAL
+    path: "^src/validation/validators/.*validation\\.ts$"
+    description: "Actual validation implementations (excluding index.ts)"
+
+  - name: VALIDATION_IMPLEMENTATION
+    path: "^src/validation/validators"
+    description: "Validation layer validators"
+
+  - name: VALIDATION_PROTOCOL
+    path: "^src/validation/protocols"
+    description: "Validation layer protocols"
+
+  - name: COMPOSER_CONTROLLER_FACTORY
+    path: "^src/main/factories/controllers"
+    description: "Composition root factories for controllers"
+
+  - name: COMPOSER_VALIDATION_FACTORY
+    path: "^src/main/factories/(validators|controllers/.+validation-factory)"
+    description: "Composition root factories dedicated to validation wiring"
 
   - name: COMPOSER
     path: "^src/main"
@@ -53,7 +97,26 @@ rules:
     from:
       role: [NOUN, VERB_CONTRACT]
     to:
-      role: [VERB_IMPLEMENTATION, ADVERB_ABSTRACT, ADVERB_CONCRETE, CONTEXT, COMPOSER]
+      role:
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+        - VALIDATION_PROTOCOL
+        - COMPOSER
+        - COMPOSER_CONTROLLER_FACTORY
+        - COMPOSER_VALIDATION_FACTORY
     rule: "forbidden"
 
   - name: "Data-Dependency-Inversion"
@@ -62,16 +125,28 @@ rules:
     from:
       role: [VERB_IMPLEMENTATION]
     to:
-      role: [ADVERB_CONCRETE]
+      role:
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
     rule: "forbidden"
 
   - name: "Presentation-Isolation"
     severity: error
     comment: "Presentation layer must not directly depend on infrastructure implementations"
     from:
-      role: [CONTEXT]
+      role:
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
     to:
-      role: [ADVERB_CONCRETE]
+      role:
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
     rule: "forbidden"
 
   - name: "Protocol-Purity"
@@ -80,16 +155,94 @@ rules:
     from:
       role: [ADVERB_ABSTRACT]
     to:
-      role: [ADVERB_CONCRETE]
+      role:
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+        - VALIDATION_PROTOCOL
+    rule: "forbidden"
+
+  - name: "Validation-Protocol-Purity"
+    severity: error
+    comment: "Validation protocols must remain abstract and independent from infrastructure or data layers"
+    from:
+      role: [VALIDATION_PROTOCOL]
+    to:
+      role:
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - COMPOSER
+        - COMPOSER_CONTROLLER_FACTORY
+        - COMPOSER_VALIDATION_FACTORY
+    rule: "forbidden"
+
+  - name: "Validation-Isolation"
+    severity: error
+    comment: "Validation implementations should only rely on presentation contracts and validation protocols"
+    from:
+      role:
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+    to:
+      role:
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - COMPOSER
+        - COMPOSER_CONTROLLER_FACTORY
     rule: "forbidden"
 
   - name: "Data-No-Presentation"
     severity: warning
     comment: "Data layer should not depend on presentation layer"
     from:
-      role: [VERB_IMPLEMENTATION, ADVERB_ABSTRACT]
+      role:
+        - VERB_IMPLEMENTATION
+        - ADVERB_ABSTRACT
     to:
-      role: [CONTEXT]
+      role:
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+    rule: "forbidden"
+
+  - name: "Presentation-No-Data"
+    severity: error
+    comment: "Presentation layer must not depend on data layer implementations or protocols"
+    from:
+      role:
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+    to:
+      role:
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
     rule: "forbidden"
 
   # ============================================================================
@@ -107,7 +260,7 @@ rules:
     rule: "forbidden"
 
   # Feature 2: Required Dependencies (Enforce Good Practices)
-  # Note: Uses _ACTUAL roles to exclude barrel export files (index.ts)
+  # Note: Uses specialized roles to exclude barrel export files (index.ts)
   - name: "Use-Case-Implementations-Must-Implement-Contracts"
     severity: error
     comment: "Every use case implementation must depend on its corresponding domain contract"
@@ -119,11 +272,13 @@ rules:
 
   - name: "Adapters-Must-Implement-Protocols"
     severity: error
-    comment: "Infrastructure adapters must implement data layer protocols for proper dependency inversion"
+    comment: "Infrastructure adapters must implement data or validation layer protocols for proper dependency inversion"
     from:
       role: ADVERB_CONCRETE_ACTUAL
     to:
-      role: ADVERB_ABSTRACT
+      role:
+        - ADVERB_ABSTRACT
+        - VALIDATION_PROTOCOL
     rule: "required"
 
   - name: "Controllers-Must-Use-Domain"
@@ -133,6 +288,24 @@ rules:
       role: CONTEXT_ACTUAL
     to:
       role: VERB_CONTRACT
+    rule: "required"
+
+  - name: "Middlewares-Must-Use-Domain"
+    severity: error
+    comment: "Presentation middlewares must delegate to domain contracts"
+    from:
+      role: CONTEXT_MIDDLEWARE_ACTUAL
+    to:
+      role: VERB_CONTRACT
+    rule: "required"
+
+  - name: "Validators-Implement-Presentation-Contract"
+    severity: error
+    comment: "Validation implementations must implement the presentation Validation interface"
+    from:
+      role: VALIDATION_IMPLEMENTATION_ACTUAL
+    to:
+      role: CONTEXT_PROTOCOL
     rule: "required"
 
   # Feature 3: Naming Pattern Validation
@@ -157,8 +330,24 @@ rules:
     severity: warning
     comment: "Controller files should follow the .controller.ts naming convention"
     for:
-      role: CONTEXT
+      role: CONTEXT_ACTUAL
     pattern: "(\\.controller\\.ts|/index\\.ts)$"
+    rule: "naming_pattern"
+
+  - name: "Middleware-Files-Follow-Convention"
+    severity: warning
+    comment: "Middleware files should follow the .middleware.ts naming convention"
+    for:
+      role: CONTEXT_MIDDLEWARE_ACTUAL
+    pattern: "(\\.middleware\\.ts|/index\\.ts)$"
+    rule: "naming_pattern"
+
+  - name: "Validation-Files-Follow-Convention"
+    severity: warning
+    comment: "Validation files should follow the -validation.ts naming convention"
+    for:
+      role: VALIDATION_IMPLEMENTATION_ACTUAL
+    pattern: "(validation\\.ts|validation-composite\\.ts|/index\\.ts)$"
     rule: "naming_pattern"
 
   # ============================================================================
@@ -188,7 +377,7 @@ rules:
     options:
       similarity_threshold: 0.85
       thesaurus:
-        - [Parser, Adapter, Repository]
+        - [Parser, Adapter, Repository, Validator]
         - [Yaml, Yml, JSON]
     rule: "find_synonyms"
 
@@ -204,5 +393,5 @@ rules:
         - "/index\\.ts$"
         - "\\.spec\\.ts$"
         - "\\.test\\.ts$"
+        - "^tests/"
     rule: "detect_unreferenced"
-
