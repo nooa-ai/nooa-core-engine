@@ -159,6 +159,14 @@ _E mais 133 outros arquivos não listados aqui por brevidade. Ver relatório com
 | **Warnings** | 24 | 0 | ⚠️ |
 | **Info (Zombies)** | 164 | 11 | 💀 |
 
+> **⚠️ NOTA IMPORTANTE**: A comparação acima pode parecer indicar que o nooa-core-engine tem código menos modular. Para entender a metodologia de contagem e a explicação detalhada das métricas, consulte:
+> - 📊 [METRICS_EXPLANATION.md](../METRICS_EXPLANATION.md) (Português)
+> - 📊 [METRICS_EXPLANATION.en-us.md](../METRICS_EXPLANATION.en-us.md) (English)
+>
+> **TL;DR**: Os 240 arquivos do clean-ts-api incluem **181 arquivos fonte + 59 testes**. O nooa-core-engine tem **22 arquivos fonte + 0 testes**. Comparando apenas código-fonte:
+> - clean-ts-api: 2,510 LOC em 181 arquivos = **13.9 LOC/arquivo** (excelente granularidade)
+> - nooa-core-engine: 1,920 LOC em 22 arquivos = **87.3 LOC/arquivo** (arquivos 6.3x maiores)
+
 ## 📄 Arquivos Disponíveis
 
 ### Benchmarks
