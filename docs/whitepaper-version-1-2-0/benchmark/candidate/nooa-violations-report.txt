@@ -1,0 +1,793 @@
+
+> nooa-core-engine@1.2.0 start
+> node dist/main/server.js /Users/thiagobutignon/dev/clean-ts-api-candidate
+
+🔍 Nooa Core Engine - Architectural Analysis
+==================================================
+📁 Analyzing project: /Users/thiagobutignon/dev/clean-ts-api-candidate
+
+❌ Found 190 architectural violation(s):
+
+🔴 ERRORS (2):
+  1. [No-Circular-Dependencies]
+     File: src/main/docs/schemas.ts
+     COMPOSER → COMPOSER
+     Dependency: src/main/docs/schemas.ts → src/main/docs/schemas.ts
+     No-Circular-Dependencies: Circular dependency detected: src/main/docs/schemas.ts → src/main/docs/schemas.ts - Circular dependencies are the most destructive architectural flaw and must be eliminated
+
+  2. [No-Circular-Dependencies]
+     File: src/main/docs/paths.ts
+     COMPOSER → COMPOSER
+     Dependency: src/main/docs/paths.ts → src/main/docs/paths.ts
+     No-Circular-Dependencies: Circular dependency detected: src/main/docs/paths.ts → src/main/docs/paths.ts - Circular dependencies are the most destructive architectural flaw and must be eliminated
+
+
+🟡 WARNINGS (24):
+  1. [Adapter-Files-Follow-Convention]
+     File: src/infra/cryptography/bcrypt-adapter.ts
+     Adapter-Files-Follow-Convention: src/infra/cryptography/bcrypt-adapter.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  2. [Adapter-Files-Follow-Convention]
+     File: src/infra/cryptography/jwt-adapter.ts
+     Adapter-Files-Follow-Convention: src/infra/cryptography/jwt-adapter.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  3. [Adapter-Files-Follow-Convention]
+     File: src/infra/validators/email-validator-adapter.ts
+     Adapter-Files-Follow-Convention: src/infra/validators/email-validator-adapter.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  4. [Adapter-Files-Follow-Convention]
+     File: src/infra/db/mongodb/account-mongo-repository.ts
+     Adapter-Files-Follow-Convention: src/infra/db/mongodb/account-mongo-repository.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  5. [Adapter-Files-Follow-Convention]
+     File: src/infra/db/mongodb/log-mongo-repository.ts
+     Adapter-Files-Follow-Convention: src/infra/db/mongodb/log-mongo-repository.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  6. [Adapter-Files-Follow-Convention]
+     File: src/infra/db/mongodb/mongo-helper.ts
+     Adapter-Files-Follow-Convention: src/infra/db/mongodb/mongo-helper.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  7. [Adapter-Files-Follow-Convention]
+     File: src/infra/db/mongodb/query-builder.ts
+     Adapter-Files-Follow-Convention: src/infra/db/mongodb/query-builder.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  8. [Adapter-Files-Follow-Convention]
+     File: src/infra/db/mongodb/survey-mongo-repository.ts
+     Adapter-Files-Follow-Convention: src/infra/db/mongodb/survey-mongo-repository.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  9. [Adapter-Files-Follow-Convention]
+     File: src/infra/db/mongodb/survey-result-mongo-repository.ts
+     Adapter-Files-Follow-Convention: src/infra/db/mongodb/survey-result-mongo-repository.ts (ADVERB_CONCRETE) does not match naming pattern "(\.(adapter|repository)\.ts|/index\.ts)$" - Infrastructure files should follow the .adapter.ts or .repository.ts naming convention
+
+  10. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-add-account.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-add-account.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  11. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-add-survey.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-add-survey.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  12. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-authentication.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-authentication.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  13. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-check-survey-by-id.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-check-survey-by-id.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  14. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-load-account-by-token.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-load-account-by-token.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  15. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-load-answers-by-survey.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-load-answers-by-survey.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  16. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-load-survey-result.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-load-survey-result.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  17. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-load-surveys.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-load-surveys.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  18. [UseCase-Files-Follow-Convention]
+     File: src/data/usecases/db-save-survey-result.ts
+     UseCase-Files-Follow-Convention: src/data/usecases/db-save-survey-result.ts (VERB_IMPLEMENTATION) does not match naming pattern "(\.usecase\.ts|/index\.ts)$" - Use case implementation files should follow the .usecase.ts naming convention
+
+  19. [Controller-Files-Follow-Convention]
+     File: src/presentation/controllers/add-survey-controller.ts
+     Controller-Files-Follow-Convention: src/presentation/controllers/add-survey-controller.ts (CONTEXT) does not match naming pattern "(\.controller\.ts|/index\.ts)$" - Controller files should follow the .controller.ts naming convention
+
+  20. [Controller-Files-Follow-Convention]
+     File: src/presentation/controllers/load-survey-result-controller.ts
+     Controller-Files-Follow-Convention: src/presentation/controllers/load-survey-result-controller.ts (CONTEXT) does not match naming pattern "(\.controller\.ts|/index\.ts)$" - Controller files should follow the .controller.ts naming convention
+
+  21. [Controller-Files-Follow-Convention]
+     File: src/presentation/controllers/load-surveys-controller.ts
+     Controller-Files-Follow-Convention: src/presentation/controllers/load-surveys-controller.ts (CONTEXT) does not match naming pattern "(\.controller\.ts|/index\.ts)$" - Controller files should follow the .controller.ts naming convention
+
+  22. [Controller-Files-Follow-Convention]
+     File: src/presentation/controllers/login-controller.ts
+     Controller-Files-Follow-Convention: src/presentation/controllers/login-controller.ts (CONTEXT) does not match naming pattern "(\.controller\.ts|/index\.ts)$" - Controller files should follow the .controller.ts naming convention
+
+  23. [Controller-Files-Follow-Convention]
+     File: src/presentation/controllers/save-survey-result-controller.ts
+     Controller-Files-Follow-Convention: src/presentation/controllers/save-survey-result-controller.ts (CONTEXT) does not match naming pattern "(\.controller\.ts|/index\.ts)$" - Controller files should follow the .controller.ts naming convention
+
+  24. [Controller-Files-Follow-Convention]
+     File: src/presentation/controllers/signup-controller.ts
+     Controller-Files-Follow-Convention: src/presentation/controllers/signup-controller.ts (CONTEXT) does not match naming pattern "(\.controller\.ts|/index\.ts)$" - Controller files should follow the .controller.ts naming convention
+
+
+🔵 INFO (164):
+  1. [Detect-Zombie-Files]
+     File: src/data/usecases/db-add-account.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-add-account.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  2. [Detect-Zombie-Files]
+     File: src/data/usecases/db-add-survey.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-add-survey.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  3. [Detect-Zombie-Files]
+     File: src/data/usecases/db-authentication.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-authentication.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  4. [Detect-Zombie-Files]
+     File: src/data/usecases/db-check-survey-by-id.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-check-survey-by-id.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  5. [Detect-Zombie-Files]
+     File: src/data/usecases/db-load-account-by-token.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-load-account-by-token.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  6. [Detect-Zombie-Files]
+     File: src/data/usecases/db-load-answers-by-survey.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-load-answers-by-survey.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  7. [Detect-Zombie-Files]
+     File: src/data/usecases/db-load-survey-result.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-load-survey-result.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  8. [Detect-Zombie-Files]
+     File: src/data/usecases/db-load-surveys.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-load-surveys.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  9. [Detect-Zombie-Files]
+     File: src/data/usecases/db-save-survey-result.ts
+     Detect-Zombie-Files: File "src/data/usecases/db-save-survey-result.ts" (VERB_IMPLEMENTATION) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  10. [Detect-Zombie-Files]
+     File: src/domain/models/survey-result.ts
+     Detect-Zombie-Files: File "src/domain/models/survey-result.ts" (NOUN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  11. [Detect-Zombie-Files]
+     File: src/domain/models/survey.ts
+     Detect-Zombie-Files: File "src/domain/models/survey.ts" (NOUN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  12. [Detect-Zombie-Files]
+     File: src/domain/usecases/add-account.ts
+     Detect-Zombie-Files: File "src/domain/usecases/add-account.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  13. [Detect-Zombie-Files]
+     File: src/domain/usecases/add-survey.ts
+     Detect-Zombie-Files: File "src/domain/usecases/add-survey.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  14. [Detect-Zombie-Files]
+     File: src/domain/usecases/authentication.ts
+     Detect-Zombie-Files: File "src/domain/usecases/authentication.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  15. [Detect-Zombie-Files]
+     File: src/domain/usecases/check-survey-by-id.ts
+     Detect-Zombie-Files: File "src/domain/usecases/check-survey-by-id.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  16. [Detect-Zombie-Files]
+     File: src/domain/usecases/load-account-by-token.ts
+     Detect-Zombie-Files: File "src/domain/usecases/load-account-by-token.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  17. [Detect-Zombie-Files]
+     File: src/domain/usecases/load-answers-by-survey.ts
+     Detect-Zombie-Files: File "src/domain/usecases/load-answers-by-survey.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  18. [Detect-Zombie-Files]
+     File: src/domain/usecases/load-survey-result.ts
+     Detect-Zombie-Files: File "src/domain/usecases/load-survey-result.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  19. [Detect-Zombie-Files]
+     File: src/domain/usecases/load-surveys.ts
+     Detect-Zombie-Files: File "src/domain/usecases/load-surveys.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  20. [Detect-Zombie-Files]
+     File: src/domain/usecases/save-survey-result.ts
+     Detect-Zombie-Files: File "src/domain/usecases/save-survey-result.ts" (VERB_CONTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  21. [Detect-Zombie-Files]
+     File: src/infra/cryptography/bcrypt-adapter.ts
+     Detect-Zombie-Files: File "src/infra/cryptography/bcrypt-adapter.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  22. [Detect-Zombie-Files]
+     File: src/infra/cryptography/jwt-adapter.ts
+     Detect-Zombie-Files: File "src/infra/cryptography/jwt-adapter.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  23. [Detect-Zombie-Files]
+     File: src/infra/validators/email-validator-adapter.ts
+     Detect-Zombie-Files: File "src/infra/validators/email-validator-adapter.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  24. [Detect-Zombie-Files]
+     File: src/main/adapters/apollo-server-resolver-adapter.ts
+     Detect-Zombie-Files: File "src/main/adapters/apollo-server-resolver-adapter.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  25. [Detect-Zombie-Files]
+     File: src/main/adapters/express-middleware-adapter.ts
+     Detect-Zombie-Files: File "src/main/adapters/express-middleware-adapter.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  26. [Detect-Zombie-Files]
+     File: src/main/adapters/express-route-adapter.ts
+     Detect-Zombie-Files: File "src/main/adapters/express-route-adapter.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  27. [Detect-Zombie-Files]
+     File: src/main/config/app.ts
+     Detect-Zombie-Files: File "src/main/config/app.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  28. [Detect-Zombie-Files]
+     File: src/main/config/custom-modules.d.ts
+     Detect-Zombie-Files: File "src/main/config/custom-modules.d.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  29. [Detect-Zombie-Files]
+     File: src/main/config/env.ts
+     Detect-Zombie-Files: File "src/main/config/env.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  30. [Detect-Zombie-Files]
+     File: src/main/config/middlewares.ts
+     Detect-Zombie-Files: File "src/main/config/middlewares.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  31. [Detect-Zombie-Files]
+     File: src/main/config/routes.ts
+     Detect-Zombie-Files: File "src/main/config/routes.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  32. [Detect-Zombie-Files]
+     File: src/main/config/static-files.ts
+     Detect-Zombie-Files: File "src/main/config/static-files.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  33. [Detect-Zombie-Files]
+     File: src/main/config/swagger.ts
+     Detect-Zombie-Files: File "src/main/config/swagger.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  34. [Detect-Zombie-Files]
+     File: src/main/decorators/log-controller-decorator.ts
+     Detect-Zombie-Files: File "src/main/decorators/log-controller-decorator.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  35. [Detect-Zombie-Files]
+     File: src/main/middlewares/admin-auth.ts
+     Detect-Zombie-Files: File "src/main/middlewares/admin-auth.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  36. [Detect-Zombie-Files]
+     File: src/main/middlewares/auth.ts
+     Detect-Zombie-Files: File "src/main/middlewares/auth.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  37. [Detect-Zombie-Files]
+     File: src/main/middlewares/body-parser.ts
+     Detect-Zombie-Files: File "src/main/middlewares/body-parser.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  38. [Detect-Zombie-Files]
+     File: src/main/middlewares/content-type.ts
+     Detect-Zombie-Files: File "src/main/middlewares/content-type.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  39. [Detect-Zombie-Files]
+     File: src/main/middlewares/cors.ts
+     Detect-Zombie-Files: File "src/main/middlewares/cors.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  40. [Detect-Zombie-Files]
+     File: src/main/middlewares/no-cache.ts
+     Detect-Zombie-Files: File "src/main/middlewares/no-cache.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  41. [Detect-Zombie-Files]
+     File: src/main/routes/login-routes.ts
+     Detect-Zombie-Files: File "src/main/routes/login-routes.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  42. [Detect-Zombie-Files]
+     File: src/main/routes/survey-result-routes.ts
+     Detect-Zombie-Files: File "src/main/routes/survey-result-routes.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  43. [Detect-Zombie-Files]
+     File: src/main/routes/survey-routes.ts
+     Detect-Zombie-Files: File "src/main/routes/survey-routes.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  44. [Detect-Zombie-Files]
+     File: src/presentation/controllers/add-survey-controller.ts
+     Detect-Zombie-Files: File "src/presentation/controllers/add-survey-controller.ts" (CONTEXT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  45. [Detect-Zombie-Files]
+     File: src/presentation/controllers/load-survey-result-controller.ts
+     Detect-Zombie-Files: File "src/presentation/controllers/load-survey-result-controller.ts" (CONTEXT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  46. [Detect-Zombie-Files]
+     File: src/presentation/controllers/load-surveys-controller.ts
+     Detect-Zombie-Files: File "src/presentation/controllers/load-surveys-controller.ts" (CONTEXT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  47. [Detect-Zombie-Files]
+     File: src/presentation/controllers/login-controller.ts
+     Detect-Zombie-Files: File "src/presentation/controllers/login-controller.ts" (CONTEXT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  48. [Detect-Zombie-Files]
+     File: src/presentation/controllers/save-survey-result-controller.ts
+     Detect-Zombie-Files: File "src/presentation/controllers/save-survey-result-controller.ts" (CONTEXT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  49. [Detect-Zombie-Files]
+     File: src/presentation/controllers/signup-controller.ts
+     Detect-Zombie-Files: File "src/presentation/controllers/signup-controller.ts" (CONTEXT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  50. [Detect-Zombie-Files]
+     File: src/presentation/errors/access-denied-error.ts
+     Detect-Zombie-Files: File "src/presentation/errors/access-denied-error.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  51. [Detect-Zombie-Files]
+     File: src/presentation/errors/email-in-use-error.ts
+     Detect-Zombie-Files: File "src/presentation/errors/email-in-use-error.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  52. [Detect-Zombie-Files]
+     File: src/presentation/errors/invalid-param-error.ts
+     Detect-Zombie-Files: File "src/presentation/errors/invalid-param-error.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  53. [Detect-Zombie-Files]
+     File: src/presentation/errors/missing-param-error.ts
+     Detect-Zombie-Files: File "src/presentation/errors/missing-param-error.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  54. [Detect-Zombie-Files]
+     File: src/presentation/errors/server-error.ts
+     Detect-Zombie-Files: File "src/presentation/errors/server-error.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  55. [Detect-Zombie-Files]
+     File: src/presentation/errors/unauthorized-error.ts
+     Detect-Zombie-Files: File "src/presentation/errors/unauthorized-error.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  56. [Detect-Zombie-Files]
+     File: src/presentation/helpers/http-helper.ts
+     Detect-Zombie-Files: File "src/presentation/helpers/http-helper.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  57. [Detect-Zombie-Files]
+     File: src/presentation/middlewares/auth-middleware.ts
+     Detect-Zombie-Files: File "src/presentation/middlewares/auth-middleware.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  58. [Detect-Zombie-Files]
+     File: src/presentation/protocols/controller.ts
+     Detect-Zombie-Files: File "src/presentation/protocols/controller.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  59. [Detect-Zombie-Files]
+     File: src/presentation/protocols/http.ts
+     Detect-Zombie-Files: File "src/presentation/protocols/http.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  60. [Detect-Zombie-Files]
+     File: src/presentation/protocols/middleware.ts
+     Detect-Zombie-Files: File "src/presentation/protocols/middleware.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  61. [Detect-Zombie-Files]
+     File: src/presentation/protocols/validation.ts
+     Detect-Zombie-Files: File "src/presentation/protocols/validation.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  62. [Detect-Zombie-Files]
+     File: src/validation/protocols/email-validator.ts
+     Detect-Zombie-Files: File "src/validation/protocols/email-validator.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  63. [Detect-Zombie-Files]
+     File: src/validation/validators/compare-fields-validation.ts
+     Detect-Zombie-Files: File "src/validation/validators/compare-fields-validation.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  64. [Detect-Zombie-Files]
+     File: src/validation/validators/email-validation.ts
+     Detect-Zombie-Files: File "src/validation/validators/email-validation.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  65. [Detect-Zombie-Files]
+     File: src/validation/validators/required-field-validation.ts
+     Detect-Zombie-Files: File "src/validation/validators/required-field-validation.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  66. [Detect-Zombie-Files]
+     File: src/validation/validators/validation-composite.ts
+     Detect-Zombie-Files: File "src/validation/validators/validation-composite.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  67. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-cryptography.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-cryptography.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  68. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-cryptography.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-cryptography.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  69. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-cryptography.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-cryptography.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  70. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-cryptography.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-cryptography.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  71. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-account.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  72. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-account.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  73. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-account.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  74. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-account.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  75. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-account.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  76. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-log.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-log.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  77. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-survey-result.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-survey-result.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  78. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-survey-result.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-survey-result.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  79. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-survey.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  80. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-survey.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  81. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-survey.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  82. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-survey.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  83. [Detect-Zombie-Files]
+     File: tests/data/mocks/mock-db-survey.ts
+     Detect-Zombie-Files: File "tests/data/mocks/mock-db-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  84. [Detect-Zombie-Files]
+     File: tests/domain/mocks/mock-account.ts
+     Detect-Zombie-Files: File "tests/domain/mocks/mock-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  85. [Detect-Zombie-Files]
+     File: tests/domain/mocks/mock-survey-result.ts
+     Detect-Zombie-Files: File "tests/domain/mocks/mock-survey-result.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  86. [Detect-Zombie-Files]
+     File: tests/domain/mocks/mock-survey.ts
+     Detect-Zombie-Files: File "tests/domain/mocks/mock-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  87. [Detect-Zombie-Files]
+     File: tests/domain/mocks/test-helpers.ts
+     Detect-Zombie-Files: File "tests/domain/mocks/test-helpers.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  88. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-account.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  89. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-account.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  90. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-account.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-account.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  91. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-survey-result.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-survey-result.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  92. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-survey-result.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-survey-result.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  93. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-survey.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  94. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-survey.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  95. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-survey.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  96. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-survey.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-survey.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  97. [Detect-Zombie-Files]
+     File: tests/presentation/mocks/mock-validation.ts
+     Detect-Zombie-Files: File "tests/presentation/mocks/mock-validation.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  98. [Detect-Zombie-Files]
+     File: tests/validation/mocks/mock-email-validator.ts
+     Detect-Zombie-Files: File "tests/validation/mocks/mock-email-validator.ts" (UNKNOWN) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  99. [Detect-Zombie-Files]
+     File: src/data/protocols/cryptography/decrypter.ts
+     Detect-Zombie-Files: File "src/data/protocols/cryptography/decrypter.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  100. [Detect-Zombie-Files]
+     File: src/data/protocols/cryptography/encrypter.ts
+     Detect-Zombie-Files: File "src/data/protocols/cryptography/encrypter.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  101. [Detect-Zombie-Files]
+     File: src/data/protocols/cryptography/hash-comparer.ts
+     Detect-Zombie-Files: File "src/data/protocols/cryptography/hash-comparer.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  102. [Detect-Zombie-Files]
+     File: src/data/protocols/cryptography/hasher.ts
+     Detect-Zombie-Files: File "src/data/protocols/cryptography/hasher.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  103. [Detect-Zombie-Files]
+     File: src/infra/db/mongodb/account-mongo-repository.ts
+     Detect-Zombie-Files: File "src/infra/db/mongodb/account-mongo-repository.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  104. [Detect-Zombie-Files]
+     File: src/infra/db/mongodb/log-mongo-repository.ts
+     Detect-Zombie-Files: File "src/infra/db/mongodb/log-mongo-repository.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  105. [Detect-Zombie-Files]
+     File: src/infra/db/mongodb/mongo-helper.ts
+     Detect-Zombie-Files: File "src/infra/db/mongodb/mongo-helper.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  106. [Detect-Zombie-Files]
+     File: src/infra/db/mongodb/query-builder.ts
+     Detect-Zombie-Files: File "src/infra/db/mongodb/query-builder.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  107. [Detect-Zombie-Files]
+     File: src/infra/db/mongodb/survey-mongo-repository.ts
+     Detect-Zombie-Files: File "src/infra/db/mongodb/survey-mongo-repository.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  108. [Detect-Zombie-Files]
+     File: src/infra/db/mongodb/survey-result-mongo-repository.ts
+     Detect-Zombie-Files: File "src/infra/db/mongodb/survey-result-mongo-repository.ts" (ADVERB_CONCRETE) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  109. [Detect-Zombie-Files]
+     File: src/main/docs/components/bad-request.ts
+     Detect-Zombie-Files: File "src/main/docs/components/bad-request.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  110. [Detect-Zombie-Files]
+     File: src/main/docs/components/forbidden.ts
+     Detect-Zombie-Files: File "src/main/docs/components/forbidden.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  111. [Detect-Zombie-Files]
+     File: src/main/docs/components/not-found.ts
+     Detect-Zombie-Files: File "src/main/docs/components/not-found.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  112. [Detect-Zombie-Files]
+     File: src/main/docs/components/server-error.ts
+     Detect-Zombie-Files: File "src/main/docs/components/server-error.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  113. [Detect-Zombie-Files]
+     File: src/main/docs/components/unauthorized.ts
+     Detect-Zombie-Files: File "src/main/docs/components/unauthorized.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  114. [Detect-Zombie-Files]
+     File: src/main/docs/paths/login-path.ts
+     Detect-Zombie-Files: File "src/main/docs/paths/login-path.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  115. [Detect-Zombie-Files]
+     File: src/main/docs/paths/signup-path.ts
+     Detect-Zombie-Files: File "src/main/docs/paths/signup-path.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  116. [Detect-Zombie-Files]
+     File: src/main/docs/paths/survey-path.ts
+     Detect-Zombie-Files: File "src/main/docs/paths/survey-path.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  117. [Detect-Zombie-Files]
+     File: src/main/docs/paths/survey-result-path.ts
+     Detect-Zombie-Files: File "src/main/docs/paths/survey-result-path.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  118. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/account-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/account-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  119. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/add-survey-params-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/add-survey-params-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  120. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/api-key-auth-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/api-key-auth-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  121. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/error-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/error-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  122. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/login-params-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/login-params-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  123. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/save-survey-params-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/save-survey-params-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  124. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/signup-params-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/signup-params-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  125. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/survey-answer-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/survey-answer-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  126. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/survey-result-answer-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/survey-result-answer-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  127. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/survey-result-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/survey-result-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  128. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/survey-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/survey-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  129. [Detect-Zombie-Files]
+     File: src/main/docs/schemas/surveys-schema.ts
+     Detect-Zombie-Files: File "src/main/docs/schemas/surveys-schema.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  130. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/add-survey-controller-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/add-survey-controller-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  131. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/add-survey-validation-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/add-survey-validation-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  132. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/load-survey-result-controller-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/load-survey-result-controller-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  133. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/load-surveys-controller-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/load-surveys-controller-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  134. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/login-controller-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/login-controller-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  135. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/login-validation-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/login-validation-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  136. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/save-survey-result-controller-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/save-survey-result-controller-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  137. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/signup-controller-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/signup-controller-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  138. [Detect-Zombie-Files]
+     File: src/main/factories/controllers/signup-validation-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/controllers/signup-validation-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  139. [Detect-Zombie-Files]
+     File: src/main/factories/decorators/log-controller-decorator-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/decorators/log-controller-decorator-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  140. [Detect-Zombie-Files]
+     File: src/main/factories/middlewares/auth-middleware-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/middlewares/auth-middleware-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  141. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/add-account-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/add-account-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  142. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/add-survey-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/add-survey-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  143. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/authentication-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/authentication-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  144. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/check-survey-by-id-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/check-survey-by-id-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  145. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/load-account-by-token-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/load-account-by-token-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  146. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/load-answers-by-survey-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/load-answers-by-survey-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  147. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/load-survey-result-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/load-survey-result-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  148. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/load-surveys-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/load-surveys-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  149. [Detect-Zombie-Files]
+     File: src/main/factories/usecases/save-survey-result-factory.ts
+     Detect-Zombie-Files: File "src/main/factories/usecases/save-survey-result-factory.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  150. [Detect-Zombie-Files]
+     File: src/main/graphql/apollo/apollo-server.ts
+     Detect-Zombie-Files: File "src/main/graphql/apollo/apollo-server.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  151. [Detect-Zombie-Files]
+     File: src/main/graphql/directives/auth-directive.ts
+     Detect-Zombie-Files: File "src/main/graphql/directives/auth-directive.ts" (COMPOSER) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  152. [Detect-Zombie-Files]
+     File: src/data/protocols/db/account/add-account-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/account/add-account-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  153. [Detect-Zombie-Files]
+     File: src/data/protocols/db/account/check-account-by-email-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/account/check-account-by-email-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  154. [Detect-Zombie-Files]
+     File: src/data/protocols/db/account/load-account-by-email-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/account/load-account-by-email-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  155. [Detect-Zombie-Files]
+     File: src/data/protocols/db/account/load-account-by-token-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/account/load-account-by-token-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  156. [Detect-Zombie-Files]
+     File: src/data/protocols/db/account/update-access-token-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/account/update-access-token-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  157. [Detect-Zombie-Files]
+     File: src/data/protocols/db/log/log-error-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/log/log-error-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  158. [Detect-Zombie-Files]
+     File: src/data/protocols/db/survey/add-survey-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/survey/add-survey-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  159. [Detect-Zombie-Files]
+     File: src/data/protocols/db/survey/check-survey-by-id-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/survey/check-survey-by-id-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  160. [Detect-Zombie-Files]
+     File: src/data/protocols/db/survey/load-answers-by-survey-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/survey/load-answers-by-survey-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  161. [Detect-Zombie-Files]
+     File: src/data/protocols/db/survey/load-survey-by-id-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/survey/load-survey-by-id-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  162. [Detect-Zombie-Files]
+     File: src/data/protocols/db/survey/load-surveys-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/survey/load-surveys-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  163. [Detect-Zombie-Files]
+     File: src/data/protocols/db/survey-result/load-survey-result-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/survey-result/load-survey-result-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+  164. [Detect-Zombie-Files]
+     File: src/data/protocols/db/survey-result/save-survey-result-repository.ts
+     Detect-Zombie-Files: File "src/data/protocols/db/survey-result/save-survey-result-repository.ts" (ADVERB_ABSTRACT) is not imported by any other file. It may be dead code that can be removed - Detects files that are not imported by any other file, indicating potentially dead code
+
+
+==================================================
+Summary: 2 errors, 24 warnings, 164 info
+
+📊 Performance Metrics
+──────────────────────────────────────────────────
+⏱️  Analysis Time: 545ms
+📋 Rules Triggered: 5
+🔍 Total Violations: 190
+📌 Most Common Issues:
+   • Detect-Zombie-Files: 164 violations
+   • Adapter-Files-Follow-Convention: 9 violations
+   • UseCase-Files-Follow-Convention: 9 violations
+──────────────────────────────────────────────────

@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-10-15T01:44:34.303Z",
+  "iterations": 5,
+  "results": [],
+  "statistics": {
+    "analysisTime": {
+      "min": null,
+      "max": null,
+      "mean": null,
+      "stdDev": null
+    },
+    "realTime": {
+      "min": null,
+      "max": null,
+      "mean": null,
+      "stdDev": null
+    },
+    "memory": {
+      "min": null,
+      "max": null,
+      "mean": null,
+      "stdDev": null
+    }
+  },
+  "projectInfo": {
+    "files": 22,
+    "linesOfCode": 1920,
+    "roles": 10,
+    "rules": 15
+  }
+}
