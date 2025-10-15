@@ -12,7 +12,7 @@ const path = require('path');
 const yaml = require('yaml');
 
 const BENCHMARK_DIR = path.join(__dirname, 'docs', 'whitepaper-version-1-2-0', 'benchmark');
-const ITERATIONS = 5;
+const ITERATIONS = 100;
 
 // Cores para output
 const colors = {
