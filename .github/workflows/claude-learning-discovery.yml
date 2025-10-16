@@ -1,13 +1,13 @@
 name: Claude Learning - Pattern Discovery
 
 on:
-  # TEMPORARY: Push trigger for testing on feature branch
-  push:
-    branches: [feature/continuous-learning]
+  # TEMPORARY: Pull request trigger for testing
+  pull_request:
+    types: [opened, synchronize]
     paths:
       - '.github/workflows/claude-learning-discovery.yml'
 
-  # Manual trigger for testing
+  # Manual trigger (only works after merge to main)
   workflow_dispatch:
     inputs:
       analysis_depth:
@@ -15,7 +15,7 @@ on:
         required: false
         default: 'medium'
 
-  # TODO: Enable after merge to main
+  # TODO: Enable after merge to main and testing complete
   # schedule:
   #   - cron: '0 2 * * 0'  # Domingo às 2AM UTC
 
