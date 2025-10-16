@@ -767,6 +767,44 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # DOCKER SECURITY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # Evidence: Issue #20 - Learning Insight Discovery (2025-10-16)
+  # Pattern: docker-hardcoded-secrets
+  # Confidence: 0.95
+
+  - name: "docker-hardcoded-secrets"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(ARG|ENV)\\s+.*(SECRET|TOKEN|PASSWORD|KEY|API_KEY|PRIVATE|CREDENTIAL|AUTH)\\s*="
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects hardcoded secrets in Dockerfile instructions.
+
+      WHY: Secrets embedded in Docker images are a critical security risk:
+      - Exposed in image layers (even intermediate ones)
+      - Accessible to anyone with image access
+      - Persist in registries permanently
+      - Violate security compliance standards
+
+      SOLUTION:
+      - Use Docker BuildKit secrets: RUN --mount=type=secret,id=mysecret
+      - Use runtime environment variables from orchestration platform
+      - Use secret management systems (Vault, AWS Secrets Manager)
+      - Reference secret files: ENV PASSWORD_FILE=/run/secrets/password
+
+      EXAMPLE:
+      Bad:  ENV API_KEY=abc123xyz789
+      Good: RUN --mount=type=secret,id=api_key cat /run/secrets/api_key > .env
+
+      REFERENCES:
+      - Docker BuildKit Secrets: https://docs.docker.com/build/building/secrets/
+      - CIS Docker Benchmark 4.10: "Ensure secrets are not stored in Dockerfiles"
+      - OWASP Docker Security Cheat Sheet
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
