@@ -767,6 +767,66 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # RESOURCE MANAGEMENT ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # These patterns prevent resource leaks and exhaustion issues that cause
+  # service failures in production. Discovered through community analysis.
+  # Evidence: Issue #32 - Learning Insight Discovery (2025-10-16)
+  # Frequency: 20-25% of codebases | Confidence: 0.88
+
+  # Critical: Network sockets opened without proper cleanup
+  - name: "socket-no-close"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(?:socket|Socket|createSocket|new\\s+Socket)\\([^)]*\\)(?!.*?(close|end|destroy|disconnect))"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects network sockets opened without proper cleanup.
+
+      WHY: Unclosed sockets cause resource exhaustion:
+      - Each socket consumes a file descriptor
+      - OS has finite FD limit (ulimit -n, typically 1024-65536)
+      - Leaked sockets keep ports in TIME_WAIT state
+      - Memory leaks from socket buffers
+
+      SOLUTION:
+      1. **try-finally**: Always destroy socket in finally block
+      2. **Timeout**: Implement connection timeout with auto-cleanup
+      3. **Connection Pooling**: Reuse sockets instead of creating new ones
+      4. **Event Handlers**: Add 'error' and 'close' event handlers
+      5. **Graceful Shutdown**: Close all sockets on SIGTERM/SIGINT
+
+      EXAMPLE:
+      Bad:
+        const socket = new Socket();
+        socket.connect(port, host);
+        socket.write(data);
+        // Socket leaked!
+
+      Good:
+        const socket = new Socket();
+        try {
+          socket.connect(port, host);
+          socket.write(data);
+        } finally {
+          socket.destroy();  // Always closed
+        }
+
+      Best:
+        await socketPool.with(async (socket) => {
+          socket.write(data);
+          // Auto-released to pool
+        });
+
+      REFERENCES:
+      - Node.js net.Socket documentation
+      - "TCP/IP Socket Programming" patterns
+      - Linux file descriptor limits (ulimit)
+      - WebSocket RFC 6455: Connection management
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
