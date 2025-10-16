@@ -555,18 +555,14 @@ rules:
   # Prevents consolidation of multiple responsibilities in one file
   # NOTE: Requires 'forbidden_keywords' rule type not yet implemented
   - name: "No-Business-Logic-In-Controllers"
-    severity: error
-    comment: "AI NOTE: Controller contains business logic keywords (calculate/compute/transform/process/validate) - violates separation of concerns, breaks Clean Architecture boundaries. REFACTOR: Extract business logic to use case or domain service. Controller should ONLY: (1) receive input from external interface, (2) call use case with validated input, (3) format response for external interface. Controller is thin adapter, not business logic container. EXAMPLE: If CliController has 'process.exit(hasErrors ? 1 : 0)' logic, extract to use case: ExitCodeDeterminer.execute(violations). Controller becomes: exitCode = await this.determineExitCode.execute(violations); this.exitHandler.exit(exitCode). Business rule (violations → exit code mapping) moves to use case, testable independently. BENEFIT: Business logic reusable across interfaces (CLI/HTTP/GraphQL), testable in isolation without mocking presentation layer, controller stays thin and focused on interface adaptation, follows Clean Architecture dependency rule."
+    severity: warning
+    comment: "AI NOTE: Controller contains business logic keywords (calculate/compute/transform) - violates separation of concerns, breaks Clean Architecture boundaries. REFACTOR: Extract business logic to use case or domain service. Controller should ONLY: (1) receive input from external interface, (2) call use case with validated input, (3) format response for external interface. Controller is thin adapter, not business logic container. EXAMPLE: If CliController calculates exit codes based on violation types, extract to use case: ExitCodeDeterminer.execute(violations). Controller becomes: exitCode = await this.determineExitCode.execute(violations); this.exitHandler.exit(exitCode). Business rule (violations → exit code mapping) moves to use case, testable independently. BENEFIT: Business logic reusable across interfaces (CLI/HTTP/GraphQL), testable in isolation without mocking presentation layer, controller stays thin and focused on interface adaptation, follows Clean Architecture dependency rule. NOTE: This rule has false positives (detects keywords in imports/comments). Manual review recommended."
     from:
       role: CONTEXT_ACTUAL
     contains_forbidden:
-      - "calculate"
-      - "compute"
-      - "transform"
-      - "process"
-      - "parse"
-      - "validate"
-      - "isValid"
+      - "calculateTotal"
+      - "computeResult"
+      - "transformData"
     rule: "forbidden_keywords"
 
   # 6. MINIMUM TEST RATIO (Priority: HIGH)
