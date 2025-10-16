@@ -724,6 +724,21 @@ rules:
   # TODO: Implement 'interface_method_count' rule type for automatic detection
 
   # ============================================================================
+  # LEARNING EVOLUTION RULES
+  # ============================================================================
+  # Rules discovered through continuous learning and pattern analysis
+  # Evidence: Issue #7 - Learning Insight Discovery (2025-10-16)
+  # Frequency: 5 occurrences | Confidence: 0.95
+  # Note: This is a test rule to validate the learning evolution workflow
+
+  - name: "Test-Pattern-Rule"
+    severity: warning
+    for: { role: VERB_IMPLEMENTATION }
+    pattern: "(\\.usecase\\.ts|/index\\.ts)$"
+    rule: "naming_pattern"
+    comment: "AI NOTE: Discovered via manual testing of learning system. This test rule validates the grammar evolution workflow by checking use case naming patterns."
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
