@@ -488,31 +488,46 @@ describe('AnalyzeCodebaseUseCase', () => {
     const grammar = makeGrammar([complexityRule], makeRoles([domainRole]));
     const { sut, codeParserSpy } = makeSut(grammar);
 
-    // Mock fs module with complex class
-    const complexClass = `
-      class GodObject {
-        private prop1: string;
-        private prop2: number;
-        private prop3: boolean;
-        public prop4: string;
-        public prop5: number;
-        public prop6: boolean;
-        public prop7: string;
-        public prop8: number;
-        public prop9: boolean;
-        public prop10: string;
-        public prop11: number;
+    // Create actual temporary file for ts-morph to parse
+    const fsActual = await vi.importActual<typeof import('fs')>('fs');
+    const path = await import('path');
+    const os = await import('os');
 
-        public method1() {}
-        public method2() {}
-        public method3() {}
-        public method4() {}
-        public method5() {}
-        public method6() {}
-      }
-    `;
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockResolvedValue(complexClass);
+    const tmpDir = await fsActual.promises.mkdtemp(path.join(os.tmpdir(), 'nooa-test-'));
+    const srcDir = path.join(tmpDir, 'src', 'domain', 'models');
+    await fsActual.promises.mkdir(srcDir, { recursive: true });
+
+    const complexClass = `
+class GodObject {
+  private prop1: string;
+  private prop2: number;
+  private prop3: boolean;
+  public prop4: string;
+  public prop5: number;
+  public prop6: boolean;
+  public prop7: string;
+  public prop8: number;
+  public prop9: boolean;
+  public prop10: string;
+  public prop11: number;
+
+  method1() {}
+  method2() {}
+  method3() {}
+  method4() {}
+  method5() {}
+  method6() {}
+}
+`;
+
+    const filePath = path.join(srcDir, 'god-object.ts');
+    await fsActual.promises.writeFile(filePath, complexClass);
+
+    // Create minimal tsconfig.json
+    await fsActual.promises.writeFile(
+      path.join(tmpDir, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { target: 'ES2015' } })
+    );
 
     codeParserSpy.result = [
       makeSymbol({
@@ -520,11 +535,16 @@ describe('AnalyzeCodebaseUseCase', () => {
       }),
     ];
 
-    const violations = await sut.analyze({ projectPath: '/tmp/project' });
+    try {
+      const violations = await sut.analyze({ projectPath: tmpDir });
 
-    expect(violations).toHaveLength(2);
-    expect(violations.some(v => v.message.includes('public methods'))).toBe(true);
-    expect(violations.some(v => v.message.includes('properties'))).toBe(true);
+      expect(violations).toHaveLength(2);
+      expect(violations.some(v => v.message.includes('public methods'))).toBe(true);
+      expect(violations.some(v => v.message.includes('properties'))).toBe(true);
+    } finally {
+      // Clean up
+      await fsActual.promises.rm(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it('Should handle file read errors in class complexity validation', async () => {
