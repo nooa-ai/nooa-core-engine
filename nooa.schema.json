@@ -1,0 +1,532 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nooa.dev/schemas/grammar.json",
+  "title": "Nooa Grammar Schema",
+  "description": "JSON Schema for Nooa architectural grammar files. Defines all rule types as pure data - no code changes needed to add new rule types. Enables BigO(1) iteration on grammar.",
+  "type": "object",
+  "required": ["version", "language", "roles", "rules"],
+  "properties": {
+    "version": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+$"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "description": "Grammar version (e.g., '1.1' or 1.1)"
+    },
+    "language": {
+      "type": "string",
+      "enum": ["typescript", "javascript", "python", "java", "go", "rust", "csharp"],
+      "description": "Programming language being validated"
+    },
+    "roles": {
+      "type": "array",
+      "description": "Architectural roles (layers/components) in the codebase",
+      "items": {
+        "$ref": "#/definitions/Role"
+      },
+      "minItems": 1
+    },
+    "rules": {
+      "type": "array",
+      "description": "Validation rules to enforce architectural constraints",
+      "items": {
+        "$ref": "#/definitions/Rule"
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "Role": {
+      "type": "object",
+      "required": ["name", "path"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z_][A-Z0-9_]*$",
+          "description": "Role name in SCREAMING_SNAKE_CASE"
+        },
+        "path": {
+          "type": "string",
+          "description": "Regex pattern matching files belonging to this role"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of role's responsibility"
+        }
+      }
+    },
+    "RoleReference": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Single role name or 'ALL'"
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Array of role names"
+        }
+      ]
+    },
+    "Rule": {
+      "type": "object",
+      "required": ["name", "severity", "rule"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique rule identifier in kebab-case or PascalCase"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warning", "info"],
+          "description": "Severity level for violations"
+        },
+        "comment": {
+          "type": "string",
+          "description": "AI NOTE: Executable instructions for fixing violations (PROBLEM→REFACTOR→EXAMPLE→BENEFIT)"
+        },
+        "rule": {
+          "type": "string",
+          "enum": [
+            "allowed",
+            "forbidden",
+            "required",
+            "naming_pattern",
+            "find_synonyms",
+            "detect_unreferenced",
+            "file_size",
+            "test_coverage",
+            "forbidden_keywords",
+            "required_structure",
+            "documentation_required",
+            "class_complexity",
+            "minimum_test_ratio",
+            "granularity_metric",
+            "forbidden_patterns",
+            "barrel_purity"
+          ],
+          "description": "Rule type - defines which validator to use"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "rule": { "enum": ["allowed", "forbidden", "required"] } }
+          },
+          "then": {
+            "$ref": "#/definitions/DependencyRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "naming_pattern" } }
+          },
+          "then": {
+            "$ref": "#/definitions/NamingPatternRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "find_synonyms" } }
+          },
+          "then": {
+            "$ref": "#/definitions/SynonymDetectionRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "detect_unreferenced" } }
+          },
+          "then": {
+            "$ref": "#/definitions/UnreferencedCodeRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "file_size" } }
+          },
+          "then": {
+            "$ref": "#/definitions/FileSizeRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "test_coverage" } }
+          },
+          "then": {
+            "$ref": "#/definitions/TestCoverageRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "forbidden_keywords" } }
+          },
+          "then": {
+            "$ref": "#/definitions/ForbiddenKeywordsRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "required_structure" } }
+          },
+          "then": {
+            "$ref": "#/definitions/RequiredStructureRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "documentation_required" } }
+          },
+          "then": {
+            "$ref": "#/definitions/DocumentationRequiredRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "class_complexity" } }
+          },
+          "then": {
+            "$ref": "#/definitions/ClassComplexityRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "minimum_test_ratio" } }
+          },
+          "then": {
+            "$ref": "#/definitions/MinimumTestRatioRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "granularity_metric" } }
+          },
+          "then": {
+            "$ref": "#/definitions/GranularityMetricRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "forbidden_patterns" } }
+          },
+          "then": {
+            "$ref": "#/definitions/ForbiddenPatternsRule"
+          }
+        },
+        {
+          "if": {
+            "properties": { "rule": { "const": "barrel_purity" } }
+          },
+          "then": {
+            "$ref": "#/definitions/BarrelPurityRule"
+          }
+        }
+      ]
+    },
+    "DependencyRule": {
+      "type": "object",
+      "required": ["from", "to"],
+      "properties": {
+        "from": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "to": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["role"],
+              "properties": {
+                "role": { "$ref": "#/definitions/RoleReference" }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["circular"],
+              "properties": {
+                "circular": { "const": true }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "NamingPatternRule": {
+      "type": "object",
+      "required": ["for", "pattern"],
+      "properties": {
+        "for": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern that file paths must match"
+        }
+      }
+    },
+    "SynonymDetectionRule": {
+      "type": "object",
+      "required": ["for", "options"],
+      "properties": {
+        "for": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "options": {
+          "type": "object",
+          "required": ["similarity_threshold"],
+          "properties": {
+            "similarity_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Similarity threshold (0.0-1.0)"
+            },
+            "thesaurus": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 2
+              },
+              "description": "Groups of synonymous words"
+            }
+          }
+        }
+      }
+    },
+    "UnreferencedCodeRule": {
+      "type": "object",
+      "required": ["for"],
+      "properties": {
+        "for": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "ignore_patterns": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "File patterns to ignore (entry points, tests)"
+            }
+          }
+        }
+      }
+    },
+    "FileSizeRule": {
+      "type": "object",
+      "required": ["for", "max_lines"],
+      "properties": {
+        "for": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "max_lines": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum lines allowed in file"
+        }
+      }
+    },
+    "TestCoverageRule": {
+      "type": "object",
+      "required": ["from", "to"],
+      "properties": {
+        "from": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "to": {
+          "type": "object",
+          "required": ["test_file"],
+          "properties": {
+            "test_file": { "const": "required" }
+          }
+        }
+      }
+    },
+    "ForbiddenKeywordsRule": {
+      "type": "object",
+      "required": ["from", "contains_forbidden"],
+      "properties": {
+        "from": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "contains_forbidden": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Keywords that must not appear in code"
+        }
+      }
+    },
+    "RequiredStructureRule": {
+      "type": "object",
+      "required": ["required_directories"],
+      "properties": {
+        "required_directories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Directory paths that must exist"
+        }
+      }
+    },
+    "DocumentationRequiredRule": {
+      "type": "object",
+      "required": ["for", "min_lines", "requires_jsdoc"],
+      "properties": {
+        "for": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "min_lines": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum lines that trigger documentation requirement"
+        },
+        "requires_jsdoc": {
+          "type": "boolean",
+          "description": "Whether JSDoc is required"
+        }
+      }
+    },
+    "ClassComplexityRule": {
+      "type": "object",
+      "required": ["for", "max_public_methods", "max_properties"],
+      "properties": {
+        "for": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "max_public_methods": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum public methods allowed in a class"
+        },
+        "max_properties": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum properties allowed in a class"
+        }
+      }
+    },
+    "MinimumTestRatioRule": {
+      "type": "object",
+      "required": ["global"],
+      "properties": {
+        "global": {
+          "type": "object",
+          "required": ["test_ratio"],
+          "properties": {
+            "test_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Minimum ratio of test files to production files (0.0-1.0)"
+            }
+          }
+        }
+      }
+    },
+    "GranularityMetricRule": {
+      "type": "object",
+      "required": ["global"],
+      "properties": {
+        "global": {
+          "type": "object",
+          "required": ["target_loc_per_file", "warning_threshold_multiplier"],
+          "properties": {
+            "target_loc_per_file": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Target lines of code per file"
+            },
+            "warning_threshold_multiplier": {
+              "type": "number",
+              "minimum": 1,
+              "description": "Multiplier for warning threshold"
+            }
+          }
+        }
+      }
+    },
+    "ForbiddenPatternsRule": {
+      "type": "object",
+      "required": ["from", "contains_forbidden"],
+      "properties": {
+        "from": {
+          "type": "object",
+          "required": ["role"],
+          "properties": {
+            "role": { "$ref": "#/definitions/RoleReference" }
+          }
+        },
+        "contains_forbidden": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Regex patterns that must not appear in code"
+        }
+      }
+    },
+    "BarrelPurityRule": {
+      "type": "object",
+      "required": ["for", "contains_forbidden"],
+      "properties": {
+        "for": {
+          "type": "object",
+          "required": ["file_pattern"],
+          "properties": {
+            "file_pattern": {
+              "type": "string",
+              "description": "Regex pattern matching barrel files (e.g., '/index\\.ts$')"
+            }
+          }
+        },
+        "contains_forbidden": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Patterns that should not exist in barrel files"
+        }
+      }
+    }
+  }
+}

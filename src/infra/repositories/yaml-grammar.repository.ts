@@ -17,19 +17,33 @@ import {
   GrammarValidatorHelper,
   GrammarTransformerHelper,
 } from './helpers';
+import { SchemaValidator } from '../validators/schema.validator';
+import * as path from 'path';
 
 /**
  * YAML-based grammar repository implementation
  */
 export class YamlGrammarRepository implements IGrammarRepository {
   private yamlParser: YamlParserHelper;
+  private schemaValidator: SchemaValidator;
   private validator: GrammarValidatorHelper;
   private transformer: GrammarTransformerHelper;
 
   constructor() {
     this.yamlParser = new YamlParserHelper();
+    this.schemaValidator = new SchemaValidator();
     this.validator = new GrammarValidatorHelper();
     this.transformer = new GrammarTransformerHelper();
+
+    // Load JSON schema (from project root)
+    const schemaPath = path.join(process.cwd(), 'nooa.schema.json');
+    try {
+      this.schemaValidator.loadSchema(schemaPath);
+    } catch (error) {
+      // Schema validation is optional - if schema not found, skip it
+      // This maintains backward compatibility
+      console.warn(`Schema file not found at ${schemaPath}. Skipping schema validation.`);
+    }
   }
 
   /**
@@ -54,6 +68,10 @@ export class YamlGrammarRepository implements IGrammarRepository {
   /**
    * Validates the parsed YAML content and transforms it into a GrammarModel
    *
+   * Two-layer validation:
+   * 1. Schema validation (structural - via JSON schema)
+   * 2. Semantic validation (business rules - existing validator)
+   *
    * @param content - Parsed YAML content
    * @param projectPath - Path to the project (for error messages)
    * @returns Validated and transformed GrammarModel
@@ -63,7 +81,21 @@ export class YamlGrammarRepository implements IGrammarRepository {
     // Construct file path for error messages
     const filePath = `${projectPath}/nooa.grammar.yaml`;
 
-    // Validate
+    // Layer 1: Schema validation (if schema loaded)
+    try {
+      const schemaResult = this.schemaValidator.validate(content);
+      if (!schemaResult.valid) {
+        const errorMessage = schemaResult.errors.join('\n  - ');
+        throw new Error(`Grammar file failed schema validation:\n  - ${errorMessage}`);
+      }
+    } catch (error) {
+      // If schema validator not initialized (no schema file), skip this step
+      if (error instanceof Error && !error.message.includes('Schema not loaded')) {
+        throw error;
+      }
+    }
+
+    // Layer 2: Semantic validation
     this.validator.validate(content, filePath);
 
     // Transform
