@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as yaml from 'yaml';
 import { YamlGrammarRepository } from '../../../src/infra/repositories/yaml-grammar.repository';
-import { IFileSystem } from '../../../src/data/protocols';
+import { IFileReader, IFileExistenceChecker } from '../../../src/data/protocols';
 
 vi.mock('yaml');
 
 describe('YamlGrammarRepository', () => {
   let sut: YamlGrammarRepository;
-  let fileSystemMock: IFileSystem;
+  let fileSystemMock: IFileReader & IFileExistenceChecker;
 
   beforeEach(() => {
-    // Create mock IFileSystem
+    // Create mock IFileReader & IFileExistenceChecker
     fileSystemMock = {
       readFileSync: vi.fn(),
       existsSync: vi.fn(),

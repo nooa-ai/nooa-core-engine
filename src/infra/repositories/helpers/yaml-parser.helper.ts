@@ -2,17 +2,20 @@
  * YAML Parser Helper
  *
  * Handles file system operations and YAML parsing for grammar files.
- * Uses IFileSystem abstraction for DIP compliance (no direct fs usage).
+ * Uses IFileReader and IFileExistenceChecker abstractions for DIP and ISP compliance.
  */
 
 import * as path from 'path';
 import * as yaml from 'yaml';
-import { IFileSystem } from '../../../data/protocols';
+import { IFileReader, IFileExistenceChecker } from '../../../data/protocols';
 
 export class YamlParserHelper {
   private readonly possibleFilenames = ['nooa.grammar.yaml', 'nooa.grammar.yml'];
 
-  constructor(private readonly fileSystem: IFileSystem) {}
+  constructor(
+    private readonly fileReader: IFileReader,
+    private readonly fileExistenceChecker: IFileExistenceChecker
+  ) {}
 
   /**
    * Finds and reads the grammar file from the project path
@@ -23,7 +26,7 @@ export class YamlParserHelper {
    */
   parseGrammarFile(projectPath: string): any {
     const grammarFilePath = this.findGrammarFile(projectPath);
-    const fileContent = this.fileSystem.readFileSync(grammarFilePath, 'utf-8');
+    const fileContent = this.fileReader.readFileSync(grammarFilePath, 'utf-8');
     return this.parseYaml(fileContent);
   }
 
@@ -37,7 +40,7 @@ export class YamlParserHelper {
   private findGrammarFile(projectPath: string): string {
     for (const filename of this.possibleFilenames) {
       const testPath = path.join(projectPath, filename);
-      if (this.fileSystem.existsSync(testPath)) {
+      if (this.fileExistenceChecker.existsSync(testPath)) {
         return testPath;
       }
     }

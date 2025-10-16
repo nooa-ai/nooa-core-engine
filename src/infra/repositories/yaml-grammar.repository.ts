@@ -31,7 +31,9 @@ export class YamlGrammarRepository implements IGrammarRepository {
   private transformer: GrammarTransformerHelper;
 
   constructor(private readonly fileSystem: IFileSystem = new NodeFileSystemAdapter()) {
-    this.yamlParser = new YamlParserHelper(this.fileSystem);
+    // YamlParserHelper needs both IFileReader and IFileExistenceChecker (ISP)
+    // Same fileSystem instance provides both interfaces
+    this.yamlParser = new YamlParserHelper(this.fileSystem, this.fileSystem);
     this.schemaValidator = new SchemaValidator(this.fileSystem);
     this.semanticValidator = new SemanticGrammarValidator();
     this.transformer = new GrammarTransformerHelper();
