@@ -14,6 +14,7 @@ import {
   BarrelPurityRule,
 } from '../../domain/models';
 import { BaseRuleValidator } from './base-rule.validator';
+import { readFileContent } from '../helpers';
 
 export class CodePatternValidator extends BaseRuleValidator {
   constructor(
@@ -63,35 +64,23 @@ export class CodePatternValidator extends BaseRuleValidator {
 
     // Performance: Use cache if available
     const validationPromises = symbolsToCheck.map(async (symbol) => {
-      try {
-        let content: string;
-        if (fileCache && fileCache.has(symbol.path)) {
-          content = fileCache.get(symbol.path)!;
-        } else {
-          const fs = await import('fs').then((m) => m.promises);
-          const path = await import('path');
-          const filePath = path.join(projectPath, symbol.path);
-          content = await fs.readFile(filePath, 'utf-8');
-        }
+      const content = await readFileContent(symbol.path, projectPath, fileCache);
+      if (!content) return null;
 
-        for (const keyword of rule.contains_forbidden) {
-          if (content.includes(keyword)) {
-            return {
-              ruleName: rule.name,
-              severity: rule.severity,
-              file: symbol.path,
-              message: `${rule.name}: ${symbol.path} contains forbidden keyword '${keyword}'${rule.comment ? ` - ${rule.comment}` : ''}`,
-              fromRole: symbol.role,
-              toRole: undefined,
-              dependency: undefined,
-            };
-          }
+      for (const keyword of rule.contains_forbidden) {
+        if (content.includes(keyword)) {
+          return {
+            ruleName: rule.name,
+            severity: rule.severity,
+            file: symbol.path,
+            message: `${rule.name}: ${symbol.path} contains forbidden keyword '${keyword}'${rule.comment ? ` - ${rule.comment}` : ''}`,
+            fromRole: symbol.role,
+            toRole: undefined,
+            dependency: undefined,
+          };
         }
-        return null;
-      } catch (error) {
-        // File might not exist or be readable, skip
-        return null;
       }
+      return null;
     });
 
     const results = await Promise.all(validationPromises);
@@ -110,41 +99,29 @@ export class CodePatternValidator extends BaseRuleValidator {
 
     // Performance: Use cache if available
     const validationPromises = symbolsToCheck.map(async (symbol) => {
-      try {
-        let content: string;
-        if (fileCache && fileCache.has(symbol.path)) {
-          content = fileCache.get(symbol.path)!;
-        } else {
-          const fs = await import('fs').then((m) => m.promises);
-          const path = await import('path');
-          const filePath = path.join(projectPath, symbol.path);
-          content = await fs.readFile(filePath, 'utf-8');
-        }
+      const content = await readFileContent(symbol.path, projectPath, fileCache);
+      if (!content) return null;
 
-        for (const pattern of rule.contains_forbidden) {
-          try {
-            const regex = new RegExp(pattern);
-            if (regex.test(content)) {
-              return {
-                ruleName: rule.name,
-                severity: rule.severity,
-                file: symbol.path,
-                message: `${rule.name}: ${symbol.path} contains forbidden pattern '${pattern}'${rule.comment ? ` - ${rule.comment}` : ''}`,
-                fromRole: symbol.role,
-                toRole: undefined,
-                dependency: undefined,
-              };
-            }
-          } catch (error) {
-            // Invalid regex pattern, skip
-            continue;
+      for (const pattern of rule.contains_forbidden) {
+        try {
+          const regex = new RegExp(pattern);
+          if (regex.test(content)) {
+            return {
+              ruleName: rule.name,
+              severity: rule.severity,
+              file: symbol.path,
+              message: `${rule.name}: ${symbol.path} contains forbidden pattern '${pattern}'${rule.comment ? ` - ${rule.comment}` : ''}`,
+              fromRole: symbol.role,
+              toRole: undefined,
+              dependency: undefined,
+            };
           }
+        } catch (error) {
+          // Invalid regex pattern, skip
+          continue;
         }
-        return null;
-      } catch (error) {
-        // File might not exist or be readable, skip
-        return null;
       }
+      return null;
     });
 
     const results = await Promise.all(validationPromises);
@@ -162,41 +139,29 @@ export class CodePatternValidator extends BaseRuleValidator {
 
     // Performance: Use cache if available
     const validationPromises = symbolsToCheck.map(async (symbol) => {
-      try {
-        let content: string;
-        if (fileCache && fileCache.has(symbol.path)) {
-          content = fileCache.get(symbol.path)!;
-        } else {
-          const fs = await import('fs').then((m) => m.promises);
-          const path = await import('path');
-          const filePath = path.join(projectPath, symbol.path);
-          content = await fs.readFile(filePath, 'utf-8');
-        }
+      const content = await readFileContent(symbol.path, projectPath, fileCache);
+      if (!content) return null;
 
-        for (const pattern of rule.contains_forbidden) {
-          try {
-            const regex = new RegExp(pattern);
-            if (regex.test(content)) {
-              return {
-                ruleName: rule.name,
-                severity: rule.severity,
-                file: symbol.path,
-                message: `${rule.name}: Barrel file ${symbol.path} contains forbidden pattern '${pattern}' - should only re-export${rule.comment ? ` - ${rule.comment}` : ''}`,
-                fromRole: symbol.role,
-                toRole: undefined,
-                dependency: undefined,
-              };
-            }
-          } catch (error) {
-            // Invalid regex pattern, skip
-            continue;
+      for (const pattern of rule.contains_forbidden) {
+        try {
+          const regex = new RegExp(pattern);
+          if (regex.test(content)) {
+            return {
+              ruleName: rule.name,
+              severity: rule.severity,
+              file: symbol.path,
+              message: `${rule.name}: Barrel file ${symbol.path} contains forbidden pattern '${pattern}' - should only re-export${rule.comment ? ` - ${rule.comment}` : ''}`,
+              fromRole: symbol.role,
+              toRole: undefined,
+              dependency: undefined,
+            };
           }
+        } catch (error) {
+          // Invalid regex pattern, skip
+          continue;
         }
-        return null;
-      } catch (error) {
-        // File might not exist or be readable, skip
-        return null;
       }
+      return null;
     });
 
     const results = await Promise.all(validationPromises);

@@ -9,6 +9,7 @@ import {
   FileSizeRule,
 } from '../../../domain/models';
 import { BaseRuleValidator } from '../base-rule.validator';
+import { readFileContent } from '../../helpers';
 
 export class FileSizeValidator extends BaseRuleValidator {
   constructor(private readonly rules: FileSizeRule[]) {
@@ -41,37 +42,23 @@ export class FileSizeValidator extends BaseRuleValidator {
 
     // Performance: Use cache if available, otherwise read from disk
     const validationPromises = symbolsToCheck.map(async (symbol) => {
-      try {
-        // Use cache if available (eliminates redundant I/O)
-        let content: string;
-        if (fileCache && fileCache.has(symbol.path)) {
-          content = fileCache.get(symbol.path)!;
-        } else {
-          // Fallback to disk read if cache miss
-          const fs = await import('fs').then((m) => m.promises);
-          const path = await import('path');
-          const filePath = path.join(projectPath, symbol.path);
-          content = await fs.readFile(filePath, 'utf-8');
-        }
+      const content = await readFileContent(symbol.path, projectPath, fileCache);
+      if (!content) return null;
 
-        const lines = content.split('\n').length;
+      const lines = content.split('\n').length;
 
-        if (lines > rule.max_lines) {
-          return {
-            ruleName: rule.name,
-            severity: rule.severity,
-            file: symbol.path,
-            message: `${rule.name}: File ${symbol.path} has ${lines} lines (exceeds ${rule.max_lines} limit)${rule.comment ? ` - ${rule.comment}` : ''}`,
-            fromRole: symbol.role,
-            toRole: undefined,
-            dependency: undefined,
-          };
-        }
-        return null;
-      } catch (error) {
-        // File might not exist or be readable, skip
-        return null;
+      if (lines > rule.max_lines) {
+        return {
+          ruleName: rule.name,
+          severity: rule.severity,
+          file: symbol.path,
+          message: `${rule.name}: File ${symbol.path} has ${lines} lines (exceeds ${rule.max_lines} limit)${rule.comment ? ` - ${rule.comment}` : ''}`,
+          fromRole: symbol.role,
+          toRole: undefined,
+          dependency: undefined,
+        };
       }
+      return null;
     });
 
     const results = await Promise.all(validationPromises);
