@@ -767,6 +767,57 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # DOCKER SECURITY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # These patterns enforce Docker security best practices to prevent common
+  # vulnerabilities. Discovered through community pattern analysis (Issue #21).
+
+  - name: "docker-root-user"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "^(?!.*USER\\s+(?!root)\\w+).*FROM.*"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects Docker containers running as root user.
+
+      WHY: Running containers as root violates security best practices:
+      - Increases attack surface if container is compromised
+      - Allows privilege escalation in certain scenarios
+      - Violates principle of least privilege
+      - Easier exploitation of container breakout vulnerabilities
+
+      SOLUTION:
+      - Create a non-root user in Dockerfile
+      - Use USER instruction to switch to non-root
+      - Set appropriate file permissions for the user
+      - Use numeric UID for better security (e.g., USER 1000)
+
+      EXAMPLE:
+      Bad:
+        FROM node:18
+        COPY . /app
+        CMD ["node", "server.js"]
+
+      Good:
+        FROM node:18
+        RUN groupadd -r appuser && useradd -r -g appuser appuser
+        COPY --chown=appuser:appuser . /app
+        USER appuser
+        CMD ["node", "server.js"]
+
+      REFERENCES:
+      - CIS Docker Benchmark 4.1: "Ensure a user for the container has been created"
+      - OWASP Docker Security: Use non-root containers
+      - Kubernetes Security: runAsNonRoot=true
+
+      EVIDENCE:
+      - Discovered: 2025-10-16 (Issue #21)
+      - Confidence: 0.90
+      - Frequency: Very common - most base images default to root
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
