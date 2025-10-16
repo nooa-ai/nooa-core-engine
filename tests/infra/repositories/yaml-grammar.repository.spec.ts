@@ -23,6 +23,9 @@ roles:
   - name: DOMAIN
     path: ^src/domain
     description: Domain layer
+  - name: INFRA
+    path: ^src/infra
+    description: Infrastructure layer
 rules:
   - name: TestRule
     severity: error
@@ -43,6 +46,11 @@ rules:
             name: 'DOMAIN',
             path: '^src/domain',
             description: 'Domain layer'
+          },
+          {
+            name: 'INFRA',
+            path: '^src/infra',
+            description: 'Infrastructure layer'
           }
         ],
         rules: [
@@ -62,7 +70,7 @@ rules:
       expect(fs.readFile).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml', 'utf-8');
       expect(result.version).toBe('1.0');
       expect(result.language).toBe('typescript');
-      expect(result.roles).toHaveLength(1);
+      expect(result.roles).toHaveLength(2);
       expect(result.rules).toHaveLength(1);
     });
 
@@ -71,12 +79,12 @@ rules:
         .mockRejectedValueOnce(new Error('File not found'))
         .mockResolvedValueOnce(undefined);
 
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: []\nrules: []');
+      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
-        rules: []
+        roles: [{ name: 'TEST', path: '^src' }],
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
       await sut.load('/test/project');
@@ -108,59 +116,59 @@ rules:
 
     it('should throw error if version is missing', async () => {
       vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('language: typescript\nroles: []\nrules: []');
+      vi.mocked(fs.readFile).mockResolvedValue('language: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         language: 'typescript',
-        roles: [],
-        rules: []
+        roles: [{ name: 'TEST', path: '^src' }],
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Missing required field 'version'"
+        "missing required property 'version'"
       );
     });
 
     it('should throw error if language is missing', async () => {
       vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nroles: []\nrules: []');
+      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
-        roles: [],
-        rules: []
+        roles: [{ name: 'TEST', path: '^src' }],
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Missing required field 'language'"
+        "missing required property 'language'"
       );
     });
 
     it('should throw error if roles is not an array', async () => {
       vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: "invalid"\nrules: []');
+      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: "invalid"\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
         roles: 'invalid',
-        rules: []
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Missing or invalid 'roles' array"
+        "/roles: must be array"
       );
     });
 
     it('should throw error if rules is not an array', async () => {
       vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: []\nrules: "invalid"');
+      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: "invalid"');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: 'invalid'
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Missing or invalid 'rules' array"
+        "/rules: must be array"
       );
     });
 
@@ -171,11 +179,11 @@ rules:
         version: '1.0',
         language: 'typescript',
         roles: [{ path: '^src/domain' }],
-        rules: []
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid role: missing or invalid 'name'"
+        "missing required property 'name'"
       );
     });
 
@@ -186,11 +194,11 @@ rules:
         version: '1.0',
         language: 'typescript',
         roles: [{ name: 'DOMAIN' }],
-        rules: []
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'DOMAIN' }, to: { role: 'DOMAIN' } }]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid role 'DOMAIN': missing or invalid 'path'"
+        "missing required property 'path'"
       );
     });
 
@@ -200,12 +208,12 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{ severity: 'error', rule: 'forbidden' }]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule: missing or invalid 'name'"
+        "missing required property 'name'"
       );
     });
 
@@ -215,12 +223,12 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{ name: 'TestRule', severity: 'critical', rule: 'forbidden' }]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule 'TestRule': severity must be 'error', 'warning', or 'info'"
+        "/rules/0/severity: must be equal to one of the allowed values"
       );
     });
 
@@ -230,7 +238,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'DOMAIN', path: '^src/domain' }],
         rules: [{
           name: 'NamingRule',
           severity: 'warning',
@@ -250,7 +258,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'DOMAIN', path: '^src/domain' }],
         rules: [{
           name: 'NamingRule',
           severity: 'warning',
@@ -260,7 +268,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule 'NamingRule': naming_pattern rules must have a 'pattern' string"
+        "missing required property 'pattern'"
       );
     });
 
@@ -270,7 +278,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'DOMAIN', path: '^src/domain' }],
         rules: [{
           name: 'NamingRule',
           severity: 'warning',
@@ -281,7 +289,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule 'NamingRule': pattern is not a valid regular expression"
+        "'[invalid' is not a valid regular expression"
       );
     });
 
@@ -291,7 +299,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'DOMAIN', path: '^src/domain' }],
         rules: [{
           name: 'SynonymRule',
           severity: 'warning',
@@ -314,7 +322,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'ZombieRule',
           severity: 'info',
@@ -336,7 +344,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'SizeRule',
           severity: 'error',
@@ -356,7 +364,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'PROD', path: '^src' }],
         rules: [{
           name: 'TestRule',
           severity: 'error',
@@ -376,7 +384,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'PROD', path: '^src' }],
         rules: [{
           name: 'TestRule',
           severity: 'error',
@@ -386,7 +394,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "test_coverage rules must have 'from.role'"
+        "missing required property 'from'"
       );
     });
 
@@ -396,7 +404,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'PROD', path: '^src' }],
         rules: [{
           name: 'TestRule',
           severity: 'error',
@@ -407,7 +415,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "test_coverage rules must have 'to.test_file'"
+        "missing required property 'test_file'"
       );
     });
 
@@ -417,7 +425,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CONTROLLER', path: '^src/controllers' }],
         rules: [{
           name: 'KeywordRule',
           severity: 'error',
@@ -437,7 +445,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CONTROLLER', path: '^src/controllers' }],
         rules: [{
           name: 'KeywordRule',
           severity: 'error',
@@ -447,7 +455,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "forbidden_keywords rules must have 'from.role'"
+        "missing required property 'from'"
       );
     });
 
@@ -457,7 +465,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CONTROLLER', path: '^src/controllers' }],
         rules: [{
           name: 'KeywordRule',
           severity: 'error',
@@ -467,7 +475,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "forbidden_keywords rules must have 'contains_forbidden' as a non-empty array"
+        "missing required property 'contains_forbidden'"
       );
     });
 
@@ -477,7 +485,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CONTROLLER', path: '^src/controllers' }],
         rules: [{
           name: 'KeywordRule',
           severity: 'error',
@@ -488,7 +496,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "forbidden_keywords rules must have 'contains_forbidden' as a non-empty array"
+        "must NOT have fewer than 1 items"
       );
     });
 
@@ -498,7 +506,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'StructureRule',
           severity: 'error',
@@ -517,7 +525,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'StructureRule',
           severity: 'error',
@@ -526,7 +534,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "required_structure rules must have 'required_directories' as a non-empty array"
+        "missing required property 'required_directories'"
       );
     });
 
@@ -536,7 +544,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'StructureRule',
           severity: 'error',
@@ -546,7 +554,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "required_structure rules must have 'required_directories' as a non-empty array"
+        "must NOT have fewer than 1 items"
       );
     });
 
@@ -556,7 +564,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -578,7 +586,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -600,7 +608,10 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [
+          { name: 'DOMAIN', path: '^src/domain' },
+          { name: 'INFRA', path: '^src/infra' }
+        ],
         rules: [{
           name: 'DepRule',
           severity: 'error',
@@ -621,7 +632,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'CircularRule',
           severity: 'error',
@@ -641,7 +652,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'UnknownRule',
           severity: 'error',
@@ -650,7 +661,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule 'UnknownRule': rule type must be"
+        "must be equal to one of the allowed values"
       );
     });
 
@@ -660,7 +671,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'SERVICE', path: '^src/services' }],
         rules: [{
           name: 'BadRule',
           severity: 'error',
@@ -671,7 +682,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "'to' cannot have both 'role' and 'circular'"
+        "must match exactly one schema in oneOf"
       );
     });
 
@@ -681,7 +692,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'SERVICE', path: '^src/services' }],
         rules: [{
           name: 'BadRule',
           severity: 'error',
@@ -692,7 +703,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "dependency rules must have 'from.role'"
+        "missing required property 'role'"
       );
     });
 
@@ -702,7 +713,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'SERVICE', path: '^src/services' }],
         rules: [{
           name: 'BadRule',
           severity: 'error',
@@ -713,7 +724,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "dependency rules must have 'to.role' or 'to.circular'"
+        "must match exactly one schema"
       );
     });
 
@@ -723,7 +734,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -735,7 +746,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'max_public_methods' as a positive number"
+        "must be integer"
       );
     });
 
@@ -745,7 +756,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -757,7 +768,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'max_public_methods' as a positive number"
+        "must be >= 1"
       );
     });
 
@@ -767,7 +778,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -779,7 +790,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'max_properties' as a positive number"
+        "must be integer"
       );
     });
 
@@ -789,7 +800,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -800,7 +811,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "documentation_required rules must have 'for.role'"
+        "missing required property 'for'"
       );
     });
 
@@ -810,7 +821,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -822,7 +833,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "documentation_required rules must have 'min_lines' as a positive number"
+        "must be >= 1"
       );
     });
 
@@ -832,7 +843,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -844,7 +855,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "documentation_required rules must have 'min_lines' as a positive number"
+        "must be integer"
       );
     });
 
@@ -854,7 +865,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -866,7 +877,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "documentation_required rules must have 'requires_jsdoc' as a boolean"
+        "must be boolean"
       );
     });
 
@@ -876,7 +887,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -887,7 +898,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'for.role'"
+        "missing required property 'for'"
       );
     });
 
@@ -897,7 +908,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -909,7 +920,7 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'max_properties' as a positive number"
+        "must be >= 1"
       );
     });
 
@@ -919,7 +930,7 @@ rules:
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'SERVICE', path: '^src/services' }],
         rules: [{
           name: 'DetectUnused',
           severity: 'warning',
