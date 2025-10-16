@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write  # Need write to comment on PR
       issues: read
       id-token: write
 
@@ -170,16 +170,17 @@ jobs:
                - If warnings increased significantly (>20%), request explanation
                - If new code introduces violations, suggest refactoring
 
-            9. **Create Review Comment**:
-               Use `gh pr comment` with structured feedback:
+            9. **REQUIRED: Create Review Comment on PR**:
+               You MUST use `gh pr comment` to post structured feedback:
 
-               ```markdown
+               ```bash
+               gh pr comment ${{ github.event.pull_request.number }} --body "$(cat <<'REVIEW_EOF'
                ## 🏗️ Nooa Architectural Review
 
                ### Validation Status
-               - Errors: [count] $(if errors > 0 then "🔴 BLOCKING" else "✅")
-               - Warnings: [count]
-               - Total Violations: [count]
+               - **Errors**: ${{ steps.nooa-validation.outputs.errors }} $(if [ "${{ steps.nooa-validation.outputs.errors }}" -gt 0 ]; then echo "🔴 BLOCKING"; else echo "✅"; fi)
+               - **Warnings**: ${{ steps.nooa-validation.outputs.warnings }}
+               - **Total Violations**: ${{ steps.nooa-validation.outputs.violations }}
 
                ### Architecture Compliance
 
@@ -190,25 +191,28 @@ jobs:
                - [List improvements]
 
                **🔴 Required Changes** (if any):
-               - [List blocking issues]
+               - [List blocking issues with file:line references]
 
                ### Code Quality
 
                [Specific feedback on:]
-               - Dependency direction
-               - Layer isolation
-               - File sizes
-               - Naming conventions
-               - Test coverage
+               - Dependency direction (check imports)
+               - Layer isolation (verify no cross-layer violations)
+               - File sizes (check if any file >200 LOC)
+               - Naming conventions (.usecase.ts, .adapter.ts patterns)
+               - Test coverage (new files should have tests)
 
                ### Clean Architecture Grammar Notes
 
                [Explain violations in grammatical terms, e.g.:]
                - "This file mixes NOUN (domain) with ADVERB (infrastructure) concerns"
                - "Controller acts as VERB (use case) instead of CONTEXT (adapter)"
+               - "Dependency arrow violated: VERB should not import ADVERB directly"
 
                ---
-               🤖 Powered by Nooa Architectural Validation
+               🤖 Powered by Nooa Architectural Validation | [Full Details](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+               REVIEW_EOF
+               )"
                ```
 
             GUIDELINES:
@@ -218,8 +222,12 @@ jobs:
             - Use linguistic metaphors when helpful
             - Praise good architectural decisions
             - If PR is excellent, say so clearly!
+            - ALWAYS post a comment - never skip this step
 
-            CRITICAL: If Nooa reports errors, the PR should NOT be approved until fixed.
+            CRITICAL:
+            - If Nooa reports errors, the PR should NOT be approved until fixed
+            - You MUST post the review comment using gh pr comment
+            - Include specific file:line references for all issues
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options

@@ -164,15 +164,41 @@ jobs:
                [Prioritized list of refactorings]
                ```
 
-            7. **If PR context**: Comment on PR with validation results
+            7. **Comment on PR** (if this is a pull_request event):
+               ```bash
+               # Check if running in PR context
+               if [ "${{ github.event_name }}" == "pull_request" ]; then
+                 gh pr comment ${{ github.event.pull_request.number }} --body "$(cat <<'COMMENT_EOF'
+               ## 🐶 Dogfooding Validation Results
+
+               **Status**: $(if [ "${{ steps.validation.outputs.errors }}" -eq 0 ]; then echo "✅ PASSING"; else echo "❌ FAILING"; fi)
+
+               ### Metrics
+               - **Total Violations**: ${{ steps.validation.outputs.violations }}
+               - **Errors**: ${{ steps.validation.outputs.errors }} $(if [ "${{ steps.validation.outputs.errors }}" -gt 0 ]; then echo "🔴"; fi)
+               - **Warnings**: ${{ steps.validation.outputs.warnings }}
+
+               ### Analysis
+               [Include trend analysis from metrics.json if available]
+
+               ### Recommendations
+               [List top 3 refactoring priorities]
+
+               ---
+               📊 [Full Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+               COMMENT_EOF
+               )"
+               fi
+               ```
 
             CONSTRAINTS:
             - Errors = BLOCKING (must fix before merge)
             - Warnings = INFORMATIONAL (track but don't block)
             - Always maintain historical data
             - Be encouraging about progress
+            - ALWAYS comment on PR if event is pull_request
 
-          claude_args: '--allowed-tools "Bash(gh issue create:*),Bash(gh pr comment:*),Bash(git:*),Bash(cat:*),Bash(ls:*),Read,Write,Glob,Grep"'
+          claude_args: '--allowed-tools "Bash(gh pr comment:*),Bash(gh issue create:*),Bash(git:*),Bash(cat:*),Bash(ls:*),Read,Write,Glob,Grep"'
 
       - name: Upload validation report
         if: always()
