@@ -13,17 +13,26 @@
  * Refactored in v1.4.0 to apply Extract Class pattern:
  * - Extracted FileCacheBuilderHelper (file caching logic)
  * - Extracted RoleAssignmentHelper (role assignment logic)
- * - Extracted ValidatorOrchestratorHelper (validator orchestration)
- * - Use case now acts as pure coordinator (<100 LOC)
+ * - Orchestration remains in use case (following Clean Architecture guidelines)
  */
 
 import { IAnalyzeCodebase } from '../../domain/usecases';
+import { ArchitecturalViolationModel } from '../../domain/models';
 import { ICodeParser, IGrammarRepository, IFileReader, IFileExistenceChecker } from '../protocols';
 import {
   FileCacheBuilderHelper,
   RoleAssignmentHelper,
+  ViolationDeduplicatorHelper,
+  RuleExtractorHelper,
 } from '../helpers';
-import { ValidatorOrchestratorHelper } from '../helpers/validator-orchestrator.helper';
+import {
+  NamingPatternValidator,
+  DependencyValidator,
+  HygieneValidator,
+  FileMetricsValidator,
+  CodePatternValidator,
+  StructureValidator,
+} from '../validators';
 
 /**
  * Implementation of the Analyze Codebase use case
@@ -31,7 +40,8 @@ import { ValidatorOrchestratorHelper } from '../helpers/validator-orchestrator.h
 export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
   private readonly fileCacheBuilder: FileCacheBuilderHelper;
   private readonly roleAssignment: RoleAssignmentHelper;
-  private readonly validatorOrchestrator: ValidatorOrchestratorHelper;
+  private readonly deduplicator: ViolationDeduplicatorHelper;
+  private readonly ruleExtractor: RuleExtractorHelper;
 
   /**
    * Constructor with dependency injection
@@ -47,11 +57,12 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     private readonly codeParser: ICodeParser,
     private readonly grammarRepository: IGrammarRepository,
     fileReader: IFileReader,
-    fileExistenceChecker: IFileExistenceChecker
+    private readonly fileExistenceChecker: IFileExistenceChecker
   ) {
     this.fileCacheBuilder = new FileCacheBuilderHelper(fileReader);
     this.roleAssignment = new RoleAssignmentHelper();
-    this.validatorOrchestrator = new ValidatorOrchestratorHelper(fileExistenceChecker);
+    this.deduplicator = new ViolationDeduplicatorHelper();
+    this.ruleExtractor = new RuleExtractorHelper();
   }
 
   /**
@@ -62,28 +73,22 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    * 2. Parse the codebase to extract symbols
    * 3. Assign roles to symbols based on path patterns
    * 4. Cache file contents in memory (performance optimization)
-   * 5. Orchestrate validators to detect violations
-   * 6. Return all violations found
+   * 5. Extract and orchestrate validators based on rules
+   * 6. Return deduplicated violations
    *
    * Performance: Runs validators in parallel using Promise.all()
    */
   async analyze(params: IAnalyzeCodebase.Params): Promise<IAnalyzeCodebase.Result> {
     const { projectPath } = params;
 
-    // Step 1: Load grammar configuration
+    // Steps 1-4: Load, parse, assign roles, and cache files
     const grammar = await this.grammarRepository.load(projectPath);
-
-    // Step 2: Parse codebase
     const symbols = await this.codeParser.parse(projectPath);
-
-    // Step 3: Assign roles to symbols
     const symbolsWithRoles = this.roleAssignment.assign(symbols, grammar);
-
-    // Step 4: Cache all file contents in memory (eliminates redundant I/O)
     const fileCache = this.fileCacheBuilder.build(symbolsWithRoles, projectPath);
 
-    // Step 5: Orchestrate validators and collect violations
-    const violations = await this.validatorOrchestrator.orchestrate(
+    // Step 5: Orchestrate validators
+    const violations = await this.orchestrateValidators(
       symbolsWithRoles,
       grammar,
       projectPath,
@@ -91,5 +96,100 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     );
 
     return violations;
+  }
+
+  /**
+   * Orchestrates all validators based on defined rules
+   * Creates validators only for rules that exist, runs them in parallel
+   *
+   * @param symbols - Code symbols with assigned roles
+   * @param grammar - Grammar configuration
+   * @param projectPath - Project root path
+   * @param fileCache - Cached file contents
+   * @returns Deduplicated architectural violations
+   */
+  private async orchestrateValidators(
+    symbols: any[],
+    grammar: any,
+    projectPath: string,
+    fileCache: Map<string, string>
+  ): Promise<ArchitecturalViolationModel[]> {
+    const rules = this.ruleExtractor.extract(grammar.rules);
+
+    // Early return if no rules
+    const hasRules = Object.values(rules).some((ruleArray: any) => ruleArray.length > 0);
+    if (!hasRules) return [];
+
+    const validationPromises: Promise<ArchitecturalViolationModel[]>[] = [];
+
+    // Create validators conditionally based on rules (avoids unnecessary instantiation)
+    if (rules.namingPatternRules.length > 0) {
+      validationPromises.push(
+        new NamingPatternValidator(rules.namingPatternRules).validate(symbols, projectPath)
+      );
+    }
+
+    if (rules.dependencyRules.length > 0) {
+      validationPromises.push(
+        new DependencyValidator(rules.dependencyRules).validate(symbols, projectPath)
+      );
+    }
+
+    if (rules.synonymRules.length > 0 || rules.unreferencedRules.length > 0) {
+      validationPromises.push(
+        new HygieneValidator(rules.synonymRules, rules.unreferencedRules).validate(symbols, projectPath)
+      );
+    }
+
+    if (
+      rules.fileSizeRules.length > 0 ||
+      rules.testCoverageRules.length > 0 ||
+      rules.documentationRules.length > 0 ||
+      rules.classComplexityRules.length > 0 ||
+      rules.granularityMetricRules.length > 0
+    ) {
+      validationPromises.push(
+        new FileMetricsValidator(
+          rules.fileSizeRules,
+          rules.testCoverageRules,
+          rules.documentationRules,
+          rules.classComplexityRules,
+          rules.granularityMetricRules,
+          this.fileExistenceChecker
+        ).validate(symbols, projectPath, fileCache)
+      );
+    }
+
+    if (
+      rules.forbiddenKeywordsRules.length > 0 ||
+      rules.forbiddenPatternsRules.length > 0 ||
+      rules.barrelPurityRules.length > 0
+    ) {
+      validationPromises.push(
+        new CodePatternValidator(
+          rules.forbiddenKeywordsRules,
+          rules.forbiddenPatternsRules,
+          rules.barrelPurityRules
+        ).validate(symbols, projectPath, fileCache)
+      );
+    }
+
+    if (rules.requiredStructureRules.length > 0 || rules.minimumTestRatioRules.length > 0) {
+      validationPromises.push(
+        new StructureValidator(
+          rules.requiredStructureRules,
+          rules.minimumTestRatioRules,
+          this.fileExistenceChecker
+        ).validate(symbols, projectPath)
+      );
+    }
+
+    if (validationPromises.length === 0) return [];
+
+    // Run all validators in parallel and deduplicate
+    const results = await Promise.all(validationPromises);
+    const violations = results.flat();
+
+    return violations.length > 0 ? this.deduplicator.deduplicate(violations) : violations;
   }
 }
