@@ -14,6 +14,7 @@ import { Project, SourceFile } from 'ts-morph';
 import * as path from 'path';
 import { ICodeParser } from '../../data/protocols';
 import { CodeSymbolModel } from '../../domain/models';
+import { SymbolExtractorHelper } from './helpers';
 
 /**
  * TypeScript code parser implementation using ts-morph
@@ -57,69 +58,19 @@ export class TSMorphParserAdapter implements ICodeParser {
     sourceFile: SourceFile,
     projectPath: string
   ): CodeSymbolModel[] {
-    const symbols: CodeSymbolModel[] = [];
     const filePath = this.getRelativePath(sourceFile.getFilePath(), projectPath);
-
-    // Extract dependencies (imports)
     const dependencies = this.extractDependencies(sourceFile, projectPath);
 
-    // Extract exported classes
-    const classes = sourceFile.getClasses().filter((cls) => cls.isExported());
-    for (const cls of classes) {
-      symbols.push({
-        path: filePath,
-        name: cls.getName() || 'AnonymousClass',
-        role: 'UNKNOWN', // Will be assigned later based on path
-        dependencies,
-        symbolType: 'class',
-      });
-    }
-
-    // Extract exported interfaces
-    const interfaces = sourceFile.getInterfaces().filter((iface) => iface.isExported());
-    for (const iface of interfaces) {
-      symbols.push({
-        path: filePath,
-        name: iface.getName(),
-        role: 'UNKNOWN',
-        dependencies,
-        symbolType: 'interface',
-      });
-    }
-
-    // Extract exported functions
-    const functions = sourceFile.getFunctions().filter((fn) => fn.isExported());
-    for (const fn of functions) {
-      symbols.push({
-        path: filePath,
-        name: fn.getName() || 'AnonymousFunction',
-        role: 'UNKNOWN',
-        dependencies,
-        symbolType: 'function',
-      });
-    }
-
-    // Extract exported type aliases
-    const typeAliases = sourceFile.getTypeAliases().filter((type) => type.isExported());
-    for (const typeAlias of typeAliases) {
-      symbols.push({
-        path: filePath,
-        name: typeAlias.getName(),
-        role: 'UNKNOWN',
-        dependencies,
-        symbolType: 'type',
-      });
-    }
+    const symbols: CodeSymbolModel[] = [
+      ...SymbolExtractorHelper.extractClasses(sourceFile, filePath, dependencies),
+      ...SymbolExtractorHelper.extractInterfaces(sourceFile, filePath, dependencies),
+      ...SymbolExtractorHelper.extractFunctions(sourceFile, filePath, dependencies),
+      ...SymbolExtractorHelper.extractTypeAliases(sourceFile, filePath, dependencies),
+    ];
 
     // If no specific symbols were exported, create a file-level symbol
     if (symbols.length === 0) {
-      symbols.push({
-        path: filePath,
-        name: path.basename(filePath, path.extname(filePath)),
-        role: 'UNKNOWN',
-        dependencies,
-        symbolType: 'file',
-      });
+      symbols.push(SymbolExtractorHelper.createDefaultSymbol(filePath, dependencies));
     }
 
     return symbols;

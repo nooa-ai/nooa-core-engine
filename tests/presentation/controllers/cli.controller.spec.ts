@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CliController } from '../../../src/presentation/controllers/cli.controller';
 import { IAnalyzeCodebase } from '../../../src/domain/usecases';
 import { ArchitecturalViolationModel } from '../../../src/domain/models';
+import { IValidation } from '../../../src/presentation/protocols/validation';
+import { IProcessArgsProvider } from '../../../src/presentation/protocols/process-args-provider';
+import { IProcessExitHandler } from '../../../src/presentation/protocols/process-exit-handler';
+import { CliViolationPresenter } from '../../../src/presentation/presenters/cli-violation.presenter';
 
 // Mock console methods
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -10,39 +14,56 @@ const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 describe('CliController', () => {
   let sut: CliController;
   let mockAnalyzeCodebase: IAnalyzeCodebase;
-  let mockProcess: NodeJS.Process;
+  let mockValidator: IValidation;
+  let mockArgsProvider: IProcessArgsProvider;
+  let mockExitHandler: IProcessExitHandler;
+  let mockPresenter: CliViolationPresenter;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockAnalyzeCodebase = {
       analyze: vi.fn()
     };
-    sut = new CliController(mockAnalyzeCodebase);
-
-    // Create mock process object
-    mockProcess = {
-      argv: ['node', 'script.js', '/test/project'],
-      exit: vi.fn(),
-      env: {}
+    mockValidator = {
+      check: vi.fn().mockReturnValue({ success: true, errors: [] })
+    };
+    mockArgsProvider = {
+      getArgs: vi.fn().mockReturnValue(['/test/project'])
+    };
+    mockExitHandler = {
+      exit: vi.fn()
+    };
+    mockPresenter = {
+      displayUsage: vi.fn(),
+      displayResults: vi.fn(),
+      displayMetrics: vi.fn(),
+      displayViolation: vi.fn(),
+      displayError: vi.fn(),
+      displayConfig: { isDebugMode: vi.fn().mockReturnValue(false) }
     } as any;
+    sut = new CliController(mockAnalyzeCodebase, mockValidator, mockArgsProvider, mockExitHandler, mockPresenter);
   });
 
   describe('handle', () => {
     it('should display usage when no arguments provided', async () => {
-      mockProcess.argv = ['node', 'script.js'];
-      vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue([]);
+      vi.mocked(mockArgsProvider.getArgs).mockReturnValue([]);
+      vi.mocked(mockValidator.check).mockReturnValue({
+        success: false,
+        errors: [{ field: 'args', message: 'At least one argument is required (project path)' }]
+      });
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Usage:'));
-      expect(mockProcess.exit).toHaveBeenCalledWith(0);
+      expect(mockPresenter.displayUsage).toHaveBeenCalled();
+      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Input errors'));
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(1);
     });
 
     it('should analyze the provided path from arguments', async () => {
-      mockProcess.argv = ['node', 'script.js', '/custom/path'];
+      vi.mocked(mockArgsProvider.getArgs).mockReturnValue(['/custom/path']);
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue([]);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
       expect(mockAnalyzeCodebase.analyze).toHaveBeenCalledWith({ projectPath: '/custom/path' });
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Analyzing project: /custom/path'));
@@ -51,10 +72,10 @@ describe('CliController', () => {
     it('should display success message when no violations found', async () => {
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue([]);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith('✅ No architectural violations found!');
-      expect(mockProcess.exit).toHaveBeenCalledWith(0);
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith([], expect.any(Number));
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(0);
     });
 
     it('should display violations grouped by severity', async () => {
@@ -86,17 +107,14 @@ describe('CliController', () => {
 
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue(violations);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith('❌ Found 3 architectural violation(s):');
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('🔴 ERRORS (1)'));
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('🟡 WARNINGS (1)'));
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('🔵 INFO (1)'));
-      expect(mockProcess.exit).toHaveBeenCalledWith(1); // Exit 1 because of errors
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith(violations, expect.any(Number));
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(1); // Exit 1 because of errors
     });
 
     it('should display performance metrics', async () => {
-      vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue([
+      const violations = [
         {
           ruleName: 'Rule1',
           severity: 'warning',
@@ -104,45 +122,40 @@ describe('CliController', () => {
           message: 'Warning',
           fromRole: 'DOMAIN'
         }
-      ]);
+      ];
+      vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue(violations);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith('📊 Performance Metrics');
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Analysis Time:'));
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Rules Triggered: 1'));
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Total Violations: 1'));
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith(violations, expect.any(Number));
     });
 
     it('should handle errors gracefully', async () => {
       const error = new Error('Analysis failed');
       vi.mocked(mockAnalyzeCodebase.analyze).mockRejectedValue(error);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ Error during analysis:');
-      expect(mockConsoleError).toHaveBeenCalledWith('  Analysis failed');
-      expect(mockProcess.exit).toHaveBeenCalledWith(1);
+      expect(mockPresenter.displayError).toHaveBeenCalledWith(error);
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(1);
     });
 
     it('should show stack trace when DEBUG env is set', async () => {
-      mockProcess.env.DEBUG = 'true';
       const error = new Error('Analysis failed');
       error.stack = 'Stack trace here';
       vi.mocked(mockAnalyzeCodebase.analyze).mockRejectedValue(error);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleError).toHaveBeenCalledWith('Stack trace:');
-      expect(mockConsoleError).toHaveBeenCalledWith(error.stack);
+      expect(mockPresenter.displayError).toHaveBeenCalledWith(error);
     });
 
     it('should handle unknown errors', async () => {
       vi.mocked(mockAnalyzeCodebase.analyze).mockRejectedValue('Unknown error');
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleError).toHaveBeenCalledWith('  An unknown error occurred');
+      expect(mockPresenter.displayError).toHaveBeenCalledWith('Unknown error');
     });
 
     it('should display violations with no toRole or dependency', async () => {
@@ -158,10 +171,9 @@ describe('CliController', () => {
 
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue(violations);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith('  1. [NamingRule]');
-      expect(mockConsoleLog).toHaveBeenCalledWith('     File: src/bad-name.ts');
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith(violations, expect.any(Number));
     });
 
     it('should display violations with dependencies', async () => {
@@ -179,10 +191,9 @@ describe('CliController', () => {
 
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue(violations);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith('     DOMAIN → INFRA');
-      expect(mockConsoleLog).toHaveBeenCalledWith('     Dependency: src/infra/database.ts');
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith(violations, expect.any(Number));
     });
 
     it('should display summary with correct counts', async () => {
@@ -196,9 +207,9 @@ describe('CliController', () => {
 
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue(violations);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith('Summary: 2 errors, 2 warnings, 1 info');
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith(violations, expect.any(Number));
     });
 
     it('should format elapsed time in milliseconds', async () => {
@@ -209,9 +220,9 @@ describe('CliController', () => {
         .mockReturnValueOnce(startTime)
         .mockReturnValueOnce(startTime + 500);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('500ms'));
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith([], 500);
     });
 
     it('should format elapsed time in seconds when over 1000ms', async () => {
@@ -222,9 +233,9 @@ describe('CliController', () => {
         .mockReturnValueOnce(startTime)
         .mockReturnValueOnce(startTime + 2500);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('2.50s'));
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith([], 2500);
     });
 
     it('should show most common rule violations', async () => {
@@ -239,12 +250,9 @@ describe('CliController', () => {
 
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue(violations);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith('📌 Most Common Issues:');
-      expect(mockConsoleLog).toHaveBeenCalledWith('   • Rule1: 3 violations');
-      expect(mockConsoleLog).toHaveBeenCalledWith('   • Rule2: 2 violations');
-      expect(mockConsoleLog).toHaveBeenCalledWith('   • Rule3: 1 violation');
+      expect(mockPresenter.displayResults).toHaveBeenCalledWith(violations, expect.any(Number));
     });
 
     it('should exit with 0 when only warnings and info', async () => {
@@ -255,9 +263,9 @@ describe('CliController', () => {
 
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue(violations);
 
-      await sut.handle(mockProcess);
+      await sut.handle();
 
-      expect(mockProcess.exit).toHaveBeenCalledWith(0);
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(0);
     });
   });
 });

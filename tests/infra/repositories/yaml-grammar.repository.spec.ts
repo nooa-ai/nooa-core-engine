@@ -1,16 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as fs from 'fs/promises';
 import * as yaml from 'yaml';
 import { YamlGrammarRepository } from '../../../src/infra/repositories/yaml-grammar.repository';
+import { IFileReader, IFileExistenceChecker } from '../../../src/data/protocols';
+import { SchemaValidator } from '../../../src/infra/validators/schema.validator';
 
-vi.mock('fs/promises');
 vi.mock('yaml');
 
 describe('YamlGrammarRepository', () => {
   let sut: YamlGrammarRepository;
+  let fileSystemMock: IFileReader & IFileExistenceChecker;
+  let schemaValidatorMock: SchemaValidator;
 
   beforeEach(() => {
-    sut = new YamlGrammarRepository();
+    // Create mock IFileReader & IFileExistenceChecker
+    fileSystemMock = {
+      readFileSync: vi.fn(),
+      existsSync: vi.fn(),
+    };
+
+    // Create mock SchemaValidator
+    schemaValidatorMock = {
+      loadSchema: vi.fn(),
+      validate: vi.fn().mockReturnValue({ valid: true, errors: [] }),
+    } as any;
+
+    sut = new YamlGrammarRepository(fileSystemMock, schemaValidatorMock);
     vi.clearAllMocks();
   });
 
@@ -23,6 +37,9 @@ roles:
   - name: DOMAIN
     path: ^src/domain
     description: Domain layer
+  - name: INFRA
+    path: ^src/infra
+    description: Infrastructure layer
 rules:
   - name: TestRule
     severity: error
@@ -33,8 +50,8 @@ rules:
     rule: forbidden
 `;
 
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue(mockGrammarContent);
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue(mockGrammarContent);
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -43,6 +60,11 @@ rules:
             name: 'DOMAIN',
             path: '^src/domain',
             description: 'Domain layer'
+          },
+          {
+            name: 'INFRA',
+            path: '^src/infra',
+            description: 'Infrastructure layer'
           }
         ],
         rules: [
@@ -58,36 +80,36 @@ rules:
 
       const result = await sut.load('/test/project');
 
-      expect(fs.access).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml');
-      expect(fs.readFile).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml', 'utf-8');
+      expect(fileSystemMock.existsSync).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml');
+      expect(fileSystemMock.readFileSync).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml', 'utf-8');
       expect(result.version).toBe('1.0');
       expect(result.language).toBe('typescript');
-      expect(result.roles).toHaveLength(1);
+      expect(result.roles).toHaveLength(2);
       expect(result.rules).toHaveLength(1);
     });
 
     it('should try .yml extension if .yaml not found', async () => {
-      vi.mocked(fs.access)
-        .mockRejectedValueOnce(new Error('File not found'))
-        .mockResolvedValueOnce(undefined);
+      vi.mocked(fileSystemMock.existsSync)
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
 
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: []\nrules: []');
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('version: "1.0"\nlanguage: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
-        rules: []
+        roles: [{ name: 'TEST', path: '^src' }],
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
       await sut.load('/test/project');
 
-      expect(fs.access).toHaveBeenCalledTimes(2);
-      expect(fs.access).toHaveBeenNthCalledWith(1, '/test/project/nooa.grammar.yaml');
-      expect(fs.access).toHaveBeenNthCalledWith(2, '/test/project/nooa.grammar.yml');
+      expect(fileSystemMock.existsSync).toHaveBeenCalledTimes(2);
+      expect(fileSystemMock.existsSync).toHaveBeenNthCalledWith(1, '/test/project/nooa.grammar.yaml');
+      expect(fileSystemMock.existsSync).toHaveBeenNthCalledWith(2, '/test/project/nooa.grammar.yml');
     });
 
     it('should throw error if no grammar file found', async () => {
-      vi.mocked(fs.access).mockRejectedValue(new Error('File not found'));
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(false);
 
       await expect(sut.load('/test/project')).rejects.toThrow(
         "Grammar file not found. Expected 'nooa.grammar.yaml' or 'nooa.grammar.yml'"
@@ -95,8 +117,8 @@ rules:
     });
 
     it('should throw error if YAML parsing fails', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('invalid: yaml: content:');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('invalid: yaml: content:');
       vi.mocked(yaml.parse).mockImplementation(() => {
         throw new Error('Invalid YAML');
       });
@@ -107,130 +129,178 @@ rules:
     });
 
     it('should throw error if version is missing', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('language: typescript\nroles: []\nrules: []');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('language: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         language: 'typescript',
-        roles: [],
-        rules: []
+        roles: [{ name: 'TEST', path: '^src' }],
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'version'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Missing required field 'version'"
+        "missing required property 'version'"
       );
     });
 
     it('should throw error if language is missing', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nroles: []\nrules: []');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('version: "1.0"\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
-        roles: [],
-        rules: []
+        roles: [{ name: 'TEST', path: '^src' }],
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'language'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Missing required field 'language'"
+        "missing required property 'language'"
       );
     });
 
     it('should throw error if roles is not an array', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: "invalid"\nrules: []');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('version: "1.0"\nlanguage: typescript\nroles: "invalid"\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
         roles: 'invalid',
-        rules: []
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["/roles: must be array"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Missing or invalid 'roles' array"
+        "/roles: must be array"
       );
     });
 
     it('should throw error if rules is not an array', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: []\nrules: "invalid"');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('version: "1.0"\nlanguage: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: "invalid"');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: 'invalid'
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["/rules: must be array"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Missing or invalid 'rules' array"
+        "/rules: must be array"
       );
     });
 
     it('should validate role with missing name', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
         roles: [{ path: '^src/domain' }],
-        rules: []
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'name'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid role: missing or invalid 'name'"
+        "missing required property 'name'"
       );
     });
 
     it('should validate role with missing path', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
         roles: [{ name: 'DOMAIN' }],
-        rules: []
+        rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'DOMAIN' }, to: { role: 'DOMAIN' } }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'path'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid role 'DOMAIN': missing or invalid 'path'"
+        "missing required property 'path'"
       );
     });
 
     it('should validate rule with missing name', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{ severity: 'error', rule: 'forbidden' }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'name'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule: missing or invalid 'name'"
+        "missing required property 'name'"
       );
     });
 
     it('should validate rule with invalid severity', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{ name: 'TestRule', severity: 'critical', rule: 'forbidden' }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["/rules/0/severity: must be equal to one of the allowed values"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule 'TestRule': severity must be 'error', 'warning', or 'info'"
+        "/rules/0/severity: must be equal to one of the allowed values"
       );
     });
 
     it('should validate naming_pattern rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'DOMAIN', path: '^src/domain' }],
         rules: [{
           name: 'NamingRule',
           severity: 'warning',
@@ -245,12 +315,12 @@ rules:
     });
 
     it('should validate naming_pattern rule without pattern', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'DOMAIN', path: '^src/domain' }],
         rules: [{
           name: 'NamingRule',
           severity: 'warning',
@@ -259,18 +329,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'pattern'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule 'NamingRule': naming_pattern rules must have a 'pattern' string"
+        "missing required property 'pattern'"
       );
     });
 
     it('should validate naming_pattern rule with invalid regex', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'DOMAIN', path: '^src/domain' }],
         rules: [{
           name: 'NamingRule',
           severity: 'warning',
@@ -281,17 +357,17 @@ rules:
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule 'NamingRule': pattern is not a valid regular expression"
+        "'[invalid' is not a valid regular expression"
       );
     });
 
     it('should validate find_synonyms rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'DOMAIN', path: '^src/domain' }],
         rules: [{
           name: 'SynonymRule',
           severity: 'warning',
@@ -309,12 +385,12 @@ rules:
     });
 
     it('should validate detect_unreferenced rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'ZombieRule',
           severity: 'info',
@@ -331,12 +407,12 @@ rules:
     });
 
     it('should validate file_size rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'SizeRule',
           severity: 'error',
@@ -351,12 +427,12 @@ rules:
     });
 
     it('should validate test_coverage rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'PROD', path: '^src' }],
         rules: [{
           name: 'TestRule',
           severity: 'error',
@@ -371,12 +447,12 @@ rules:
     });
 
     it('should throw error for test_coverage rule without from.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'PROD', path: '^src' }],
         rules: [{
           name: 'TestRule',
           severity: 'error',
@@ -385,18 +461,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'from'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "test_coverage rules must have 'from.role'"
+        "missing required property 'from'"
       );
     });
 
     it('should throw error for test_coverage rule without to.test_file', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'PROD', path: '^src' }],
         rules: [{
           name: 'TestRule',
           severity: 'error',
@@ -406,18 +488,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'test_file'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "test_coverage rules must have 'to.test_file'"
+        "missing required property 'test_file'"
       );
     });
 
     it('should validate forbidden_keywords rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CONTROLLER', path: '^src/controllers' }],
         rules: [{
           name: 'KeywordRule',
           severity: 'error',
@@ -432,12 +520,12 @@ rules:
     });
 
     it('should throw error for forbidden_keywords rule without from.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CONTROLLER', path: '^src/controllers' }],
         rules: [{
           name: 'KeywordRule',
           severity: 'error',
@@ -446,18 +534,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'from'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "forbidden_keywords rules must have 'from.role'"
+        "missing required property 'from'"
       );
     });
 
     it('should throw error for forbidden_keywords rule without contains_forbidden', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CONTROLLER', path: '^src/controllers' }],
         rules: [{
           name: 'KeywordRule',
           severity: 'error',
@@ -466,18 +560,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'contains_forbidden'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "forbidden_keywords rules must have 'contains_forbidden' as a non-empty array"
+        "missing required property 'contains_forbidden'"
       );
     });
 
     it('should throw error for forbidden_keywords rule with empty contains_forbidden', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CONTROLLER', path: '^src/controllers' }],
         rules: [{
           name: 'KeywordRule',
           severity: 'error',
@@ -487,18 +587,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must NOT have fewer than 1 items"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "forbidden_keywords rules must have 'contains_forbidden' as a non-empty array"
+        "must NOT have fewer than 1 items"
       );
     });
 
     it('should validate required_structure rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'StructureRule',
           severity: 'error',
@@ -512,12 +618,12 @@ rules:
     });
 
     it('should throw error for required_structure rule without required_directories', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'StructureRule',
           severity: 'error',
@@ -525,18 +631,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'required_directories'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "required_structure rules must have 'required_directories' as a non-empty array"
+        "missing required property 'required_directories'"
       );
     });
 
     it('should throw error for required_structure rule with empty required_directories', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'StructureRule',
           severity: 'error',
@@ -545,18 +657,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must NOT have fewer than 1 items"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "required_structure rules must have 'required_directories' as a non-empty array"
+        "must NOT have fewer than 1 items"
       );
     });
 
     it('should validate documentation_required rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -573,12 +691,12 @@ rules:
     });
 
     it('should validate class_complexity rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -595,12 +713,15 @@ rules:
     });
 
     it('should validate dependency rules (forbidden, allowed, required)', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [
+          { name: 'DOMAIN', path: '^src/domain' },
+          { name: 'INFRA', path: '^src/infra' }
+        ],
         rules: [{
           name: 'DepRule',
           severity: 'error',
@@ -616,12 +737,12 @@ rules:
     });
 
     it('should handle circular dependency rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'CircularRule',
           severity: 'error',
@@ -636,12 +757,12 @@ rules:
     });
 
     it('should throw error for unknown rule type', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'UnknownRule',
           severity: 'error',
@@ -649,18 +770,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be equal to one of the allowed values"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "Invalid rule 'UnknownRule': rule type must be"
+        "must be equal to one of the allowed values"
       );
     });
 
     it('should throw error for dependency rule with both role and circular in "to"', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'SERVICE', path: '^src/services' }],
         rules: [{
           name: 'BadRule',
           severity: 'error',
@@ -670,18 +797,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must match exactly one schema in oneOf"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "'to' cannot have both 'role' and 'circular'"
+        "must match exactly one schema in oneOf"
       );
     });
 
     it('should throw error for dependency rule without from.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'SERVICE', path: '^src/services' }],
         rules: [{
           name: 'BadRule',
           severity: 'error',
@@ -691,18 +824,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'role'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "dependency rules must have 'from.role'"
+        "missing required property 'role'"
       );
     });
 
     it('should throw error for dependency rule without to.role or to.circular', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'SERVICE', path: '^src/services' }],
         rules: [{
           name: 'BadRule',
           severity: 'error',
@@ -712,18 +851,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must match exactly one schema"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "dependency rules must have 'to.role' or 'to.circular'"
+        "must match exactly one schema"
       );
     });
 
     it('should throw error for class_complexity rule with invalid max_public_methods', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -734,18 +879,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be integer"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'max_public_methods' as a positive number"
+        "must be integer"
       );
     });
 
     it('should throw error for class_complexity rule with negative max_public_methods', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -756,18 +907,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be >= 1"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'max_public_methods' as a positive number"
+        "must be >= 1"
       );
     });
 
     it('should throw error for class_complexity rule with invalid max_properties', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -778,18 +935,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be integer"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'max_properties' as a positive number"
+        "must be integer"
       );
     });
 
     it('should throw error for documentation_required rule without for.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -799,18 +962,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'for'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "documentation_required rules must have 'for.role'"
+        "missing required property 'for'"
       );
     });
 
     it('should throw error for documentation_required rule with invalid min_lines', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -821,18 +990,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be >= 1"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "documentation_required rules must have 'min_lines' as a positive number"
+        "must be >= 1"
       );
     });
 
     it('should throw error for documentation_required rule with non-numeric min_lines', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -843,18 +1018,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be integer"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "documentation_required rules must have 'min_lines' as a positive number"
+        "must be integer"
       );
     });
 
     it('should throw error for documentation_required rule with invalid requires_jsdoc', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'DocRule',
           severity: 'warning',
@@ -865,18 +1046,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be boolean"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "documentation_required rules must have 'requires_jsdoc' as a boolean"
+        "must be boolean"
       );
     });
 
     it('should throw error for class_complexity rule without for.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'TEST', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -886,18 +1073,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'for'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'for.role'"
+        "missing required property 'for'"
       );
     });
 
     it('should throw error for class_complexity rule with zero max_properties', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'CLASS', path: '^src' }],
         rules: [{
           name: 'ComplexityRule',
           severity: 'error',
@@ -908,18 +1101,24 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be >= 1"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
-        "class_complexity rules must have 'max_properties' as a positive number"
+        "must be >= 1"
       );
     });
 
     it('should handle detect_unreferenced rule without options', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
-        roles: [],
+        roles: [{ name: 'SERVICE', path: '^src/services' }],
         rules: [{
           name: 'DetectUnused',
           severity: 'warning',

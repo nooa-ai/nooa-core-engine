@@ -27,14 +27,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "ts-morph": "^21.0.1",
     "yaml": "^2.3.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.5",
     "@vitest/coverage-v8": "^1.6.0",
-    "vitest": "^1.6.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^1.6.0"
   }
 }

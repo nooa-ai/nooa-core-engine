@@ -136,7 +136,7 @@ roles:
 rules:
   - name: "Domain-Independence"
     severity: error
-    comment: "Domain layer (models and use case interfaces) must remain pure and independent of all outer layers"
+    comment: "AI NOTE: Domain layer imports from outer layers (data/infra/presentation) - violates Clean Architecture dependency rule, creates coupling to implementation details. REFACTOR: Remove all imports from outer layers. Domain should only depend on itself. Use Dependency Inversion - domain defines interfaces, outer layers implement them. If domain needs external capability, create interface in domain/usecases and implement in data layer. EXAMPLE: If domain/models/grammar.model.ts imports from data/protocols/grammar-repository.ts, this is WRONG. Instead: domain defines IGrammarRepository interface, data layer imports and implements it. Dependency arrows point INWARD only. BENEFIT: Domain remains pure business logic, portable across frameworks, testable without mocks, reusable in different contexts (CLI/web/mobile), prevents architectural erosion, enforces Clean Architecture dependency rule."
     from:
       role: [NOUN, VERB_CONTRACT]
     to:
@@ -174,7 +174,7 @@ rules:
 
   - name: "Data-Dependency-Inversion"
     severity: error
-    comment: "Data layer use case implementations must depend on protocols (abstractions), never on concrete infrastructure"
+    comment: "AI NOTE: Data layer use case imports concrete infrastructure implementations - violates Dependency Inversion Principle, creates tight coupling, prevents testing. REFACTOR: Never import from infra layer directly. Instead, depend on abstractions (protocols) in data/protocols. Use constructor injection to receive protocol instances. Composition root (main layer) wires concrete implementations. EXAMPLE: If AnalyzeCodebaseUseCase imports TsMorphParserAdapter directly, this is WRONG. Instead: UseCase depends on ICodeParser interface from data/protocols. Main layer creates TsMorphParserAdapter and injects it. UseCase tests can use MockCodeParser. BENEFIT: Enables testing with mocks, allows swapping implementations without changing use cases, follows DIP and Open/Closed Principle, decouples business logic from technical details, supports multiple implementations (different parsers for different languages)."
     from:
       role: [VERB_IMPLEMENTATION]
     to:
@@ -185,7 +185,7 @@ rules:
 
   - name: "Presentation-Isolation"
     severity: error
-    comment: "Presentation layer must not directly depend on infrastructure implementations"
+    comment: "AI NOTE: Presentation layer imports infrastructure implementations - creates inappropriate coupling, bypasses use case orchestration, violates Clean Architecture. REFACTOR: Presentation should ONLY depend on domain use case interfaces, never on data protocols or infrastructure. Controllers orchestrate through use cases. Use cases coordinate with infrastructure via DIP. EXAMPLE: If CliController imports YamlGrammarRepository directly, this is WRONG. Instead: Controller depends on IAnalyzeCodebase use case interface. Use case internally uses IGrammarRepository protocol. Main layer wires everything. Controller → UseCase → Protocol ← Adapter (dependencies point inward). BENEFIT: Presentation becomes thin adapter focused on HTTP/CLI concerns, business logic testable independently, infrastructure swappable without touching controllers, proper separation of concerns, supports multiple presentation layers (REST/GraphQL/CLI) using same use cases."
     from:
       role:
         - CONTEXT
@@ -204,7 +204,7 @@ rules:
 
   - name: "Protocol-Purity"
     severity: error
-    comment: "Data protocols must remain abstract and not depend on concrete implementations"
+    comment: "AI NOTE: Data protocol imports concrete implementations or presentation layer - protocols must remain pure abstractions, importing implementations defeats DIP purpose. REFACTOR: Protocols should only import domain models and other protocols. Never import adapters, repositories, controllers, or validators. Protocols define WHAT, implementations define HOW. Keep interface definitions minimalist. EXAMPLE: If ICodeParser protocol imports TsMorphParserAdapter or references CliController types, this is WRONG. Instead: ICodeParser only imports CodeSymbolModel from domain and returns it. Adapter implements interface independently. Protocol has zero knowledge of implementations. BENEFIT: True abstraction enables multiple implementations, protocols become reusable contracts, implementations can evolve independently, prevents circular dependencies, maintains Clean Architecture purity, supports plugin architectures."
     from:
       role: [ADVERB_ABSTRACT]
     to:
@@ -226,7 +226,7 @@ rules:
 
   - name: "Validation-Protocol-Purity"
     severity: error
-    comment: "Validation protocols must remain abstract and independent from infrastructure or data layers"
+    comment: "AI NOTE: Validation protocol imports infrastructure, data layer, or composition root - validation protocols should be pure interface definitions for presentation layer. REFACTOR: Validation protocols should only import domain models and presentation protocols. Never import use cases, data protocols, adapters, or factories. Validation is input validation concern, separate from business logic. EXAMPLE: If IValidation protocol imports AnalyzeCodebaseUseCase or ICodeParser, this is WRONG. Instead: IValidation defines validate(input: any): ValidationResult. Implementations use domain models for error types. No dependency on business logic layer. BENEFIT: Validation layer remains focused on input sanitization, reusable across different use cases, testable independently, prevents validation from becoming business logic, maintains layer separation, allows different validation strategies (Joi/Yup/custom)."
     from:
       role: [VALIDATION_PROTOCOL]
     to:
@@ -243,7 +243,7 @@ rules:
 
   - name: "Validation-Isolation"
     severity: error
-    comment: "Validation implementations should only rely on presentation contracts and validation protocols"
+    comment: "AI NOTE: Validation implementation imports use cases, data protocols, or infrastructure - validation should only sanitize inputs, not orchestrate business logic. REFACTOR: Validation implementations should only import domain models (for error types), presentation protocols (IValidation interface), and validation protocols. Input validation is separate from business rules. Controller validates inputs BEFORE calling use case. EXAMPLE: If CliArgsValidation imports AnalyzeCodebaseUseCase or IGrammarRepository, this is WRONG. Instead: validator checks if args exist, are strings, paths are valid - pure input checks. Returns ValidationError with field info. No business logic. BENEFIT: Validation becomes reusable across controllers, testable with simple inputs, no need to mock business layer in validation tests, clear separation between input validation and business rules, follows Single Responsibility Principle, enables validator composition."
     from:
       role:
         - VALIDATION_IMPLEMENTATION
@@ -261,7 +261,7 @@ rules:
 
   - name: "Data-No-Presentation"
     severity: warning
-    comment: "Data layer should not depend on presentation layer"
+    comment: "AI NOTE: Data layer imports presentation layer - violates dependency direction, creates inappropriate coupling between business logic and interface adapters. REFACTOR: Data layer should only know about domain. If use case needs to communicate results, return domain models. Presentation layer formats domain models for external interfaces. Never import controllers, presenters, HTTP helpers, or CLI utilities into data layer. EXAMPLE: If AnalyzeCodebaseUseCase imports CliViolationPresenter to format output, this is WRONG. Instead: UseCase returns ArchitecturalViolationModel[]. Controller receives violations and calls presenter.display(violations). Data returns data, presentation presents data. BENEFIT: Use cases become reusable across different interfaces (CLI/REST/GraphQL/gRPC), business logic decoupled from presentation concerns, same use case can power web app and CLI tool, easier testing without presentation layer mocks, follows Clean Architecture dependency rule."
     from:
       role:
         - VERB_IMPLEMENTATION
@@ -280,7 +280,7 @@ rules:
 
   - name: "Presentation-No-Data"
     severity: error
-    comment: "Presentation layer must not depend on data layer implementations or protocols"
+    comment: "AI NOTE: Presentation layer imports data layer use cases or protocols - bypasses proper abstraction, couples controller to implementation details, violates Clean Architecture. REFACTOR: Presentation should ONLY import domain use case interfaces (VERB_CONTRACT), never data implementations or protocols. Controllers depend on IAnalyzeCodebase interface, not AnalyzeCodebaseUseCase class. Main layer performs dependency injection. EXAMPLE: If CliController imports AnalyzeCodebaseUseCase class or ICodeParser protocol, this is WRONG. Instead: Controller constructor receives IAnalyzeCodebase interface. Main creates concrete AnalyzeCodebaseUseCase and injects. Controller knows nothing about data layer. BENEFIT: Controllers testable with mock use cases, data layer swappable without touching presentation, proper dependency inversion, enables different data implementations for different environments (dev/staging/prod), maintains Clean Architecture boundaries."
     from:
       role:
         - CONTEXT
@@ -305,7 +305,7 @@ rules:
   # Feature 1: Circular Dependency Detection
   - name: "No-Circular-Dependencies"
     severity: error
-    comment: "Circular dependencies are the most destructive architectural flaw and must be eliminated"
+    comment: "AI NOTE: Circular dependency detected (A imports B, B imports A) - creates fragile coupling, prevents independent testing, causes initialization issues, makes code impossible to understand or refactor safely. REFACTOR: Break cycle using Dependency Inversion or Extract Interface. Identify which module should be lower-level. Lower-level module defines interface. Higher-level module implements and injects it. Or extract shared concern to separate module both depend on. EXAMPLE: If UserService imports OrderService and OrderService imports UserService (cycle!), WRONG. Instead: Define IUserRepository interface. OrderService depends on IUserRepository. UserService implements repository methods. Inject repository into OrderService. Cycle broken: OrderService → IUserRepository ← UserService. BENEFIT: Modules testable in isolation, clear dependency direction, code easier to understand and reason about, enables incremental builds, prevents initialization deadlocks, allows tree-shaking, supports modular architecture."
     from:
       role: ALL
     to:
@@ -316,7 +316,7 @@ rules:
   # Note: Uses specialized roles to exclude barrel export files (index.ts)
   - name: "Use-Case-Implementations-Must-Implement-Contracts"
     severity: error
-    comment: "Every use case implementation must depend on its corresponding domain contract"
+    comment: "AI NOTE: Use case implementation doesn't import its domain contract interface - loses type safety, prevents polymorphism, breaks Interface Segregation Principle, makes testing harder. REFACTOR: Every use case implementation must explicitly implement its domain interface. Import interface from domain/usecases. Use 'implements IUseCaseName' in class declaration. Ensures implementation matches contract signature. EXAMPLE: If AnalyzeCodebaseUseCase doesn't import and implement IAnalyzeCodebase interface, this is WRONG. Instead: 'export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase'. TypeScript compiler enforces contract. Tests can depend on interface. BENEFIT: Type safety ensures implementation matches contract, enables mock implementations for testing, supports Liskov Substitution Principle, compiler catches signature mismatches, documents intent explicitly, enables dependency injection, allows multiple implementations of same interface."
     from:
       role: VERB_IMPLEMENTATION_ACTUAL
     to:
@@ -325,7 +325,7 @@ rules:
 
   - name: "Adapters-Must-Implement-Protocols"
     severity: error
-    comment: "Infrastructure adapters must implement data or validation layer protocols for proper dependency inversion"
+    comment: "AI NOTE: Infrastructure adapter doesn't implement protocol interface - bypasses Dependency Inversion Principle, makes adapter non-swappable, prevents polymorphic usage, breaks testability. REFACTOR: Every infrastructure adapter must implement corresponding protocol interface from data/protocols or validation/protocols. Import protocol interface. Declare 'implements IProtocolName'. Ensures adapter conforms to expected contract. EXAMPLE: If TsMorphParserAdapter doesn't implement ICodeParser interface, this is WRONG. Instead: 'export class TsMorphParserAdapter implements ICodeParser'. Use cases depend on ICodeParser, can receive any implementation. Tests use MockCodeParser. BENEFIT: Adapters become swappable without changing use cases, enables testing with mocks, supports multiple implementations (TsMorph/Babel/SWC parsers), enforces DIP, allows runtime selection of implementation, maintains Clean Architecture boundaries."
     from:
       role: ADVERB_CONCRETE_ACTUAL
     to:
@@ -336,7 +336,7 @@ rules:
 
   - name: "Controllers-Must-Use-Domain"
     severity: error
-    comment: "Presentation controllers must orchestrate through domain use cases, not bypass them"
+    comment: "AI NOTE: Controller doesn't import domain use case interface - bypasses business logic layer, puts business rules in controller, violates Clean Architecture, breaks reusability. REFACTOR: Controllers must orchestrate through domain use cases. Import use case interface from domain/usecases. Receive interface via constructor injection. Call use case methods to perform business operations. Controller handles HTTP/CLI concerns only. EXAMPLE: If CliController directly calls parser and validator without using AnalyzeCodebaseUseCase, this is WRONG. Instead: Controller receives IAnalyzeCodebase in constructor. Calls analyzeCodebase.execute(params). Use case orchestrates parsing and validation. Controller only handles CLI input/output. BENEFIT: Business logic reusable across interfaces (CLI/REST/gRPC), controller stays thin and focused, use cases testable independently, same business logic for web and mobile, follows Clean Architecture, enables API and CLI to share code."
     from:
       role: CONTEXT_ACTUAL
     to:
@@ -345,7 +345,7 @@ rules:
 
   - name: "Middlewares-Must-Use-Domain"
     severity: error
-    comment: "Presentation middlewares must delegate to domain contracts"
+    comment: "AI NOTE: Middleware doesn't import domain use case interface - implements business logic in middleware, violates separation of concerns, duplicates logic across middleware/controllers. REFACTOR: Middlewares must delegate business operations to domain use cases. Import use case interface from domain/usecases. Inject via constructor. Call use case to perform operations. Middleware handles cross-cutting concerns (auth/logging) but delegates domain operations. EXAMPLE: If AuthMiddleware directly checks user credentials in database, this is WRONG. Instead: Middleware receives IAuthenticate use case. Calls authenticate.execute(token). Use case validates token and returns user. Middleware only handles HTTP headers and request decoration. BENEFIT: Business logic centralized in use cases, middleware stays focused on cross-cutting concerns, authentication logic reusable, testable independently, prevents business logic duplication, maintains Clean Architecture boundaries."
     from:
       role: CONTEXT_MIDDLEWARE_ACTUAL
     to:
@@ -354,7 +354,7 @@ rules:
 
   - name: "Validators-Implement-Presentation-Contract"
     severity: error
-    comment: "Validation implementations must implement the presentation Validation interface"
+    comment: "AI NOTE: Validator doesn't implement IValidation interface - lacks polymorphism, can't be composed, breaks Composite pattern, prevents validator chaining. REFACTOR: Every validator must implement IValidation interface from presentation/protocols. Import IValidation. Declare 'implements IValidation'. Implement validate(input: any) method returning ValidationResult. Enables validator composition and chaining. EXAMPLE: If CliArgsValidation doesn't implement IValidation, this is WRONG. Instead: 'export class CliArgsValidation implements IValidation'. Controller depends on IValidation interface. Can use ValidationComposite to chain multiple validators. All validators follow same contract. BENEFIT: Validators composable via Composite pattern, can chain validations (required → type → format → business rules), controller agnostic to specific validators, testable with mock validators, supports decorator pattern for validation, enables validation strategies."
     from:
       role: VALIDATION_IMPLEMENTATION_ACTUAL
     to:
@@ -365,15 +365,15 @@ rules:
   # Note: index.ts files are barrel exports and are exempt from naming conventions
   - name: "Adapter-Files-Follow-Convention"
     severity: warning
-    comment: "Infrastructure files should follow the .adapter.ts or .repository.ts naming convention"
+    comment: "AI NOTE: Infrastructure file doesn't follow naming convention (.adapter.ts, .repository.ts, .validator.ts, .helper.ts, or .transformer.ts) - breaks discoverability, creates confusion about file purpose, inconsistent codebase navigation. REFACTOR: Rename file to match convention. Files implementing ICodeParser should be named something.adapter.ts. Files implementing data storage should be named something.repository.ts. Validation logic should be named something.validator.ts. Data transformers should be named something.transformer.ts. Internal utilities should be named something.helper.ts. Use descriptive prefix indicating purpose (ts-morph-parser.adapter.ts, yaml-grammar.repository.ts, schema.validator.ts, hygiene-rule.transformer.ts, symbol-extractor.helper.ts). EXAMPLE: If file is named parser.ts in infra/parsers/, this is WRONG. Instead: ts-morph-parser.adapter.ts. Clearly indicates it's an adapter for ts-morph. Role obvious from filename. BENEFIT: Immediate recognition of file role from name, easier codebase navigation, consistent file organization, new developers find files faster, grep/search more effective, prevents ambiguous names like 'handler.ts' or 'service.ts'."
     for:
       role: ADVERB_CONCRETE
-    pattern: "(\\.(adapter|repository)\\.ts|/index\\.ts)$"
+    pattern: "(\\.(adapter|repository|validator|helper|transformer)\\.ts|/index\\.ts)$"
     rule: "naming_pattern"
 
   - name: "UseCase-Files-Follow-Convention"
     severity: warning
-    comment: "Use case implementation files should follow the .usecase.ts naming convention"
+    comment: "AI NOTE: Use case file doesn't follow .usecase.ts naming convention - unclear if file is use case or helper, breaks architectural clarity, inconsistent with Clean Architecture patterns. REFACTOR: Rename file to match convention. Use case implementations should be named verb-noun.usecase.ts matching business capability (analyze-codebase.usecase.ts, authenticate-user.usecase.ts). Verb indicates action, noun indicates entity, suffix indicates layer. EXAMPLE: If business logic file is named analyzer.ts or codebase-analyzer.ts, this is WRONG. Instead: analyze-codebase.usecase.ts. Clear this is use case layer, describes business capability, follows ubiquitous language. BENEFIT: Architectural layer immediately obvious, use cases easily distinguished from helpers/validators, consistent naming across project, aligns with domain language, easier to locate business logic, supports screaming architecture."
     for:
       role: VERB_IMPLEMENTATION
     pattern: "(\\.usecase\\.ts|/index\\.ts)$"
@@ -381,7 +381,7 @@ rules:
 
   - name: "Controller-Files-Follow-Convention"
     severity: warning
-    comment: "Controller files should follow the .controller.ts naming convention"
+    comment: "AI NOTE: Controller file doesn't follow .controller.ts naming convention - ambiguous file role, unclear if HTTP/CLI/GraphQL handler, inconsistent with MVC/Clean Architecture patterns. REFACTOR: Rename file to match convention. Controllers should be named entity.controller.ts or interface-entity.controller.ts (user.controller.ts, cli.controller.ts, http-user.controller.ts). Suffix makes role immediately clear. EXAMPLE: If presentation file is named handler.ts or cli.ts, this is WRONG. Instead: cli.controller.ts. Immediately obvious this is controller layer, handles CLI interface. BENEFIT: Architectural role clear from filename, distinguishes controllers from middlewares/helpers, consistent with framework conventions (NestJS/Angular), easier onboarding for new developers, supports screaming architecture, grep 'controller' finds all controllers."
     for:
       role: CONTEXT_ACTUAL
     pattern: "(\\.controller\\.ts|/index\\.ts)$"
@@ -389,7 +389,7 @@ rules:
 
   - name: "Middleware-Files-Follow-Convention"
     severity: warning
-    comment: "Middleware files should follow the .middleware.ts naming convention"
+    comment: "AI NOTE: Middleware file doesn't follow .middleware.ts naming convention - confuses middlewares with controllers/helpers, unclear execution order, inconsistent with middleware patterns. REFACTOR: Rename file to match convention. Middlewares should be named concern.middleware.ts describing cross-cutting concern they handle (auth.middleware.ts, logging.middleware.ts, rate-limit.middleware.ts). Suffix indicates execution phase (before controller). EXAMPLE: If file is named auth.ts or authentication.ts in presentation/, this is WRONG. Instead: auth.middleware.ts. Clear this runs before controllers, handles authentication concern. BENEFIT: Distinguishes middlewares from controllers, execution phase obvious, consistent with Express/Koa conventions, easier to understand request pipeline, cross-cutting concerns clearly identified, supports middleware composition patterns."
     for:
       role: CONTEXT_MIDDLEWARE_ACTUAL
     pattern: "(\\.middleware\\.ts|/index\\.ts)$"
@@ -397,7 +397,7 @@ rules:
 
   - name: "Validation-Files-Follow-Convention"
     severity: warning
-    comment: "Validation files should follow the -validation.ts naming convention"
+    comment: "AI NOTE: Validation file doesn't follow -validation.ts naming convention - unclear file performs input validation, confused with business validation in use cases, breaks validation layer patterns. REFACTOR: Rename file to match convention. Validators should be named entity-validation.ts or field-validation.ts (user-registration-validation.ts, email-validation.ts, cli-args-validation.ts). Suffix clearly indicates validation layer. EXAMPLE: If file is named validator.ts or user-validator.ts, this is WRONG. Instead: user-registration-validation.ts. Immediately clear this validates registration inputs, not business rules. BENEFIT: Validation layer files easily identifiable, distinguishes input validation from business validation, consistent with validation library conventions, grep 'validation' finds all validators, supports validation composition, new developers understand file purpose instantly."
     for:
       role: VALIDATION_IMPLEMENTATION_ACTUAL
     pattern: "(validation\\.ts|validation-composite\\.ts|/index\\.ts)$"
@@ -411,7 +411,7 @@ rules:
   # Note: Only check actual implementation files, not barrel exports
   - name: "Detect-Duplicate-Use-Cases"
     severity: warning
-    comment: "Detects use cases with very similar names, suggesting potential duplication of logic"
+    comment: "AI NOTE: Two use cases have highly similar names - likely duplicate logic, violates DRY principle, creates maintenance burden, causes inconsistent behavior when only one is updated. REFACTOR: Analyze both use cases to identify duplication. If truly duplicate, delete one and update all references. If slightly different, extract shared logic to helper or base class. If legitimately different, rename to clarify distinction. EXAMPLE: If you have AnalyzeCodebase and ValidateCodebase use cases doing similar parsing, this suggests duplication. Instead: Create single AnalyzeCodebase use case. If validation is subset of analysis, compose: ValidateCodebase calls AnalyzeCodebase and filters results. Or extract shared CodebaseParser helper both use. BENEFIT: Eliminates duplicate code, single source of truth for logic, reduces maintenance burden, prevents behavior divergence, smaller codebase, easier testing, forces clarification of business capabilities."
     for:
       role: VERB_IMPLEMENTATION_ACTUAL
     options:
@@ -424,7 +424,7 @@ rules:
 
   - name: "Detect-Duplicate-Adapters"
     severity: warning
-    comment: "Detects adapters with very similar names, suggesting potential duplication"
+    comment: "AI NOTE: Two adapters have highly similar names - likely duplicate implementations of same external interface, violates DRY, creates confusion about which adapter to use. REFACTOR: Investigate both adapters. If implementing same protocol similarly, consolidate to single adapter. If wrapping different libraries for same purpose, use Strategy pattern with single adapter interface. If legitimately different, rename to emphasize distinction. EXAMPLE: If you have YamlParser and YamlGrammarParser both parsing YAML with similar logic, this is duplication. Instead: Single YamlParser adapter. Or if one uses js-yaml and other uses yaml library, rename: JsYamlAdapter vs YamlLibraryAdapter. Make choice explicit. BENEFIT: Single implementation reduces maintenance, eliminates confusion about which to use, forces architectural decisions to be explicit, reduces codebase size, clearer abstraction boundaries."
     for:
       role: ADVERB_CONCRETE_ACTUAL
     options:
@@ -437,7 +437,7 @@ rules:
   # Hygiene Feature 2: Unreferenced Code Detection (Zombie Files)
   - name: "Detect-Zombie-Files"
     severity: info
-    comment: "Detects files that are not imported by any other file, indicating potentially dead code"
+    comment: "AI NOTE: File not imported by any other file - likely dead code, increases codebase size unnecessarily, confuses developers about what's active, may contain outdated patterns. REFACTOR: Verify file is truly unused by searching for imports and usage. If confirmed dead, delete file entirely - don't comment out, DELETE. If file is entry point (server.ts) or test, it's expected to be unreferenced. If file should be used, find where it should be imported and import it. EXAMPLE: If old-parser.adapter.ts exists but nothing imports it after migration to new-parser.adapter.ts, DELETE old-parser.adapter.ts. Git preserves history if needed later. Keep codebase lean. BENEFIT: Smaller codebase, faster builds, less confusion, easier navigation, removes outdated patterns that might be copied, reduces maintenance burden, cleaner architecture emerges."
     for:
       role: ALL
     options:
@@ -454,7 +454,7 @@ rules:
   # ============================================================================
   - name: "Production-Does-Not-Depend-On-Tests"
     severity: error
-    comment: "Production code must never depend on test files or fixtures"
+    comment: "AI NOTE: Production code imports test files or mocks - creates dependency on test infrastructure, breaks production builds when tests excluded, couples production to test implementation details. REFACTOR: Remove all imports from tests/ directory in production code. If production needs test data, that's not test data - it's production data. Move to src/ as fixtures or constants. If production uses test mocks, that's architectural problem - refactor to use real implementations with DI. EXAMPLE: If AnalyzeCodebaseUseCase imports MockCodeParser from tests/data/mocks, this is WRONG. Instead: UseCase depends on ICodeParser interface. Tests inject MockCodeParser. Production injects TsMorphParserAdapter. No test imports in production. BENEFIT: Production independently buildable, test infrastructure can change without affecting production, clear boundary between test and production code, enables tree-shaking, production bundle excludes test code, supports different test frameworks."
     from:
       role:
         - NOUN
@@ -503,7 +503,7 @@ rules:
   # NOTE: This rule requires a new rule type 'test_coverage' not yet implemented
   - name: "Test-Coverage-Required"
     severity: error
-    comment: "Every production file must have a corresponding test file (currently 0% coverage)"
+    comment: "AI NOTE: Production file has no corresponding test file - zero test coverage, unacceptable risk. REFACTOR: Create test file following naming convention. Mirror directory structure: src/path/file.ts → tests/path/file.spec.ts. Write unit tests covering: (1) happy path scenarios, (2) error cases with proper error handling, (3) edge cases and boundary conditions, (4) all public methods and interfaces. Use proper mocking for dependencies. Aim for >80% code coverage, 100% for critical paths. EXAMPLE: src/presentation/presenters/cli-violation.presenter.ts (no tests) → create tests/presentation/presenters/cli-violation.presenter.spec.ts with tests for: displayUsage() (verify console output), displayResults() (test formatting for 0/1/many violations), displayError() (test error formatting, stack traces), displayMetrics() (test performance display). Mock console.log/error. Verify output format. BENEFIT: Prevents regressions, enables confident refactoring, documents expected behavior, catches bugs early in development cycle, provides executable specification."
     from:
       role: [VERB_IMPLEMENTATION_ACTUAL, ADVERB_CONCRETE_ACTUAL, CONTEXT_ACTUAL]
     to:
@@ -515,7 +515,7 @@ rules:
   # NOTE: Requires 'file_size' rule type not yet implemented
   - name: "File-Size-Warning"
     severity: warning
-    comment: "Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)"
+    comment: "AI NOTE: File exceeds 100 lines - approaching SRP violation, increasing complexity, harder to understand and test. REFACTOR: Look for opportunities to extract classes or functions. Identify if file has multiple concerns. Consider splitting if file handles more than one responsibility. Extract helpers, validators, or builders to separate files. EXAMPLE: If controller file is 120 lines with validation logic embedded, extract: ControllerInputValidator (30 lines), ControllerResponseBuilder (25 lines), leave controller at 65 lines. Each file focused on single concern. BENEFIT: Proactive refactoring before file becomes too large, easier code review (smaller diffs), improved readability, better testability, forces thinking about SRP early, prevents technical debt accumulation."
     for:
       role: ALL
     max_lines: 100
@@ -523,7 +523,7 @@ rules:
 
   - name: "File-Size-Error"
     severity: error
-    comment: "Files exceeding 200 lines violate SRP and must be refactored"
+    comment: "AI NOTE: File exceeds 200 lines - violates Single Responsibility Principle. REFACTOR: Identify distinct responsibilities in file. Extract each responsibility into separate class/file. Apply Extract Class pattern. Split by functional cohesion. EXAMPLE: If analyze-codebase.usecase.ts has 1497 lines with validation+detection+transformation mixed, extract into: (1) NamingPatternValidator class (66 lines), (2) DependencyValidator class (224 lines), (3) HygieneValidator class (143 lines), (4) FileMetricsValidator class (66 lines), (5) StringSimilarityHelper class (163 lines). Main file becomes coordinator (178 lines). BENEFIT: Each file has single concern, easier to test in isolation, better maintainability, clearer responsibilities, enables parallel development, P2P-ready modular architecture."
     for:
       role: ALL
     max_lines: 200
@@ -533,7 +533,7 @@ rules:
   # Current: No validation layer | Target: Mandatory validation layer
   - name: "Controllers-Must-Use-Validators"
     severity: error
-    comment: "Controllers must use validation layer instead of embedding validation logic"
+    comment: "AI NOTE: Controller doesn't import validation layer - likely embeds validation logic directly, violates separation of concerns, duplicates validation across controllers. REFACTOR: Create validator in validation/validators implementing IValidation interface. Controller imports and uses validator before calling use case. Validator checks input format, types, required fields - pure input validation. Controller becomes: validate input → call use case → format response. EXAMPLE: If CliController validates args with inline 'if (!args[0])' checks, this is WRONG. Instead: Create CliArgsValidation class. Controller: result = validator.validate(args); if (result.isValid()) callUseCase(). Validation logic centralized, reusable, testable independently. BENEFIT: Validation logic reusable across controllers, testable without mocking controllers, supports validation composition, consistent error messages, follows Single Responsibility, enables validator strategies (strict/permissive modes)."
     from:
       role: CONTEXT_ACTUAL
     to:
@@ -544,36 +544,32 @@ rules:
   # Current: 3 factories | Target: Factory for each controller/use case
   - name: "Controllers-Need-Factories"
     severity: error
-    comment: "All controllers must be instantiated through factories for proper DI"
+    comment: "AI NOTE: Controller factory doesn't import use case factories - likely instantiates use cases manually or bypasses composition pattern, creates tight coupling. REFACTOR: Controller factories must import and use use case factories. Never instantiate use cases directly in controller factory. Call makeUseCaseName() functions from COMPOSER layer. This ensures proper dependency injection throughout the stack. EXAMPLE: If makeCliController() does 'new AnalyzeCodebaseUseCase(new Parser(), new Repo())', this is WRONG. Instead: 'const useCase = makeAnalyzeCodebaseUseCase()'. Let use case factory handle its dependencies. Controller factory only wires controller-level dependencies. BENEFIT: Centralized dependency wiring, each factory manages its level, testable composition, supports different configurations (dev/prod), follows Dependency Injection principle, prevents dependency hell in factories."
     from:
-      role: COMPOSER
-    to:
       role: COMPOSER_CONTROLLER_FACTORY
+    to:
+      role: COMPOSER
     rule: "required"
 
   # 5. SINGLE RESPONSIBILITY ENFORCEMENT (Priority: HIGH)
   # Prevents consolidation of multiple responsibilities in one file
   # NOTE: Requires 'forbidden_keywords' rule type not yet implemented
   - name: "No-Business-Logic-In-Controllers"
-    severity: error
-    comment: "Controllers must not contain business logic - delegate to use cases"
+    severity: warning
+    comment: "AI NOTE: Controller contains business logic keywords (calculate/compute/transform) - violates separation of concerns, breaks Clean Architecture boundaries. REFACTOR: Extract business logic to use case or domain service. Controller should ONLY: (1) receive input from external interface, (2) call use case with validated input, (3) format response for external interface. Controller is thin adapter, not business logic container. EXAMPLE: If CliController calculates exit codes based on violation types, extract to use case: ExitCodeDeterminer.execute(violations). Controller becomes: exitCode = await this.determineExitCode.execute(violations); this.exitHandler.exit(exitCode). Business rule (violations → exit code mapping) moves to use case, testable independently. BENEFIT: Business logic reusable across interfaces (CLI/HTTP/GraphQL), testable in isolation without mocking presentation layer, controller stays thin and focused on interface adaptation, follows Clean Architecture dependency rule. NOTE: This rule has false positives (detects keywords in imports/comments). Manual review recommended."
     from:
       role: CONTEXT_ACTUAL
     contains_forbidden:
-      - "calculate"
-      - "compute"
-      - "transform"
-      - "process"
-      - "parse"
-      - "validate"
-      - "isValid"
+      - "calculateTotal"
+      - "computeResult"
+      - "transformData"
     rule: "forbidden_keywords"
 
   # 6. MINIMUM TEST RATIO (Priority: HIGH)
   # Current: 0% test files | Target: 20% minimum (best practice: 24.6%)
   - name: "Minimum-Test-File-Ratio"
     severity: warning
-    comment: "Project should have at least 20% test files (current: 0%, target: 20%+)"
+    comment: "AI NOTE: Project has insufficient test coverage (test file ratio below 20%) - indicates undertested codebase, high risk of regressions, poor safety net for refactoring. REFACTOR: Systematically add tests for critical paths first. Prioritize: (1) domain logic and use cases, (2) complex validators and transformers, (3) adapters with external dependencies, (4) controllers with edge cases. Aim for 20-30% test file ratio minimum (1 test file per 3-5 production files). Write focused unit tests. EXAMPLE: If project has 50 production files but only 5 test files (10% ratio), INCREASE testing. Add tests/data/usecases for each use case, tests/infra for each adapter, tests/presentation for each controller. Target: 50 production files → 12-15 test files minimum. BENEFIT: Confident refactoring without breaking functionality, catches regressions early, documents expected behavior, enables TDD workflow, reduces debugging time, improves code design through testability requirements."
     global:
       test_ratio: 0.20
     rule: "minimum_test_ratio"
@@ -583,7 +579,7 @@ rules:
   # NOTE: Requires 'required_structure' rule type not yet implemented
   - name: "All-Clean-Architecture-Layers-Required"
     severity: error
-    comment: "Clean Architecture requires all layers to be present"
+    comment: "AI NOTE: Required architectural layer directory missing - violates Clean Architecture structure, creates confusion about where to place code, likely indicates concerns mixed in wrong layers. REFACTOR: Create missing layer directories following Clean Architecture pattern. Each layer has specific responsibility: domain (business entities/rules), data (use case implementations), infra (external interfaces), presentation (controllers/HTTP), validation (input validation), main (composition root). Ensure all layers present even if some are small initially. EXAMPLE: If validation/validators directory doesn't exist, validation logic likely embedded in controllers or use cases. CREATE validation/validators/, validation/protocols/. Extract validation to proper layer. BENEFIT: Clear separation of concerns, obvious where new code belongs, prevents architectural drift, enforces Clean Architecture boundaries, team understands structure immediately, scalable organization pattern."
     required_directories:
       - "src/domain/models"
       - "src/domain/usecases"
@@ -600,7 +596,7 @@ rules:
   # NOTE: Requires 'documentation_required' rule type not yet implemented
   - name: "Complex-Files-Need-Documentation"
     severity: warning
-    comment: "Files over 50 lines should have JSDoc documentation"
+    comment: "AI NOTE: File over 50 lines lacks JSDoc documentation - harder for developers to understand purpose quickly, missing context for architectural decisions, reduces code discoverability. REFACTOR: Add JSDoc to file header explaining purpose, responsibilities, and key design decisions. Document public classes with @description, @example. Document complex methods with parameter descriptions and return types. Focus on WHY, not WHAT (code shows what). EXAMPLE: If 80-line validator has no comments, ADD: /** Validates CLI arguments ensuring path exists and format is correct. Implements early validation before use case execution. @example const validator = new CliArgsValidation(); const result = validator.validate(process.argv); */. BENEFIT: Faster onboarding for new developers, architectural decisions preserved, IDE tooltips show documentation, easier code reviews, self-documenting codebase, reduces knowledge silos, supports API documentation generation."
     for:
       role: ALL
     min_lines: 50
@@ -612,7 +608,7 @@ rules:
   # NOTE: Requires 'class_complexity' rule type not yet implemented
   - name: "No-God-Objects"
     severity: error
-    comment: "Classes should not exceed 10 public methods (God Object anti-pattern)"
+    comment: "AI NOTE: Class has >10 public methods or >15 properties - God Object anti-pattern detected. REFACTOR: Apply Extract Class pattern. Group related methods/properties by responsibility. Create focused classes with single responsibility. Each class should do ONE thing well. EXAMPLE: If UserService has 20 methods (createUser, deleteUser, login, logout, updateProfile, getProfile, changePassword, resetPassword, sendNotification, etc), extract into: UserAuthService (login, logout, changePassword, resetPassword - 4 methods), UserProfileService (getProfile, updateProfile - 2 methods), UserCRUDService (createUser, deleteUser - 2 methods), UserNotificationService (sendNotification, subscribe - 2 methods). Each service has <5 methods, clear single responsibility. BENEFIT: Better testability (test each service independently), clearer responsibilities, easier maintenance, follows SRP, enables team parallelization, reduces cognitive load."
     for:
       role: ALL
     max_public_methods: 10
@@ -623,7 +619,7 @@ rules:
   # Current: 22 files | Expected: ~138 files based on LOC/file ratio
   - name: "File-Granularity-Check"
     severity: info
-    comment: "Project should have adequate file granularity (target: 10-20 LOC/file)"
+    comment: "AI NOTE: Project has insufficient file granularity (average LOC per file too high) - suggests files with multiple responsibilities, harder to navigate and understand, indicates need for more extraction. REFACTOR: Break large files into smaller focused modules. Target 10-20 LOC per file for highly modular architecture. Extract helpers, validators, builders, strategies to separate files. Each file should do ONE thing. Favor many small files over few large files. EXAMPLE: If project has 2000 LOC across 20 files (100 LOC/file average) but target is 20 LOC/file, should have ~100 files. Extract: shared utilities to helpers/, validation logic to validators/, transformation logic to transformers/. Each focused and small. BENEFIT: Highly modular codebase, easier to understand individual files, better code reuse, supports micro-commits, easier parallel development, natural SRP enforcement, P2P-ready architecture, improves test isolation."
     global:
       target_loc_per_file: 20
       warning_threshold_multiplier: 4.0
@@ -633,7 +629,7 @@ rules:
   # Enforces separation of validation from presentation layer
   - name: "Validation-Logic-Not-In-Controllers"
     severity: error
-    comment: "Controllers must not contain validation logic - use validation layer"
+    comment: "AI NOTE: Controller contains validation keywords (RegExp/regex/pattern/match/test/isValid) - embeds validation logic directly, violates separation of concerns, duplicates validation patterns across controllers, breaks reusability. REFACTOR: Extract all validation logic to validation layer. Create validator class implementing IValidation. Move regex patterns, format checks, type validations to validator. Controller only calls validator.validate() and handles result. EXAMPLE: If controller has 'if (!/^[a-z]+$/.test(input))' or 'if (!input.match(/pattern/))' validation, this is WRONG. Instead: Create InputFormatValidator with pattern rules. Controller: const result = validator.validate(input); if (!result.isValid) return error(result). Validation centralized. BENEFIT: Validation logic reusable across controllers, testable independently, consistent validation rules, easier to update patterns globally, supports validation composition, controllers stay thin, follows Single Responsibility Principle."
     from:
       role: CONTEXT_ACTUAL
     contains_forbidden:
@@ -650,7 +646,7 @@ rules:
   # index.ts files should only re-export, not contain logic
   - name: "Barrel-Exports-Must-Be-Pure"
     severity: warning
-    comment: "Barrel exports (index.ts) should only re-export, not contain logic"
+    comment: "AI NOTE: Barrel export file (index.ts) contains implementation code (classes/functions/logic) - breaks barrel export pattern, confuses developers about file purpose, creates hidden complexity. REFACTOR: Index files should ONLY contain export statements - export * from or export { } statements. Move all classes, functions, constants, logic to dedicated files. Index file aggregates and re-exports them for convenient imports. Keep index.ts pure aggregation. EXAMPLE: If index.ts contains 'export class Helper {}' or 'export function transform() {}', this is WRONG. Instead: Create helper.ts with class. Index: 'export * from ./helper'. Consumers import from index, get clean aggregated API. Implementation in proper files. BENEFIT: Clear API surface via barrel exports, implementation details in focused files, easier navigation (implementation not hidden in index), supports tree-shaking, follows module pattern best practices, cleaner import statements for consumers."
     for:
       file_pattern: "/index\\.ts$"
     contains_forbidden:
@@ -661,3 +657,84 @@ rules:
       - "for.*\\{"
       - "while.*\\{"
     rule: "barrel_purity"
+
+  # 13. NO DIRECT NODE.JS MODULE ACCESS (Priority: CRITICAL)
+  # Enforces Dependency Inversion: use adapters instead of direct Node.js imports
+  - name: "Use-Adapters-Not-NodeJS-Modules"
+    severity: error
+    comment: "AI NOTE: File directly imports Node.js built-in modules (fs/http/crypto/path) outside infrastructure layer - violates Dependency Inversion Principle, creates tight coupling to Node.js runtime, prevents testing with mocks, breaks Clean Architecture, makes code non-portable to other runtimes (Deno/Bun/Browser). REFACTOR: Create protocol interface in data/protocols (IFileReader, IHttpClient, ICrypto). Implement adapter in infra/adapters (NodeFileSystemAdapter, NodeHttpAdapter). Inject protocol via constructor. Only infrastructure layer can import Node.js modules directly. EXAMPLE: If use case does 'import fs from fs' or 'import path from path', this is WRONG. Instead: Define IFileReader protocol. Use case: constructor(private fileReader: IFileReader). Infra implements with Node fs. Tests inject mock. BENEFIT: Runtime-agnostic code (works in Node/Deno/Bun), fully testable with mocks, swappable implementations (local FS vs cloud storage, Node http vs fetch API), follows DIP and Clean Architecture, enables edge deployment, supports progressive enhancement from Node to Web Standards."
+    from:
+      role:
+        - NOUN
+        - VERB_CONTRACT
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+        - VALIDATION_PROTOCOL
+    contains_forbidden:
+      - "import.*['\"]fs['\"]"
+      - "require\\(['\"]fs['\"]\\)"
+      - "import\\(['\"]fs['\"]\\)"
+      - "from ['\"]fs['\"]"
+      - "from ['\"]fs/promises['\"]"
+      - "import.*['\"]path['\"]"
+      - "require\\(['\"]path['\"]\\)"
+      - "from ['\"]path['\"]"
+      - "import.*['\"]http['\"]"
+      - "import.*['\"]https['\"]"
+      - "from ['\"]http['\"]"
+      - "from ['\"]https['\"]"
+      - "import.*['\"]crypto['\"]"
+      - "from ['\"]crypto['\"]"
+      - "import.*['\"]os['\"]"
+      - "from ['\"]os['\"]"
+      - "import.*['\"]child_process['\"]"
+      - "from ['\"]child_process['\"]"
+    rule: "forbidden_patterns"
+
+  # 14. INTERFACE SEGREGATION PRINCIPLE GUIDELINE (Priority: CRITICAL)
+  # NOTE: Manual validation required - automatic detection not yet implemented
+  #
+  # CRITICAL ARCHITECTURAL INSIGHT discovered through dogfooding:
+  # Interfaces with multiple methods can have mixed responsibilities, causing
+  # layer ambiguity and architectural thrashing (recursion bugs).
+  #
+  # Real case: ICommandLineAdapter with 3 methods created infinite loop:
+  # - getArgs() → Presentation concern
+  # - getEnv() → Data concern
+  # - exit() → Presentation concern
+  # Result: Interface belonged to NO layer clearly, creating recursion between
+  # presentation/protocols ↔ data/protocols (THRASHING!)
+  #
+  # Solution: Split into 3 segregated interfaces (1 method each):
+  # - IProcessArgsProvider (presentation)
+  # - IProcessEnvProvider (data)
+  # - IProcessExitHandler (presentation)
+  # Result: ZERO recursion, each interface in correct layer!
+  #
+  # GUIDELINE: Prefer interfaces with exactly 1 method (maximum 2 if tightly cohesive).
+  # If interface has >2 methods, review for mixed responsibilities.
+  #
+  # Examples to review manually:
+  # ✅ GOOD: IFileReader { readFileSync(path: string): string }
+  # ✅ GOOD: IFileExistenceChecker { existsSync(path: string): boolean }
+  # ❌ BAD:  IFileSystem { readFileSync(), existsSync() } - mixed concerns
+  #
+  # TODO: Implement 'interface_method_count' rule type for automatic detection
+
+  # ============================================================================
+  # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
+  # ============================================================================
+  # These rules document architectural insights discovered through dogfooding
+  # but cannot be enforced yet because the rule engine doesn't support these
+  # rule types. They serve as TODOs for future Nooa development.

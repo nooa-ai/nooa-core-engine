@@ -9,9 +9,9 @@ import {
   DependencyRule,
   NamingPatternRule,
 } from '../../../src/domain/models';
-import { CodeParserSpy, GrammarRepositorySpy } from '../mocks';
+import { CodeParserSpy, GrammarRepositorySpy, FileReaderSpy } from '../mocks';
 
-// Mock fs module at module level
+// Mock fs module at module level (still needed for some validators like test-coverage, structure)
 vi.mock('fs', () => ({
   promises: {
     readFile: vi.fn(),
@@ -40,12 +40,14 @@ const makeSymbol = (overrides: Partial<CodeSymbolModel>): CodeSymbolModel => ({
 const makeSut = (grammar: GrammarModel) => {
   const codeParserSpy = new CodeParserSpy();
   const grammarRepositorySpy = new GrammarRepositorySpy(grammar);
-  const sut = new AnalyzeCodebaseUseCase(codeParserSpy, grammarRepositorySpy);
+  const fileReaderSpy = new FileReaderSpy();
+  const sut = new AnalyzeCodebaseUseCase(codeParserSpy, grammarRepositorySpy, fileReaderSpy, fileReaderSpy);
 
   return {
     sut,
     codeParserSpy,
     grammarRepositorySpy,
+    fileReaderSpy,
   };
 };
 
@@ -249,12 +251,11 @@ describe('AnalyzeCodebaseUseCase', () => {
     };
 
     const grammar = makeGrammar([fileSizeRule], makeRoles([domainRole]));
-    const { sut, codeParserSpy } = makeSut(grammar);
+    const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-    // Mock fs module
+    // Setup file content in spy using FULL path (projectPath + symbolPath)
     const largeFileContent = Array(100).fill('line').join('\n');
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockResolvedValue(largeFileContent);
+    fileReaderSpy.fileContents.set('/tmp/project/src/domain/models/large.ts', largeFileContent);
 
     codeParserSpy.result = [
       makeSymbol({
@@ -312,11 +313,10 @@ describe('AnalyzeCodebaseUseCase', () => {
     };
 
     const grammar = makeGrammar([forbiddenKeywordsRule], makeRoles([domainRole]));
-    const { sut, codeParserSpy } = makeSut(grammar);
+    const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-    // Mock fs module
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockResolvedValue('console.log("debug");');
+    // Setup file content in spy using FULL path (projectPath + symbolPath)
+    fileReaderSpy.fileContents.set('/tmp/project/src/domain/models/debug.ts', 'console.log("debug");');
 
     codeParserSpy.result = [
       makeSymbol({
@@ -343,11 +343,10 @@ describe('AnalyzeCodebaseUseCase', () => {
     };
 
     const grammar = makeGrammar([forbiddenKeywordsRule], makeRoles([domainRole]));
-    const { sut, codeParserSpy } = makeSut(grammar);
+    const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-    // Mock fs module to throw error
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('File not found'));
+    // Don't add file to spy - it will not be in cache, causing skip
+    // fileReaderSpy.fileContents.set(...) intentionally omitted
 
     codeParserSpy.result = [
       makeSymbol({
@@ -422,12 +421,11 @@ describe('AnalyzeCodebaseUseCase', () => {
     };
 
     const grammar = makeGrammar([documentationRule], makeRoles([domainRole]));
-    const { sut, codeParserSpy } = makeSut(grammar);
+    const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-    // Mock fs module
+    // Setup file content in spy using FULL path (projectPath + symbolPath)
     const largeFileContent = Array(60).fill('line').join('\n');
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockResolvedValue(largeFileContent);
+    fileReaderSpy.fileContents.set('/tmp/project/src/domain/models/undocumented.ts', largeFileContent);
 
     codeParserSpy.result = [
       makeSymbol({
@@ -455,11 +453,10 @@ describe('AnalyzeCodebaseUseCase', () => {
     };
 
     const grammar = makeGrammar([documentationRule], makeRoles([domainRole]));
-    const { sut, codeParserSpy } = makeSut(grammar);
+    const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-    // Mock fs module to throw error
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('File not found'));
+    // Don't add file to spy - it will not be in cache, causing skip
+    // fileReaderSpy.fileContents.set(...) intentionally omitted
 
     codeParserSpy.result = [
       makeSymbol({
@@ -488,31 +485,46 @@ describe('AnalyzeCodebaseUseCase', () => {
     const grammar = makeGrammar([complexityRule], makeRoles([domainRole]));
     const { sut, codeParserSpy } = makeSut(grammar);
 
-    // Mock fs module with complex class
-    const complexClass = `
-      class GodObject {
-        private prop1: string;
-        private prop2: number;
-        private prop3: boolean;
-        public prop4: string;
-        public prop5: number;
-        public prop6: boolean;
-        public prop7: string;
-        public prop8: number;
-        public prop9: boolean;
-        public prop10: string;
-        public prop11: number;
+    // Create actual temporary file for ts-morph to parse
+    const fsActual = await vi.importActual<typeof import('fs')>('fs');
+    const path = await import('path');
+    const os = await import('os');
 
-        public method1() {}
-        public method2() {}
-        public method3() {}
-        public method4() {}
-        public method5() {}
-        public method6() {}
-      }
-    `;
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockResolvedValue(complexClass);
+    const tmpDir = await fsActual.promises.mkdtemp(path.join(os.tmpdir(), 'nooa-test-'));
+    const srcDir = path.join(tmpDir, 'src', 'domain', 'models');
+    await fsActual.promises.mkdir(srcDir, { recursive: true });
+
+    const complexClass = `
+class GodObject {
+  private prop1: string;
+  private prop2: number;
+  private prop3: boolean;
+  public prop4: string;
+  public prop5: number;
+  public prop6: boolean;
+  public prop7: string;
+  public prop8: number;
+  public prop9: boolean;
+  public prop10: string;
+  public prop11: number;
+
+  method1() {}
+  method2() {}
+  method3() {}
+  method4() {}
+  method5() {}
+  method6() {}
+}
+`;
+
+    const filePath = path.join(srcDir, 'god-object.ts');
+    await fsActual.promises.writeFile(filePath, complexClass);
+
+    // Create minimal tsconfig.json
+    await fsActual.promises.writeFile(
+      path.join(tmpDir, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { target: 'ES2015' } })
+    );
 
     codeParserSpy.result = [
       makeSymbol({
@@ -520,11 +532,16 @@ describe('AnalyzeCodebaseUseCase', () => {
       }),
     ];
 
-    const violations = await sut.analyze({ projectPath: '/tmp/project' });
+    try {
+      const violations = await sut.analyze({ projectPath: tmpDir });
 
-    expect(violations).toHaveLength(2);
-    expect(violations.some(v => v.message.includes('public methods'))).toBe(true);
-    expect(violations.some(v => v.message.includes('properties'))).toBe(true);
+      expect(violations).toHaveLength(2);
+      expect(violations.some(v => v.message.includes('public methods'))).toBe(true);
+      expect(violations.some(v => v.message.includes('properties'))).toBe(true);
+    } finally {
+      // Clean up
+      await fsActual.promises.rm(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it('Should handle file read errors in class complexity validation', async () => {
@@ -540,11 +557,10 @@ describe('AnalyzeCodebaseUseCase', () => {
     };
 
     const grammar = makeGrammar([complexityRule], makeRoles([domainRole]));
-    const { sut, codeParserSpy } = makeSut(grammar);
+    const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-    // Mock fs module to throw error
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('File not found'));
+    // Don't add file to spy - it will not be in cache, causing skip
+    // fileReaderSpy.fileContents.set(...) intentionally omitted
 
     codeParserSpy.result = [
       makeSymbol({
@@ -683,11 +699,10 @@ describe('AnalyzeCodebaseUseCase', () => {
     };
 
     const grammar = makeGrammar([fileSizeRule], makeRoles([domainRole]));
-    const { sut, codeParserSpy } = makeSut(grammar);
+    const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-    // Mock fs module to throw error
-    const fs = await import('fs');
-    vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('File not found'));
+    // Don't add file to spy - it will not be in cache, causing skip
+    // fileReaderSpy.fileContents.set(...) intentionally omitted
 
     codeParserSpy.result = [
       makeSymbol({
@@ -822,14 +837,12 @@ describe('AnalyzeCodebaseUseCase', () => {
       };
 
       const grammar = makeGrammar([granularityRule], []);
-      const { sut, codeParserSpy } = makeSut(grammar);
+      const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-      // Mock fs module - 3 files with different sizes
-      const fs = await import('fs');
-      vi.mocked(fs.promises.readFile)
-        .mockResolvedValueOnce(Array(60).fill('line').join('\n')) // 60 lines
-        .mockResolvedValueOnce(Array(80).fill('line').join('\n')) // 80 lines
-        .mockResolvedValueOnce(Array(100).fill('line').join('\n')); // 100 lines
+      // Setup file contents in spy using FULL paths (projectPath + symbolPath)
+      fileReaderSpy.fileContents.set('/tmp/project/src/large1.ts', Array(60).fill('line').join('\n')); // 60 lines
+      fileReaderSpy.fileContents.set('/tmp/project/src/large2.ts', Array(80).fill('line').join('\n')); // 80 lines
+      fileReaderSpy.fileContents.set('/tmp/project/src/large3.ts', Array(100).fill('line').join('\n')); // 100 lines
       // Average = 80 lines, target = 20, threshold = 30 -> violation
 
       codeParserSpy.result = [
@@ -858,14 +871,12 @@ describe('AnalyzeCodebaseUseCase', () => {
       };
 
       const grammar = makeGrammar([granularityRule], []);
-      const { sut, codeParserSpy } = makeSut(grammar);
+      const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-      // Mock fs module - 3 files with acceptable sizes
-      const fs = await import('fs');
-      vi.mocked(fs.promises.readFile)
-        .mockResolvedValueOnce(Array(40).fill('line').join('\n')) // 40 lines
-        .mockResolvedValueOnce(Array(50).fill('line').join('\n')) // 50 lines
-        .mockResolvedValueOnce(Array(60).fill('line').join('\n')); // 60 lines
+      // Setup file contents in spy using FULL paths (projectPath + symbolPath)
+      fileReaderSpy.fileContents.set('/tmp/project/src/file1.ts', Array(40).fill('line').join('\n')); // 40 lines
+      fileReaderSpy.fileContents.set('/tmp/project/src/file2.ts', Array(50).fill('line').join('\n')); // 50 lines
+      fileReaderSpy.fileContents.set('/tmp/project/src/file3.ts', Array(60).fill('line').join('\n')); // 60 lines
       // Average = 50 lines, target = 50, threshold = 75 -> no violation
 
       codeParserSpy.result = [
@@ -912,11 +923,10 @@ describe('AnalyzeCodebaseUseCase', () => {
       };
 
       const grammar = makeGrammar([granularityRule], []);
-      const { sut, codeParserSpy } = makeSut(grammar);
+      const { sut, codeParserSpy, fileReaderSpy } = makeSut(grammar);
 
-      // Mock fs module to throw error
-      const fs = await import('fs');
-      vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('File not found'));
+      // Don't add file to spy - it will not be in cache, causing skip
+      // fileReaderSpy.fileContents.set(...) intentionally omitted
 
       codeParserSpy.result = [
         makeSymbol({ path: 'src/missing.ts' }),
