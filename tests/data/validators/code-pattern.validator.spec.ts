@@ -334,6 +334,97 @@ describe('CodePatternValidator', () => {
     });
   });
 
+  describe('business logic anti-patterns', () => {
+    it('should detect float usage in money calculations', async () => {
+      const rule: ForbiddenPatternsRule = {
+        type: 'forbidden_patterns',
+        name: 'No-Float-For-Money-Calculations',
+        severity: 'error',
+        from: { role: '*' },
+        contains_forbidden: [
+          "(price|cost|amount|total|balance|payment|fee|money)\\s*[\\*\\+\\-\\/].*\\b(float|Float|double|Double|parseFloat)\\b"
+        ],
+      };
+      const symbol = makeSymbol();
+      const fileContent = 'const total = price * parseFloat(taxRate);';
+
+      readFileContentMock.mockReturnValue(fileContent);
+
+      const sut = new CodePatternValidator([], [rule], []);
+      const result = await sut.validate([symbol], projectPath);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].ruleName).toBe('No-Float-For-Money-Calculations');
+      expect(result[0].severity).toBe('error');
+    });
+
+    it('should not flag safe money calculations', async () => {
+      const rule: ForbiddenPatternsRule = {
+        type: 'forbidden_patterns',
+        name: 'No-Float-For-Money-Calculations',
+        severity: 'error',
+        from: { role: '*' },
+        contains_forbidden: [
+          "(price|cost|amount|total|balance|payment|fee|money)\\s*[\\*\\+\\-\\/].*\\b(float|Float|double|Double|parseFloat)\\b"
+        ],
+      };
+      const symbol = makeSymbol();
+      const fileContent = 'const totalCents = priceCents * 107 / 100 | 0;';
+
+      readFileContentMock.mockReturnValue(fileContent);
+
+      const sut = new CodePatternValidator([], [rule], []);
+      const result = await sut.validate([symbol], projectPath);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should detect percentage calculation errors', async () => {
+      const rule: ForbiddenPatternsRule = {
+        type: 'forbidden_patterns',
+        name: 'No-Percentage-Calculation-Errors',
+        severity: 'error',
+        from: { role: '*' },
+        contains_forbidden: [
+          "\\b\\d+\\s*\\/\\s*100\\s*\\*(?!\\s*\\()",
+          "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
+        ],
+      };
+      const symbol = makeSymbol();
+      const fileContent = 'const discount = value * 15 / 100;'; // Wrong - should use parentheses!
+
+      readFileContentMock.mockReturnValue(fileContent);
+
+      const sut = new CodePatternValidator([], [rule], []);
+      const result = await sut.validate([symbol], projectPath);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].ruleName).toBe('No-Percentage-Calculation-Errors');
+    });
+
+    it('should not flag correct percentage calculations', async () => {
+      const rule: ForbiddenPatternsRule = {
+        type: 'forbidden_patterns',
+        name: 'No-Percentage-Calculation-Errors',
+        severity: 'error',
+        from: { role: '*' },
+        contains_forbidden: [
+          "\\b\\d+\\s*\\/\\s*100\\s*\\*(?!\\s*\\()",
+          "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
+        ],
+      };
+      const symbol = makeSymbol();
+      const fileContent = 'const discount = (price * 15) / 100;'; // Correct!
+
+      readFileContentMock.mockReturnValue(fileContent);
+
+      const sut = new CodePatternValidator([], [rule], []);
+      const result = await sut.validate([symbol], projectPath);
+
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('multiple rule types', () => {
     it('should validate all rule types in parallel', async () => {
       const keywordsRule = {
