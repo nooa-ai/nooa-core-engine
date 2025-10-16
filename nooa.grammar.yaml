@@ -661,3 +661,40 @@ rules:
       - "for.*\\{"
       - "while.*\\{"
     rule: "barrel_purity"
+
+  # ============================================================================
+  # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
+  # ============================================================================
+  # These rules document architectural insights discovered through dogfooding
+  # but cannot be enforced yet because the rule engine doesn't support these
+  # rule types. They serve as TODOs for future Nooa development.
+  
+  # 13. INTERFACE SEGREGATION PRINCIPLE (Priority: CRITICAL)
+  # Discovered through RECURSION BUG: interfaces with multiple methods can have
+  # mixed responsibilities, causing layer ambiguity and architectural thrashing.
+  # 
+  # Real case: ICommandLineAdapter with 3 methods created infinite loop:
+  # - getArgs() → Presentation concern
+  # - getEnv() → Data concern  
+  # - exit() → Presentation concern
+  # Result: Interface belonged to NO layer clearly, creating recursion between
+  # presentation/protocols ↔ data/protocols (THRASHING!)
+  #
+  # Solution: Split into 3 segregated interfaces (1 method each):
+  # - IProcessArgsProvider (presentation)
+  # - IProcessEnvProvider (data)
+  # - IProcessExitHandler (presentation)
+  # Result: ZERO recursion, each interface in correct layer!
+  #
+  # TODO: Implement 'interface_method_count' rule type
+  # - name: "Interface-Segregation-Principle"
+  #   severity: warning
+  #   comment: "Interfaces should have at most 2 methods to prevent mixed responsibilities and layer ambiguity. Multi-method interfaces can belong to multiple layers, causing architectural recursion/thrashing."
+  #   for:
+  #     role:
+  #       - ADVERB_ABSTRACT
+  #       - CONTEXT_PROTOCOL
+  #       - VALIDATION_PROTOCOL
+  #       - VERB_CONTRACT
+  #   max_methods_per_interface: 2
+  #   rule: "interface_method_count"
