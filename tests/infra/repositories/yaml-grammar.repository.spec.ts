@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as yaml from 'yaml';
 import { YamlGrammarRepository } from '../../../src/infra/repositories/yaml-grammar.repository';
 import { IFileReader, IFileExistenceChecker } from '../../../src/data/protocols';
+import { SchemaValidator } from '../../../src/infra/validators/schema.validator';
 
 vi.mock('yaml');
 
 describe('YamlGrammarRepository', () => {
   let sut: YamlGrammarRepository;
   let fileSystemMock: IFileReader & IFileExistenceChecker;
+  let schemaValidatorMock: SchemaValidator;
 
   beforeEach(() => {
     // Create mock IFileReader & IFileExistenceChecker
@@ -16,7 +18,13 @@ describe('YamlGrammarRepository', () => {
       existsSync: vi.fn(),
     };
 
-    sut = new YamlGrammarRepository(fileSystemMock);
+    // Create mock SchemaValidator
+    schemaValidatorMock = {
+      loadSchema: vi.fn(),
+      validate: vi.fn().mockReturnValue({ valid: true, errors: [] }),
+    } as any;
+
+    sut = new YamlGrammarRepository(fileSystemMock, schemaValidatorMock);
     vi.clearAllMocks();
   });
 
@@ -129,6 +137,12 @@ rules:
         rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'version'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "missing required property 'version'"
       );
@@ -141,6 +155,12 @@ rules:
         version: '1.0',
         roles: [{ name: 'TEST', path: '^src' }],
         rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'language'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -158,6 +178,12 @@ rules:
         rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["/roles: must be array"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "/roles: must be array"
       );
@@ -171,6 +197,12 @@ rules:
         language: 'typescript',
         roles: [{ name: 'TEST', path: '^src' }],
         rules: 'invalid'
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["/rules: must be array"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -188,6 +220,12 @@ rules:
         rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'TEST' }, to: { role: 'TEST' } }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'name'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "missing required property 'name'"
       );
@@ -201,6 +239,12 @@ rules:
         language: 'typescript',
         roles: [{ name: 'DOMAIN' }],
         rules: [{ name: 'R1', severity: 'error', rule: 'forbidden', from: { role: 'DOMAIN' }, to: { role: 'DOMAIN' } }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'path'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -218,6 +262,12 @@ rules:
         rules: [{ severity: 'error', rule: 'forbidden' }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'name'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "missing required property 'name'"
       );
@@ -231,6 +281,12 @@ rules:
         language: 'typescript',
         roles: [{ name: 'TEST', path: '^src' }],
         rules: [{ name: 'TestRule', severity: 'critical', rule: 'forbidden' }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["/rules/0/severity: must be equal to one of the allowed values"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -271,6 +327,12 @@ rules:
           rule: 'naming_pattern',
           for: { role: 'DOMAIN' }
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'pattern'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -399,6 +461,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'from'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "missing required property 'from'"
       );
@@ -418,6 +486,12 @@ rules:
           from: { role: 'PROD' },
           to: {}
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'test_file'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -460,6 +534,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'from'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "missing required property 'from'"
       );
@@ -478,6 +558,12 @@ rules:
           rule: 'forbidden_keywords',
           from: { role: 'CONTROLLER' }
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'contains_forbidden'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -499,6 +585,12 @@ rules:
           from: { role: 'CONTROLLER' },
           contains_forbidden: []
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must NOT have fewer than 1 items"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -539,6 +631,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'required_directories'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "missing required property 'required_directories'"
       );
@@ -557,6 +655,12 @@ rules:
           rule: 'required_structure',
           required_directories: []
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must NOT have fewer than 1 items"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -666,6 +770,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be equal to one of the allowed values"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "must be equal to one of the allowed values"
       );
@@ -685,6 +795,12 @@ rules:
           from: { role: 'SERVICE' },
           to: { role: 'SERVICE', circular: true }
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must match exactly one schema in oneOf"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -708,6 +824,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'role'"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "missing required property 'role'"
       );
@@ -727,6 +849,12 @@ rules:
           from: { role: 'SERVICE' },
           to: {}
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must match exactly one schema"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -751,6 +879,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be integer"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "must be integer"
       );
@@ -771,6 +905,12 @@ rules:
           max_public_methods: -5,
           max_properties: 10
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be >= 1"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -795,6 +935,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be integer"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "must be integer"
       );
@@ -814,6 +960,12 @@ rules:
           min_lines: 50,
           requires_jsdoc: true
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'for'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -838,6 +990,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be >= 1"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "must be >= 1"
       );
@@ -858,6 +1016,12 @@ rules:
           min_lines: 'fifty',  // should be number
           requires_jsdoc: true
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be integer"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -882,6 +1046,12 @@ rules:
         }]
       });
 
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be boolean"]
+      });
+
       await expect(sut.load('/test/project')).rejects.toThrow(
         "must be boolean"
       );
@@ -901,6 +1071,12 @@ rules:
           max_public_methods: 10,
           max_properties: 15
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["missing required property 'for'"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(
@@ -923,6 +1099,12 @@ rules:
           max_public_methods: 10,
           max_properties: 0
         }]
+      });
+
+      // Mock schema validator to return error
+      vi.mocked(schemaValidatorMock.validate).mockReturnValue({
+        valid: false,
+        errors: ["must be >= 1"]
       });
 
       await expect(sut.load('/test/project')).rejects.toThrow(

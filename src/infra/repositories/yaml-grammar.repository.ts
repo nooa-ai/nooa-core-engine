@@ -30,22 +30,30 @@ export class YamlGrammarRepository implements IGrammarRepository {
   private semanticValidator: SemanticGrammarValidator;
   private transformer: GrammarTransformerHelper;
 
-  constructor(private readonly fileSystem: IFileSystem = new NodeFileSystemAdapter()) {
+  constructor(
+    private readonly fileSystem: IFileSystem = new NodeFileSystemAdapter(),
+    schemaValidator?: SchemaValidator
+  ) {
     // YamlParserHelper needs both IFileReader and IFileExistenceChecker (ISP)
     // Same fileSystem instance provides both interfaces
     this.yamlParser = new YamlParserHelper(this.fileSystem, this.fileSystem);
-    this.schemaValidator = new SchemaValidator(this.fileSystem);
     this.semanticValidator = new SemanticGrammarValidator();
     this.transformer = new GrammarTransformerHelper();
 
-    // Load JSON schema (from project root)
-    const schemaPath = path.join(process.cwd(), 'nooa.schema.json');
-    try {
-      this.schemaValidator.loadSchema(schemaPath);
-    } catch (error) {
-      // Schema validation is optional - if schema not found, skip it
-      // This maintains backward compatibility
-      console.warn(`Schema file not found at ${schemaPath}. Skipping schema validation.`);
+    // Allow schema validator injection for testing
+    if (schemaValidator) {
+      this.schemaValidator = schemaValidator;
+    } else {
+      this.schemaValidator = new SchemaValidator(this.fileSystem);
+      // Load JSON schema (from project root)
+      const schemaPath = path.join(process.cwd(), 'nooa.schema.json');
+      try {
+        this.schemaValidator.loadSchema(schemaPath);
+      } catch (error) {
+        // Schema validation is optional - if schema not found, skip it
+        // This maintains backward compatibility
+        console.warn(`Schema file not found at ${schemaPath}. Skipping schema validation.`);
+      }
     }
   }
 
