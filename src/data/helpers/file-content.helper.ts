@@ -1,36 +1,34 @@
 /**
  * File Content Helper
  *
- * Provides utility for reading file contents with cache support.
+ * Provides utility for reading file contents from cache.
  * Eliminates code duplication across validators.
+ *
+ * Following DIP: No direct dependency on Node.js fs module.
+ * With the new architecture, ALL files are pre-cached by the use case,
+ * so this function primarily serves as a type-safe cache accessor.
  */
 
 /**
- * Reads file content from cache or disk
+ * Reads file content from cache
  *
  * @param symbolPath - Relative path to the file
- * @param projectPath - Root project path
- * @param fileCache - Optional cache of file contents
- * @returns File content as string, or null if file cannot be read
+ * @param fileCache - Cache of file contents (should be pre-populated by use case)
+ * @returns File content as string, or null if file not in cache
  */
-export async function readFileContent(
+export function readFileContent(
   symbolPath: string,
-  projectPath: string,
   fileCache?: Map<string, string>
-): Promise<string | null> {
+): string | null {
   try {
-    // Check cache first
+    // Check cache
     if (fileCache && fileCache.has(symbolPath)) {
       return fileCache.get(symbolPath)!;
     }
 
-    // Fallback to disk read
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
-    const filePath = path.join(projectPath, symbolPath);
-    return await fs.readFile(filePath, 'utf-8');
+    // If not in cache, file doesn't exist or wasn't cached
+    return null;
   } catch (error) {
-    // File might not exist or be readable
     return null;
   }
 }

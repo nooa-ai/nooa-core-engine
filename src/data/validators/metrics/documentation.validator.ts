@@ -18,13 +18,13 @@ export class DocumentationValidator extends BaseRuleValidator {
 
   async validate(
     symbols: CodeSymbolModel[],
-    projectPath: string,
+    _projectPath: string,
     fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
 
     for (const rule of this.rules) {
-      violations.push(...(await this.validateDocumentation(symbols, rule, projectPath, fileCache)));
+      violations.push(...(await this.validateDocumentation(symbols, rule, fileCache)));
     }
 
     return violations;
@@ -33,7 +33,6 @@ export class DocumentationValidator extends BaseRuleValidator {
   private async validateDocumentation(
     symbols: CodeSymbolModel[],
     rule: DocumentationRequiredRule,
-    projectPath: string,
     fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const symbolsToCheck = symbols.filter((symbol) =>
@@ -42,7 +41,7 @@ export class DocumentationValidator extends BaseRuleValidator {
 
     // Performance: Use cache if available
     const validationPromises = symbolsToCheck.map(async (symbol) => {
-      const content = await readFileContent(symbol.path, projectPath, fileCache);
+      const content = readFileContent(symbol.path, fileCache);
       if (!content) return null;
 
       const lines = content.split('\n').length;

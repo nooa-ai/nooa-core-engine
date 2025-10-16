@@ -2,6 +2,7 @@
  * Class Complexity Validator
  *
  * Validates class complexity based on public method and property counts.
+ * Uses ts-morph for TypeScript AST parsing (note: ts-morph uses fs internally).
  */
 import {
   ArchitecturalViolationModel,
@@ -9,9 +10,13 @@ import {
   ClassComplexityRule,
 } from '../../../domain/models';
 import { BaseRuleValidator } from '../base-rule.validator';
+import { IFileExistenceChecker } from '../../protocols';
 
 export class ClassComplexityValidator extends BaseRuleValidator {
-  constructor(private readonly rules: ClassComplexityRule[]) {
+  constructor(
+    private readonly rules: ClassComplexityRule[],
+    private readonly fileExistenceChecker: IFileExistenceChecker
+  ) {
     super();
   }
 
@@ -24,16 +29,9 @@ export class ClassComplexityValidator extends BaseRuleValidator {
     // Performance: Create ts-morph Project once and reuse for all rules
     const { Project } = await import('ts-morph');
     const path = await import('path');
-    const fsSync = await import('fs');
 
     const tsconfigPath = path.join(projectPath, 'tsconfig.json');
-    let hasTsConfig = false;
-    try {
-      fsSync.accessSync(tsconfigPath);
-      hasTsConfig = true;
-    } catch {
-      // No tsconfig, will use default config
-    }
+    const hasTsConfig = this.fileExistenceChecker.existsSync(tsconfigPath);
 
     const project = new Project(
       hasTsConfig

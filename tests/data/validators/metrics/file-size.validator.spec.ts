@@ -52,7 +52,7 @@ describe('FileSizeValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3'; // 3 lines
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -65,7 +65,7 @@ describe('FileSizeValidator', () => {
       const symbol = makeSymbol({ path: 'src/large-file.ts' });
       const fileContent = 'line1\nline2\nline3'; // 3 lines
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -89,7 +89,7 @@ describe('FileSizeValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -101,7 +101,7 @@ describe('FileSizeValidator', () => {
       const rule = makeRule({ max_lines: 2 });
       const symbol = makeSymbol();
 
-      readFileContentMock.mockResolvedValue(null);
+      readFileContentMock.mockReturnValue(null);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -118,7 +118,7 @@ describe('FileSizeValidator', () => {
       const symbol2 = makeSymbol({ role: 'UseCase', path: 'usecase.ts' });
       const fileContent = 'line1\nline2\nline3';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol1, symbol2], projectPath);
@@ -136,7 +136,7 @@ describe('FileSizeValidator', () => {
       ];
       const fileContent = 'line1\nline2\nline3';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate(symbols, projectPath);
@@ -153,7 +153,7 @@ describe('FileSizeValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3\nline4'; // 4 lines
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator(rules);
       const result = await sut.validate([symbol], projectPath);
@@ -170,7 +170,7 @@ describe('FileSizeValidator', () => {
       fileCache.set('src/test.ts', 'line1\nline2\nline3');
 
       readFileContentMock.mockImplementation(
-        async (path, project, cache) => cache?.get(path) || null
+        (path, cache) => cache?.get(path) || null
       );
 
       const sut = new FileSizeValidator([rule]);
@@ -179,7 +179,6 @@ describe('FileSizeValidator', () => {
       expect(result).toHaveLength(1);
       expect(readFileContentMock).toHaveBeenCalledWith(
         'src/test.ts',
-        projectPath,
         fileCache
       );
     });
@@ -189,7 +188,7 @@ describe('FileSizeValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'single line';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -202,7 +201,7 @@ describe('FileSizeValidator', () => {
       const symbol = makeSymbol();
       const fileContent = '';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -215,7 +214,7 @@ describe('FileSizeValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -228,7 +227,7 @@ describe('FileSizeValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3\nline4';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new FileSizeValidator([rule]);
       const result = await sut.validate([symbol], projectPath);

@@ -52,7 +52,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3'; // 3 lines, below 50
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -65,7 +65,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol();
       const fileContent = '/**\n * JSDoc comment\n */\nclass Test {}';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -78,7 +78,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol({ path: 'src/undocumented.ts' });
       const fileContent = 'line1\nline2\nline3\nline4'; // 4 lines, no JSDoc
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -102,7 +102,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3\nline4';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -114,7 +114,7 @@ describe('DocumentationValidator', () => {
       const rule = makeRule({ min_lines: 3 });
       const symbol = makeSymbol();
 
-      readFileContentMock.mockResolvedValue(null);
+      readFileContentMock.mockReturnValue(null);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -131,7 +131,7 @@ describe('DocumentationValidator', () => {
       const symbol2 = makeSymbol({ role: 'UseCase', path: 'usecase.ts' });
       const fileContent = 'line1\nline2\nline3\nline4';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol1, symbol2], projectPath);
@@ -145,7 +145,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol();
       const fileContent = '/**\n * Doc\n */\nclass Test {}'; // exactly 4 lines
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -158,7 +158,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3\nline4'; // exactly 4 lines
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -175,7 +175,7 @@ describe('DocumentationValidator', () => {
       ];
       const fileContent = 'line1\nline2\nline3\nline4';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate(symbols, projectPath);
@@ -192,7 +192,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'line1\nline2\nline3\nline4\nline5'; // 5 lines, no JSDoc
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator(rules);
       const result = await sut.validate([symbol], projectPath);
@@ -209,7 +209,7 @@ describe('DocumentationValidator', () => {
       fileCache.set('src/test.ts', 'line1\nline2\nline3\nline4');
 
       readFileContentMock.mockImplementation(
-        async (path, project, cache) => cache?.get(path) || null
+        (path, cache) => cache?.get(path) || null
       );
 
       const sut = new DocumentationValidator([rule]);
@@ -218,7 +218,6 @@ describe('DocumentationValidator', () => {
       expect(result).toHaveLength(1);
       expect(readFileContentMock).toHaveBeenCalledWith(
         'src/test.ts',
-        projectPath,
         fileCache
       );
     });
@@ -228,7 +227,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol();
       const fileContent = '  /**  \n   * Docs\n   */\nclass Test {}';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -241,7 +240,7 @@ describe('DocumentationValidator', () => {
       const symbol = makeSymbol();
       const fileContent = '// comment\n/* block comment */\nclass Test {}';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new DocumentationValidator([rule]);
       const result = await sut.validate([symbol], projectPath);

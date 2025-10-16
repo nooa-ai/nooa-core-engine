@@ -9,9 +9,13 @@ import {
   TestCoverageRule,
 } from '../../../domain/models';
 import { BaseRuleValidator } from '../base-rule.validator';
+import { IFileExistenceChecker } from '../../protocols';
 
 export class TestCoverageValidator extends BaseRuleValidator {
-  constructor(private readonly rules: TestCoverageRule[]) {
+  constructor(
+    private readonly rules: TestCoverageRule[],
+    private readonly fileExistenceChecker: IFileExistenceChecker
+  ) {
     super();
   }
 
@@ -34,8 +38,6 @@ export class TestCoverageValidator extends BaseRuleValidator {
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
 
     const symbolsToCheck = symbols.filter((symbol) =>
       this.roleMatcher.matches(symbol.role, rule.from.role)
@@ -51,13 +53,10 @@ export class TestCoverageValidator extends BaseRuleValidator {
 
       let hasTest = false;
       for (const testPath of testPatterns) {
-        try {
-          const fullPath = path.join(projectPath, testPath);
-          await fs.access(fullPath);
+        const fullPath = `${projectPath}/${testPath}`.replace(/\/+/g, '/');
+        if (this.fileExistenceChecker.existsSync(fullPath)) {
           hasTest = true;
           break;
-        } catch {
-          // Test file doesn't exist, continue checking
         }
       }
 

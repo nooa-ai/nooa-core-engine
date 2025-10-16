@@ -13,7 +13,7 @@
 
 import { IAnalyzeCodebase } from '../../domain/usecases';
 import { ArchitecturalViolationModel, CodeSymbolModel, GrammarModel } from '../../domain/models';
-import { ICodeParser, IGrammarRepository } from '../protocols';
+import { ICodeParser, IGrammarRepository, IFileReader, IFileExistenceChecker } from '../protocols';
 import {
   NamingPatternValidator,
   DependencyValidator,
@@ -40,10 +40,15 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    *
    * @param codeParser - Protocol for parsing source code
    * @param grammarRepository - Protocol for loading grammar configuration
+   * @param fileReader - Protocol for reading file contents (Dependency Inversion)
+   * @param fileExistenceChecker - Protocol for checking file existence (ISP compliance)
+   * Note: Same adapter instance can be passed for both fileReader and fileExistenceChecker
    */
   constructor(
     private readonly codeParser: ICodeParser,
-    private readonly grammarRepository: IGrammarRepository
+    private readonly grammarRepository: IGrammarRepository,
+    private readonly fileReader: IFileReader,
+    private readonly fileExistenceChecker: IFileExistenceChecker
   ) {
     this.deduplicator = new ViolationDeduplicatorHelper();
     this.ruleExtractor = new RuleExtractorHelper();
@@ -73,7 +78,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     const symbolsWithRoles = this.assignRolesToSymbols(symbols, grammar);
 
     // Step 4: Cache all file contents in memory (eliminates redundant I/O)
-    const fileCache = await this.buildFileCache(symbolsWithRoles, projectPath);
+    const fileCache = this.buildFileCache(symbolsWithRoles, projectPath);
 
     // Step 5: Validate architecture and collect violations
     const violations = await this.validateArchitecture(symbolsWithRoles, grammar, projectPath, fileCache);
@@ -87,33 +92,32 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    * Performance: Read all files once and cache in Map to eliminate redundant I/O.
    * Multiple validators need the same file content, so we read once and share.
    *
+   * Uses IFileReader abstraction instead of direct fs for DIP compliance.
+   *
    * @param symbols - Code symbols with file paths
    * @param projectPath - Root project path
    * @returns Map of filePath → fileContent
    */
-  private async buildFileCache(
+  private buildFileCache(
     symbols: CodeSymbolModel[],
     projectPath: string
-  ): Promise<Map<string, string>> {
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
+  ): Map<string, string> {
     const fileCache = new Map<string, string>();
 
     // Get unique file paths
     const uniqueFilePaths = [...new Set(symbols.map((s) => s.path))];
 
-    // Read all files in parallel
-    await Promise.all(
-      uniqueFilePaths.map(async (symbolPath) => {
-        try {
-          const fullPath = path.join(projectPath, symbolPath);
-          const content = await fs.readFile(fullPath, 'utf-8');
-          fileCache.set(symbolPath, content);
-        } catch (error) {
-          // File might not exist or be readable, skip (cache miss handled by validators)
-        }
-      })
-    );
+    // Read all files using injected fileReader (respects DIP)
+    uniqueFilePaths.forEach((symbolPath) => {
+      try {
+        // Build full path: projectPath + symbolPath
+        const fullPath = `${projectPath}/${symbolPath}`.replace(/\/+/g, '/');
+        const content = this.fileReader.readFileSync(fullPath, 'utf-8');
+        fileCache.set(symbolPath, content);
+      } catch (error) {
+        // File might not exist or be readable, skip (cache miss handled by validators)
+      }
+    });
 
     return fileCache;
   }
@@ -206,7 +210,8 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rules.testCoverageRules,
         rules.documentationRules,
         rules.classComplexityRules,
-        rules.granularityMetricRules
+        rules.granularityMetricRules,
+        this.fileExistenceChecker
       );
       // Pass fileCache to eliminate redundant file reads
       validationPromises.push(validator.validate(symbols, projectPath, fileCache));
@@ -229,7 +234,8 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     if (rules.requiredStructureRules.length > 0 || rules.minimumTestRatioRules.length > 0) {
       const validator = new StructureValidator(
         rules.requiredStructureRules,
-        rules.minimumTestRatioRules
+        rules.minimumTestRatioRules,
+        this.fileExistenceChecker
       );
       validationPromises.push(validator.validate(symbols, projectPath));
     }

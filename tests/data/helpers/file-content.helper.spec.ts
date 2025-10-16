@@ -1,113 +1,83 @@
 /**
  * Unit tests for FileContentHelper
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { readFileContent } from '../../../src/data/helpers/file-content.helper';
-import * as fs from 'fs';
-import * as path from 'path';
-
-// Mock fs module
-vi.mock('fs', () => ({
-  promises: {
-    readFile: vi.fn(),
-  },
-}));
 
 describe('FileContentHelper', () => {
-  const projectPath = '/project';
   const symbolPath = 'src/test.ts';
   const fileContent = 'export const test = "hello";';
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('readFileContent', () => {
-    it('should return content from cache when available', async () => {
+    it('should return content from cache when available', () => {
       const fileCache = new Map<string, string>();
       fileCache.set(symbolPath, fileContent);
 
-      const result = await readFileContent(symbolPath, projectPath, fileCache);
+      const result = readFileContent(symbolPath, fileCache);
 
       expect(result).toBe(fileContent);
-      expect(fs.promises.readFile).not.toHaveBeenCalled();
     });
 
-    it('should read from disk when cache is not provided', async () => {
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+    it('should return null when cache is not provided', () => {
+      const result = readFileContent(symbolPath);
 
-      const result = await readFileContent(symbolPath, projectPath);
-
-      expect(result).toBe(fileContent);
-      expect(fs.promises.readFile).toHaveBeenCalledWith(
-        path.join(projectPath, symbolPath),
-        'utf-8'
-      );
+      expect(result).toBeNull();
     });
 
-    it('should read from disk when cache miss', async () => {
+    it('should return null when cache miss', () => {
       const fileCache = new Map<string, string>();
       fileCache.set('other/file.ts', 'other content');
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
 
-      const result = await readFileContent(symbolPath, projectPath, fileCache);
-
-      expect(result).toBe(fileContent);
-      expect(fs.promises.readFile).toHaveBeenCalledWith(
-        path.join(projectPath, symbolPath),
-        'utf-8'
-      );
-    });
-
-    it('should return null when file cannot be read', async () => {
-      vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('ENOENT'));
-
-      const result = await readFileContent(symbolPath, projectPath);
+      const result = readFileContent(symbolPath, fileCache);
 
       expect(result).toBeNull();
     });
 
-    it('should return null when file read throws permission error', async () => {
-      vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('EACCES'));
+    it('should return null when file not in cache', () => {
+      const fileCache = new Map<string, string>();
 
-      const result = await readFileContent(symbolPath, projectPath);
+      const result = readFileContent(symbolPath, fileCache);
 
       expect(result).toBeNull();
     });
 
-    it('should handle empty file content', async () => {
+    it('should handle empty file content', () => {
       const fileCache = new Map<string, string>();
       fileCache.set(symbolPath, '');
 
-      const result = await readFileContent(symbolPath, projectPath, fileCache);
+      const result = readFileContent(symbolPath, fileCache);
 
       expect(result).toBe('');
     });
 
-    it('should handle multiline content from cache', async () => {
+    it('should handle multiline content from cache', () => {
       const multilineContent = 'line1\nline2\nline3';
       const fileCache = new Map<string, string>();
       fileCache.set(symbolPath, multilineContent);
 
-      const result = await readFileContent(symbolPath, projectPath, fileCache);
+      const result = readFileContent(symbolPath, fileCache);
 
       expect(result).toBe(multilineContent);
     });
 
-    it('should construct correct file path for nested files', async () => {
-      const nestedPath = 'src/domain/models/test.model.ts';
-      vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+    it('should handle large content', () => {
+      const largeContent = 'x'.repeat(10000);
+      const fileCache = new Map<string, string>();
+      fileCache.set(symbolPath, largeContent);
 
-      await readFileContent(nestedPath, projectPath);
+      const result = readFileContent(symbolPath, fileCache);
 
-      expect(fs.promises.readFile).toHaveBeenCalledWith(
-        path.join(projectPath, nestedPath),
-        'utf-8'
-      );
+      expect(result).toBe(largeContent);
+    });
+
+    it('should handle special characters in content', () => {
+      const specialContent = '/* Comment */ @decorator\n"string" \'char\' \n\ttab';
+      const fileCache = new Map<string, string>();
+      fileCache.set(symbolPath, specialContent);
+
+      const result = readFileContent(symbolPath, fileCache);
+
+      expect(result).toBe(specialContent);
     });
   });
 });

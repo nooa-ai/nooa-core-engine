@@ -25,6 +25,7 @@ import {
   ClassComplexityValidator,
   GranularityMetricValidator,
 } from './metrics';
+import { IFileExistenceChecker } from '../protocols';
 
 export class FileMetricsValidator extends BaseRuleValidator {
   private readonly fileSizeValidator?: FileSizeValidator;
@@ -38,14 +39,15 @@ export class FileMetricsValidator extends BaseRuleValidator {
     testCoverageRules: TestCoverageRule[],
     documentationRules: DocumentationRequiredRule[],
     classComplexityRules: ClassComplexityRule[],
-    granularityRules: GranularityMetricRule[]
+    granularityRules: GranularityMetricRule[],
+    fileExistenceChecker: IFileExistenceChecker
   ) {
     super();
     // Only create validators when rules exist (performance optimization)
     this.fileSizeValidator = fileSizeRules.length > 0 ? new FileSizeValidator(fileSizeRules) : undefined;
-    this.testCoverageValidator = testCoverageRules.length > 0 ? new TestCoverageValidator(testCoverageRules) : undefined;
+    this.testCoverageValidator = testCoverageRules.length > 0 ? new TestCoverageValidator(testCoverageRules, fileExistenceChecker) : undefined;
     this.documentationValidator = documentationRules.length > 0 ? new DocumentationValidator(documentationRules) : undefined;
-    this.classComplexityValidator = classComplexityRules.length > 0 ? new ClassComplexityValidator(classComplexityRules) : undefined;
+    this.classComplexityValidator = classComplexityRules.length > 0 ? new ClassComplexityValidator(classComplexityRules, fileExistenceChecker) : undefined;
     this.granularityMetricValidator = granularityRules.length > 0 ? new GranularityMetricValidator(granularityRules) : undefined;
   }
 

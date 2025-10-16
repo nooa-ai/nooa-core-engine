@@ -17,13 +17,13 @@ export class GranularityMetricValidator extends BaseRuleValidator {
 
   async validate(
     symbols: CodeSymbolModel[],
-    projectPath: string,
+    _projectPath: string,
     fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
 
     for (const rule of this.rules) {
-      violations.push(...(await this.validateGranularityMetric(symbols, rule, projectPath, fileCache)));
+      violations.push(...(await this.validateGranularityMetric(symbols, rule, fileCache)));
     }
 
     return violations;
@@ -32,7 +32,6 @@ export class GranularityMetricValidator extends BaseRuleValidator {
   private async validateGranularityMetric(
     symbols: CodeSymbolModel[],
     rule: GranularityMetricRule,
-    projectPath: string,
     fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
@@ -44,7 +43,7 @@ export class GranularityMetricValidator extends BaseRuleValidator {
     let totalLines = 0;
     let fileCount = 0;
 
-    // Use fileCache if available, otherwise read from disk
+    // Read from cache (files are pre-cached by use case)
     if (fileCache) {
       for (const symbol of symbols) {
         const content = fileCache.get(symbol.path);
@@ -52,22 +51,6 @@ export class GranularityMetricValidator extends BaseRuleValidator {
           const lines = content.split('\n').length;
           totalLines += lines;
           fileCount++;
-        }
-      }
-    } else {
-      // Fallback to direct file reading
-      const fs = await import('fs').then((m) => m.promises);
-      const path = await import('path');
-
-      for (const symbol of symbols) {
-        try {
-          const filePath = path.join(projectPath, symbol.path);
-          const content = await fs.readFile(filePath, 'utf-8');
-          const lines = content.split('\n').length;
-          totalLines += lines;
-          fileCount++;
-        } catch (error) {
-          // File might not exist or be readable, skip
         }
       }
     }

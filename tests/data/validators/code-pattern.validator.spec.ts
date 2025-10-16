@@ -56,7 +56,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'export class Test { method() {} }';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([rule], [], []);
       const result = await sut.validate([symbol], projectPath);
@@ -69,7 +69,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol({ path: 'src/debug.ts' });
       const fileContent = 'console.log("debug"); export class Test {}';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([rule], [], []);
       const result = await sut.validate([symbol], projectPath);
@@ -89,7 +89,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'debugger; export class Test {}';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([rule], [], []);
       const result = await sut.validate([symbol], projectPath);
@@ -105,7 +105,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'console.log("test")';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([rule], [], []);
       const result = await sut.validate([symbol], projectPath);
@@ -119,7 +119,7 @@ describe('CodePatternValidator', () => {
       const symbol2 = makeSymbol({ role: 'UseCase', path: 'usecase.ts' });
       const fileContent = 'console.log("test")';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([rule], [], []);
       const result = await sut.validate([symbol1, symbol2], projectPath);
@@ -132,7 +132,7 @@ describe('CodePatternValidator', () => {
       const rule = makeForbiddenKeywordsRule();
       const symbol = makeSymbol();
 
-      readFileContentMock.mockResolvedValue(null);
+      readFileContentMock.mockReturnValue(null);
 
       const sut = new CodePatternValidator([rule], [], []);
       const result = await sut.validate([symbol], projectPath);
@@ -156,7 +156,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'const test: string = "hello";';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [rule], []);
       const result = await sut.validate([symbol], projectPath);
@@ -169,7 +169,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol({ path: 'src/bad.ts' });
       const fileContent = 'const test: any = "hello";';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [rule], []);
       const result = await sut.validate([symbol], projectPath);
@@ -191,7 +191,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'function test() { return 1; }';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [rule], []);
       const result = await sut.validate([symbol], projectPath);
@@ -206,7 +206,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol();
       const fileContent = '[invalid regex in content';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [rule], []);
       const result = await sut.validate([symbol], projectPath);
@@ -221,7 +221,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'const test: any = "hello";';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [rule], []);
       const result = await sut.validate([symbol], projectPath);
@@ -245,7 +245,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol({ path: 'src/index.ts' });
       const fileContent = "export * from './foo';\nexport { Bar } from './bar';";
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [], [rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -258,7 +258,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol({ path: 'src/index.ts' });
       const fileContent = "export class Test {}\nexport * from './foo';";
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [], [rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -280,7 +280,7 @@ describe('CodePatternValidator', () => {
       const symbol2 = makeSymbol({ path: 'src/class.ts' });
       const fileContent = 'export class Test {}';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [], [rule]);
       const result = await sut.validate([symbol1, symbol2], projectPath);
@@ -294,7 +294,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol({ path: 'src/index.ts' });
       const fileContent = "function helper() {}\nexport * from './foo';";
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [], [rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -310,7 +310,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol({ path: 'src/index.ts' });
       const fileContent = 'class Test {}';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [], [rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -325,7 +325,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol({ path: 'src/index.ts' });
       const fileContent = '[invalid';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([], [], [rule]);
       const result = await sut.validate([symbol], projectPath);
@@ -353,7 +353,7 @@ describe('CodePatternValidator', () => {
       const symbol = makeSymbol();
       const fileContent = 'console.log(test); const x: any = 1;';
 
-      readFileContentMock.mockResolvedValue(fileContent);
+      readFileContentMock.mockReturnValue(fileContent);
 
       const sut = new CodePatternValidator([keywordsRule], [patternsRule], []);
       const result = await sut.validate([symbol], projectPath);
@@ -376,7 +376,7 @@ describe('CodePatternValidator', () => {
       fileCache.set('src/test.ts', 'console.log("test")');
 
       readFileContentMock.mockImplementation(
-        async (path, project, cache) => cache?.get(path) || null
+        (path, cache) => cache?.get(path) || null
       );
 
       const sut = new CodePatternValidator([keywordsRule], [], []);
@@ -385,7 +385,6 @@ describe('CodePatternValidator', () => {
       expect(result).toHaveLength(1);
       expect(readFileContentMock).toHaveBeenCalledWith(
         'src/test.ts',
-        projectPath,
         fileCache
       );
     });

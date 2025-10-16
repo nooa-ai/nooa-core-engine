@@ -12,11 +12,13 @@ import {
   MinimumTestRatioRule,
 } from '../../domain/models';
 import { BaseRuleValidator } from './base-rule.validator';
+import { IFileExistenceChecker } from '../protocols';
 
 export class StructureValidator extends BaseRuleValidator {
   constructor(
     private readonly requiredStructureRules: RequiredStructureRule[],
-    private readonly minimumTestRatioRules: MinimumTestRatioRule[]
+    private readonly minimumTestRatioRules: MinimumTestRatioRule[],
+    private readonly fileExistenceChecker: IFileExistenceChecker
   ) {
     super();
   }
@@ -45,25 +47,11 @@ export class StructureValidator extends BaseRuleValidator {
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
 
     for (const requiredDir of rule.required_directories) {
-      try {
-        const dirPath = path.join(projectPath, requiredDir);
-        const stats = await fs.stat(dirPath);
-        if (!stats.isDirectory()) {
-          violations.push({
-            ruleName: rule.name,
-            severity: rule.severity,
-            file: requiredDir,
-            message: `${rule.name}: Required directory '${requiredDir}' does not exist${rule.comment ? ` - ${rule.comment}` : ''}`,
-            fromRole: undefined,
-            toRole: undefined,
-            dependency: undefined,
-          });
-        }
-      } catch {
+      const dirPath = `${projectPath}/${requiredDir}`.replace(/\/+/g, '/');
+
+      if (!this.fileExistenceChecker.existsSync(dirPath)) {
         violations.push({
           ruleName: rule.name,
           severity: rule.severity,
