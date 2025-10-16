@@ -11,7 +11,15 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('yaml');
 
-const BENCHMARK_DIR = path.join(__dirname, 'docs', 'whitepaper-version-1-2-0', 'benchmark');
+// Get project path from command line or use current directory
+const TARGET_PROJECT = process.argv[2] || '.';
+const PROJECT_NAME = TARGET_PROJECT === '.' ? 'nooa-core-engine' : path.basename(TARGET_PROJECT);
+const IS_CANDIDATE = TARGET_PROJECT !== '.';
+
+const BENCHMARK_DIR = IS_CANDIDATE
+  ? path.join(__dirname, 'docs', 'whitepaper-version-1-3-0', 'benchmark', 'candidate', PROJECT_NAME)
+  : path.join(__dirname, 'docs', 'whitepaper-version-1-3-0', 'benchmark');
+
 const ITERATIONS = 100;
 
 // Cores para output
@@ -74,29 +82,31 @@ function calculateStats(values) {
   };
 }
 
-function getProjectInfo() {
+function getProjectInfo(projectPath) {
+  const projectDir = path.resolve(projectPath);
+
   // Count TypeScript files
   const findCmd = 'find . -name "*.ts" -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/.git/*" -not -path "*/.stryker-tmp/*" -not -path "*/coverage/*" -type f';
-  const filesOutput = execSync(findCmd, { cwd: __dirname, encoding: 'utf-8' });
+  const filesOutput = execSync(findCmd, { cwd: projectDir, encoding: 'utf-8' });
   const files = filesOutput.trim().split('\n').filter(f => f).length;
 
   // Count lines of code
   const wcCmd = 'find . -name "*.ts" -not -path "*/node_modules/*" -not -path "*/dist/*" -not -path "*/.git/*" -not -path "*/.stryker-tmp/*" -not -path "*/coverage/*" -type f -exec cat {} \\; | wc -l';
-  const linesOutput = execSync(wcCmd, { cwd: __dirname, encoding: 'utf-8' });
+  const linesOutput = execSync(wcCmd, { cwd: projectDir, encoding: 'utf-8' });
   const linesOfCode = parseInt(linesOutput.trim());
 
   // Read grammar file
   let roles = 0;
   let rules = 0;
   try {
-    const grammarPath = fs.existsSync(path.join(__dirname, 'nooa.grammar.yaml'))
-      ? path.join(__dirname, 'nooa.grammar.yaml')
-      : path.join(__dirname, 'nooa.grammar.yml');
+    const grammarPath = fs.existsSync(path.join(projectDir, 'nooa.grammar.yaml'))
+      ? path.join(projectDir, 'nooa.grammar.yaml')
+      : path.join(projectDir, 'nooa.grammar.yml');
 
     const grammarContent = fs.readFileSync(grammarPath, 'utf-8');
     const grammar = yaml.parse(grammarContent);
 
-    roles = grammar.roles ? Object.keys(grammar.roles).length : 0;
+    roles = grammar.roles ? grammar.roles.length : 0;
     rules = grammar.rules ? grammar.rules.length : 0;
   } catch (error) {
     log(`  ⚠️  Could not read grammar file: ${error.message}`, 'yellow');
@@ -112,6 +122,8 @@ function getProjectInfo() {
 
 async function runBenchmarks() {
   log('\n🔬 Iniciando Benchmarks do Nooa Core Engine...', 'bright');
+  log(`📁 Projeto: ${PROJECT_NAME}`, 'cyan');
+  log(`📍 Caminho: ${path.resolve(TARGET_PROJECT)}`, 'cyan');
   log('═══════════════════════════════════════════════════\n', 'blue');
 
   const results = [];
@@ -124,6 +136,15 @@ async function runBenchmarks() {
     fs.mkdirSync(BENCHMARK_DIR, { recursive: true });
   }
 
+  const projectPath = path.resolve(TARGET_PROJECT);
+  const nooaEngine = IS_CANDIDATE
+    ? `node ${path.join(__dirname, 'dist', 'main', 'server.js')}`
+    : 'npm start';
+
+  const analyzeCmd = IS_CANDIDATE
+    ? `/usr/bin/time -l ${nooaEngine} ${projectPath} 2>&1`
+    : `/usr/bin/time -l ${nooaEngine} . 2>&1`;
+
   for (let i = 1; i <= ITERATIONS; i++) {
     log(`\n📊 Execução ${i}/${ITERATIONS}...`, 'cyan');
 
@@ -132,9 +153,9 @@ async function runBenchmarks() {
       let output;
       try {
         output = execSync(
-          '/usr/bin/time -l npm start . 2>&1',
+          analyzeCmd,
           {
-            cwd: __dirname,
+            cwd: IS_CANDIDATE ? __dirname : __dirname,
             encoding: 'utf-8',
             maxBuffer: 10 * 1024 * 1024
           }
@@ -174,7 +195,7 @@ async function runBenchmarks() {
 
   // Get project info dynamically
   log('📊 Coletando informações do projeto...', 'cyan');
-  const projectInfo = getProjectInfo();
+  const projectInfo = getProjectInfo(TARGET_PROJECT);
 
   const stats = {
     timestamp,
@@ -213,10 +234,15 @@ async function runBenchmarks() {
 function generateMarkdownReport(stats) {
   const { statistics, projectInfo, results, timestamp } = stats;
 
-  return `# Benchmark do Nooa Core Engine
+  const title = IS_CANDIDATE
+    ? `# Benchmark: ${PROJECT_NAME}`
+    : `# Benchmark do Nooa Core Engine`;
+
+  return `${title}
 
 **Data**: ${new Date(timestamp).toLocaleString('pt-BR')}
 **Iterações**: ${stats.iterations}
+**Projeto**: ${PROJECT_NAME}
 
 ## Configuração do Projeto
 
