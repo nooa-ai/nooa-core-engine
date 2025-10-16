@@ -28,7 +28,7 @@ describe('Main Server', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     expect(makeCliController).toHaveBeenCalled();
-    expect(mockHandle).toHaveBeenCalledWith(process);
+    expect(mockHandle).toHaveBeenCalled();
   });
 
   it('should handle fatal errors gracefully', async () => {

@@ -21,7 +21,7 @@ async function main() {
   const cliController = makeCliController();
 
   // Handle the CLI command
-  await cliController.handle(process);
+  await cliController.handle();
 }
 
 // Execute the application

@@ -28,7 +28,7 @@ export type CliArgsInput = {
  * - Project path is not empty
  */
 export class CliArgsValidation implements IValidation {
-  validate(input: unknown): ValidationResult {
+  check(input: unknown): ValidationResult {
     const errors: ValidationError[] = [];
 
     // Type guard: ensure input is an object
@@ -37,7 +37,7 @@ export class CliArgsValidation implements IValidation {
         field: 'input',
         message: 'Input must be an object',
       });
-      return { isValid: false, errors };
+      return { success: false, errors };
     }
 
     // Type guard: ensure args field exists
@@ -46,7 +46,7 @@ export class CliArgsValidation implements IValidation {
         field: 'args',
         message: 'Arguments array is required',
       });
-      return { isValid: false, errors };
+      return { success: false, errors };
     }
 
     const typedInput = input as CliArgsInput;
@@ -57,7 +57,7 @@ export class CliArgsValidation implements IValidation {
         field: 'args',
         message: 'Arguments must be an array',
       });
-      return { isValid: false, errors };
+      return { success: false, errors };
     }
 
     // Validate at least one argument is provided
@@ -80,7 +80,7 @@ export class CliArgsValidation implements IValidation {
     }
 
     return {
-      isValid: errors.length === 0,
+      success: errors.length === 0,
       errors,
     };
   }

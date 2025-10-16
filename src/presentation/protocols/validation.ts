@@ -18,7 +18,7 @@ export type ValidationError = {
  * Validation result
  */
 export type ValidationResult = {
-  isValid: boolean;
+  success: boolean;
   errors: ValidationError[];
 };
 
@@ -29,8 +29,8 @@ export interface IValidation {
   /**
    * Validates input data
    *
-   * @param input - The input data to validate
+   * @param input - The input data to check
    * @returns Validation result with errors if any
    */
-  validate(input: unknown): ValidationResult;
+  check(input: unknown): ValidationResult;
 }

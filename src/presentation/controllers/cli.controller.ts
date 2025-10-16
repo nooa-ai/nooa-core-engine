@@ -14,6 +14,7 @@
 import { IAnalyzeCodebase } from '../../domain/usecases';
 import { ArchitecturalViolationModel } from '../../domain/models';
 import { IValidation } from '../../validation/protocols';
+import { ICommandLineAdapter } from '../protocols/command-line-adapter';
 
 /**
  * CLI Controller for the Nooa architectural analysis tool
@@ -23,38 +24,39 @@ export class CliController {
    * Constructor with dependency injection
    *
    * @param analyzeCodebase - The use case for analyzing codebases
-   * @param validator - Validates CLI arguments before processing
+   * @param validator - Validates CLI arguments before handling
+   * @param commandLine - Adapter for command-line operations (args, env, exit)
    */
   constructor(
     private readonly analyzeCodebase: IAnalyzeCodebase,
     private readonly validator: IValidation,
+    private readonly commandLine: ICommandLineAdapter,
   ) {}
 
   /**
    * Handles the CLI command execution
-   *
-   * @param process - Node.js process object (for accessing argv and exit)
    */
-  async handle(process: NodeJS.Process): Promise<void> {
+  async handle(): Promise<void> {
     try {
-      // Parse command line arguments
-      const args = process.argv.slice(2);
+      // Get command line arguments
+      const args = this.commandLine.getArgs();
 
-      // Validate CLI arguments
-      const validationResult = this.validator.validate({ args });
+      // Check CLI arguments
+      const checkResult = this.validator.check({ args });
 
-      // Display usage if validation fails
-      if (!validationResult.isValid) {
+      // Display usage if check fails
+      if (!checkResult.success) {
         this.displayUsage();
         console.log('');
-        console.error('❌ Validation errors:');
-        validationResult.errors.forEach((error) => {
+        console.error('❌ Input errors:');
+        checkResult.errors.forEach((error) => {
           console.error(`  • ${error.message}`);
         });
-        process.exit(1);
+        this.commandLine.exit(1);
+        return;
       }
 
-      // Get project path from arguments (already validated)
+      // Get project path from arguments (already checked)
       const projectPath = args[0];
 
       console.log('🔍 Nooa Core Engine - Architectural Analysis');
@@ -73,11 +75,11 @@ export class CliController {
 
       // Exit with appropriate code
       const hasErrors = violations.some((v) => v.severity === 'error');
-      process.exit(hasErrors ? 1 : 0);
+      this.commandLine.exit(hasErrors ? 1 : 0);
     } catch (error) {
       // Handle errors gracefully
-      this.displayError(error, process);
-      process.exit(1);
+      this.displayError(error);
+      this.commandLine.exit(1);
     }
   }
 
@@ -221,16 +223,16 @@ export class CliController {
    * Displays an error message
    *
    * @param error - The error that occurred
-   * @param process - Node.js process object (for accessing env)
    */
-  private displayError(error: unknown, process: NodeJS.Process): void {
+  private displayError(error: unknown): void {
     console.error('');
     console.error('❌ Error during analysis:');
     console.error('');
 
     if (error instanceof Error) {
       console.error(`  ${error.message}`);
-      if (error.stack && process.env.DEBUG) {
+      const debug = this.commandLine.getEnv('DEBUG');
+      if (error.stack && debug) {
         console.error('');
         console.error('Stack trace:');
         console.error(error.stack);
