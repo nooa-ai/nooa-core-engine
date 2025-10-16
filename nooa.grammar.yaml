@@ -767,6 +767,55 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # CONCURRENCY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # Evidence: Issue #24 - Learning Insight Discovery (2025-10-16)
+  # Pattern: AB-BA Deadlock | Frequency: 10-15% of multi-threaded apps | Confidence: 0.93
+
+  # Critical: AB-BA deadlock pattern detection
+  - name: "lock-order-ab-ba"
+    severity: error
+    comment: |
+      AI NOTE: Detects AB-BA deadlock pattern (locks in different orders).
+
+      WHY: AB-BA deadlock is the classic concurrency bug:
+      - Thread 1 locks A then B
+      - Thread 2 locks B then A
+      - Both threads wait forever for each other's lock
+      - System completely freezes
+
+      SOLUTION:
+      1. **Total Ordering**: Define global lock order and always follow it
+      2. **Lock Hierarchy**: Assign priority levels to locks
+      3. **Try-Lock Pattern**: Use tryLock() with timeout and backoff
+      4. **Single Lock**: Use one coarse-grained lock instead
+      5. **Lock Manager**: Central service that handles all lock requests
+
+      EXAMPLE:
+      Bad:
+        // Function 1
+        lock(A); lock(B);
+
+        // Function 2
+        lock(B); lock(A);  // DEADLOCK!
+
+      Good:
+        // Both functions
+        const sorted = [A, B].sort(by_id);
+        lock(sorted[0]); lock(sorted[1]);
+
+      REFERENCES:
+      - Coffman Conditions for Deadlock (1971)
+      - The Little Book of Semaphores: Chapter 3
+      - Operating Systems: Three Easy Pieces - Concurrency
+      - Java Memory Model and Thread Safety
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(lockA|mutexA|lock1).*?(lockB|mutexB|lock2).*?\\|.*?(lockB|mutexB|lock2).*?(lockA|mutexA|lock1)"
+    rule: "forbidden_patterns"
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
