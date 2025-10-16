@@ -631,35 +631,33 @@ rules:
 
   # 11. NO VALIDATION IN CONTROLLERS (Priority: CRITICAL)
   # Enforces separation of validation from presentation layer
-  # NOTE: Requires 'forbidden_patterns' rule type not yet implemented
-  # - name: "Validation-Logic-Not-In-Controllers"
-  #   severity: error
-  #   comment: "Controllers must not contain validation logic - use validation layer"
-  #   from:
-  #     role: CONTEXT_ACTUAL
-  #   contains_forbidden:
-  #     - "RegExp"
-  #     - "regex"
-  #     - "pattern"
-  #     - ".match("
-  #     - ".test("
-  #     - "isValid"
-  #     - "validate"
-  #   rule: "forbidden_patterns"
+  - name: "Validation-Logic-Not-In-Controllers"
+    severity: error
+    comment: "Controllers must not contain validation logic - use validation layer"
+    from:
+      role: CONTEXT_ACTUAL
+    contains_forbidden:
+      - "RegExp"
+      - "regex"
+      - "pattern"
+      - ".match("
+      - ".test("
+      - "isValid"
+      - "validate"
+    rule: "forbidden_patterns"
 
   # 12. BARREL EXPORT PURITY (Priority: LOW)
   # index.ts files should only re-export, not contain logic
-  # NOTE: Requires 'barrel_purity' rule type not yet implemented
-  # - name: "Barrel-Exports-Must-Be-Pure"
-  #   severity: warning
-  #   comment: "Barrel exports (index.ts) should only re-export, not contain logic"
-  #   for:
-  #     file_pattern: "/index\\.ts$"
-  #   contains_forbidden:
-  #     - "class "
-  #     - "function "
-  #     - "const.*=.*{"
-  #     - "if.*{"
-  #     - "for.*{"
-  #     - "while.*{"
-  #   rule: "barrel_purity"
+  - name: "Barrel-Exports-Must-Be-Pure"
+    severity: warning
+    comment: "Barrel exports (index.ts) should only re-export, not contain logic"
+    for:
+      file_pattern: "/index\\.ts$"
+    contains_forbidden:
+      - "class "
+      - "function "
+      - "const.*=.*{"
+      - "if.*{"
+      - "for.*{"
+      - "while.*{"
+    rule: "barrel_purity"
