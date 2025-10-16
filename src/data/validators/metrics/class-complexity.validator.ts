@@ -19,30 +19,13 @@ export class ClassComplexityValidator extends BaseRuleValidator {
     symbols: CodeSymbolModel[],
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
+    if (this.rules.length === 0) return [];
 
-    for (const rule of this.rules) {
-      violations.push(...(await this.validateClassComplexity(symbols, rule, projectPath)));
-    }
-
-    return violations;
-  }
-
-  private async validateClassComplexity(
-    symbols: CodeSymbolModel[],
-    rule: ClassComplexityRule,
-    projectPath: string
-  ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
+    // Performance: Create ts-morph Project once and reuse for all rules
     const { Project } = await import('ts-morph');
     const path = await import('path');
     const fsSync = await import('fs');
 
-    const symbolsToCheck = symbols.filter((symbol) =>
-      this.roleMatcher.matches(symbol.role, rule.for.role)
-    );
-
-    // Create project with or without tsconfig
     const tsconfigPath = path.join(projectPath, 'tsconfig.json');
     let hasTsConfig = false;
     try {
@@ -65,6 +48,30 @@ export class ClassComplexityValidator extends BaseRuleValidator {
           }
     );
 
+    const violations: ArchitecturalViolationModel[] = [];
+
+    for (const rule of this.rules) {
+      violations.push(...(await this.validateClassComplexity(symbols, rule, projectPath, project, path)));
+    }
+
+    return violations;
+  }
+
+  private async validateClassComplexity(
+    symbols: CodeSymbolModel[],
+    rule: ClassComplexityRule,
+    projectPath: string,
+    project: any,
+    path: any
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+
+    const symbolsToCheck = symbols.filter((symbol) =>
+      this.roleMatcher.matches(symbol.role, rule.for.role)
+    );
+
+    const hasTsConfig = project.compilerOptions ? false : true;
+
     for (const symbol of symbolsToCheck) {
       try {
         const filePath = path.join(projectPath, symbol.path);
@@ -85,7 +92,7 @@ export class ClassComplexityValidator extends BaseRuleValidator {
           // Count public methods (excluding constructor)
           // In TypeScript, methods are public by default unless marked private/protected
           const allMethods = classDecl.getMethods();
-          const publicMethods = allMethods.filter((method) => {
+          const publicMethods = allMethods.filter((method: any) => {
             const scope = method.getScope();
             // scope is undefined for default (public) methods
             // scope exists and is not private/protected for explicit public

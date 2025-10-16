@@ -80,6 +80,8 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
   /**
    * Assigns architectural roles to code symbols based on path patterns
    *
+   * Performance: Compiles regex patterns once and reuses them for all symbols
+   *
    * @param symbols - Code symbols extracted from the codebase
    * @param grammar - Grammar configuration with role definitions
    * @returns Symbols with assigned roles
@@ -88,12 +90,17 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     symbols: CodeSymbolModel[],
     grammar: GrammarModel
   ): CodeSymbolModel[] {
+    // Compile regex patterns once (performance optimization)
+    const rolesWithPatterns = grammar.roles.map((role) => ({
+      name: role.name,
+      pattern: new RegExp(role.path),
+    }));
+
     return symbols.map((symbol) => {
       // Find the first role whose path pattern matches the symbol's path
-      const matchingRole = grammar.roles.find((role) => {
-        const pattern = new RegExp(role.path);
-        return pattern.test(symbol.path);
-      });
+      const matchingRole = rolesWithPatterns.find((role) =>
+        role.pattern.test(symbol.path)
+      );
 
       return {
         ...symbol,
@@ -105,6 +112,8 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
   /**
    * Validates architectural dependencies and detects violations
    *
+   * Performance: Runs validators in parallel using Promise.all()
+   *
    * @param symbols - Code symbols with assigned roles
    * @param grammar - Grammar configuration with rules
    * @param projectPath - Project path for file system operations
@@ -115,23 +124,23 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     grammar: GrammarModel,
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
     const rules = this.ruleExtractor.extract(grammar.rules);
+    const validationPromises: Promise<ArchitecturalViolationModel[]>[] = [];
 
-    // Validate using specialized validators
+    // Run all validators in parallel (performance optimization)
     if (rules.namingPatternRules.length > 0) {
       const validator = new NamingPatternValidator(rules.namingPatternRules);
-      violations.push(...(await validator.validate(symbols, projectPath)));
+      validationPromises.push(validator.validate(symbols, projectPath));
     }
 
     if (rules.dependencyRules.length > 0) {
       const validator = new DependencyValidator(rules.dependencyRules);
-      violations.push(...(await validator.validate(symbols, projectPath)));
+      validationPromises.push(validator.validate(symbols, projectPath));
     }
 
     if (rules.synonymRules.length > 0 || rules.unreferencedRules.length > 0) {
       const validator = new HygieneValidator(rules.synonymRules, rules.unreferencedRules);
-      violations.push(...(await validator.validate(symbols, projectPath)));
+      validationPromises.push(validator.validate(symbols, projectPath));
     }
 
     if (
@@ -148,7 +157,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rules.classComplexityRules,
         rules.granularityMetricRules
       );
-      violations.push(...(await validator.validate(symbols, projectPath)));
+      validationPromises.push(validator.validate(symbols, projectPath));
     }
 
     if (
@@ -161,7 +170,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rules.forbiddenPatternsRules,
         rules.barrelPurityRules
       );
-      violations.push(...(await validator.validate(symbols, projectPath)));
+      validationPromises.push(validator.validate(symbols, projectPath));
     }
 
     if (rules.requiredStructureRules.length > 0 || rules.minimumTestRatioRules.length > 0) {
@@ -169,8 +178,12 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rules.requiredStructureRules,
         rules.minimumTestRatioRules
       );
-      violations.push(...(await validator.validate(symbols, projectPath)));
+      validationPromises.push(validator.validate(symbols, projectPath));
     }
+
+    // Wait for all validators to complete in parallel
+    const results = await Promise.all(validationPromises);
+    const violations = results.flat();
 
     return this.deduplicator.deduplicate(violations);
   }
