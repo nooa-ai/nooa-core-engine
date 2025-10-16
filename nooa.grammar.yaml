@@ -766,6 +766,18 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Warning: Timezone-naive datetime usage
+  # Evidence: Issue #11 - Learning Insight (2025-10-16)
+  # Impact: Medium (prevents timezone bugs in distributed systems)
+  - name: "No-Timezone-Naive-Datetime"
+    severity: warning
+    comment: "AI NOTE: Using naive datetime without timezone awareness - causes bugs in distributed systems, incorrect time calculations across timezones, data corruption in global applications. REFACTOR: Always use timezone-aware datetime. Use Date with explicit UTC or timezone info. Libraries: date-fns-tz, luxon, or native Intl API. Store in UTC, display in user timezone. EXAMPLE: If code has 'const now = new Date()' for business logic, this is WRONG (timezone depends on server/client location). Instead: 'const nowUTC = new Date().toISOString()' or use library: 'const now = DateTime.now().setZone(\"UTC\")'. Always explicit about timezone. BENEFIT: Consistent behavior across timezones, prevents daylight saving bugs, correct time calculations for distributed users, data integrity in global systems, avoids edge cases in time-based logic."
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(new Date\\(\\)|Date\\.now\\(\\))(?!.*\\b(utc|UTC|timezone|tz|Z|toISOString|getUTC)\\b)"
+    rule: "forbidden_patterns"
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
