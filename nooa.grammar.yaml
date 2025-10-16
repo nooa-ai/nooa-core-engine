@@ -10,41 +10,128 @@ roles:
     path: "^src/domain/models"
     description: "Domain Models - Pure business entities"
 
+  - name: NOUN_TEST_SUPPORT
+    path: "^src/domain/mocks"
+    description: "Domain test support factories and fixtures"
+
   - name: VERB_CONTRACT
     path: "^src/domain/usecases"
     description: "Domain Use Cases - Business capability interfaces"
-
-  - name: VERB_IMPLEMENTATION
-    path: "^src/data/usecases"
-    description: "Data Use Cases - Application logic implementations"
 
   - name: VERB_IMPLEMENTATION_ACTUAL
     path: "^src/data/usecases/.*\\.usecase\\.ts$"
     description: "Actual use case implementation files (excluding index.ts)"
 
+  - name: VERB_IMPLEMENTATION
+    path: "^src/data/usecases"
+    description: "Data Use Cases - Application logic implementations"
+
   - name: ADVERB_ABSTRACT
     path: "^src/data/protocols"
     description: "Data Protocols - Interface definitions for infrastructure"
-
-  - name: ADVERB_CONCRETE
-    path: "^src/infra"
-    description: "Infrastructure - Concrete implementations (parsers, repositories)"
 
   - name: ADVERB_CONCRETE_ACTUAL
     path: "^src/infra/.*(adapter|repository)\\.ts$"
     description: "Actual infrastructure implementations (excluding index.ts)"
 
-  - name: CONTEXT
-    path: "^src/presentation/controllers"
-    description: "Presentation Controllers - External interface adapters"
+  - name: ADVERB_CONCRETE
+    path: "^src/infra"
+    description: "Infrastructure - Concrete implementations (parsers, repositories, validators)"
 
   - name: CONTEXT_ACTUAL
     path: "^src/presentation/controllers/.*\\.controller\\.ts$"
     description: "Actual controller files (excluding index.ts)"
 
+  - name: CONTEXT_CONTROLLER
+    path: "^src/presentation/controllers"
+    description: "Presentation Controllers - External interface adapters"
+
+  - name: CONTEXT_MIDDLEWARE_ACTUAL
+    path: "^src/presentation/middlewares/.*\\.middleware\\.ts$"
+    description: "Actual middleware implementations (excluding index.ts)"
+
+  - name: CONTEXT_MIDDLEWARE
+    path: "^src/presentation/middlewares"
+    description: "Presentation middlewares"
+
+  - name: CONTEXT_PROTOCOL
+    path: "^src/presentation/protocols"
+    description: "Presentation protocols (HTTP contracts, validation interface)"
+
+  - name: CONTEXT_HELPER
+    path: "^src/presentation/helpers"
+    description: "Presentation helpers (HTTP helpers, response builders)"
+
+  - name: CONTEXT_ERROR
+    path: "^src/presentation/errors"
+    description: "Presentation-level error types"
+
+  - name: CONTEXT
+    path: "^src/presentation"
+    description: "Presentation layer umbrella role"
+
+  - name: VALIDATION_IMPLEMENTATION_ACTUAL
+    path: "^src/validation/validators/.*validation\\.ts$"
+    description: "Actual validation implementations (excluding index.ts)"
+
+  - name: VALIDATION_IMPLEMENTATION
+    path: "^src/validation/validators"
+    description: "Validation layer validators"
+
+  - name: VALIDATION_PROTOCOL
+    path: "^src/validation/protocols"
+    description: "Validation layer protocols"
+
+  - name: COMPOSER_CONTROLLER_FACTORY
+    path: "^src/main/factories/controllers"
+    description: "Composition root factories for controllers"
+
+  - name: COMPOSER_VALIDATION_FACTORY
+    path: "^src/main/factories/(validators|controllers/.+validation-factory)"
+    description: "Composition root factories dedicated to validation wiring"
+
   - name: COMPOSER
     path: "^src/main"
     description: "Main - Composition root and dependency injection"
+
+  # ============================================================================
+  # Test Roles - Mirror production layers for architectural verification
+  # ============================================================================
+  - name: TEST_DOMAIN_LEXICON
+    path: "^tests/domain/mocks"
+    description: "Domain layer vocabulary (pure mocks/helpers) used in tests"
+
+  - name: TEST_DATA_MOCK
+    path: "^tests/data/mocks"
+    description: "Data layer test doubles (repositories, cryptography spies)"
+
+  - name: TEST_DATA_SPEC
+    path: "^tests/data/usecases"
+    description: "Data layer unit tests validating Db use cases"
+
+  - name: TEST_INFRA_SPEC
+    path: "^tests/infra"
+    description: "Infrastructure adapter and repository tests (integration/unit)"
+
+  - name: TEST_PRESENTATION_MOCK
+    path: "^tests/presentation/mocks"
+    description: "Presentation layer mocks/spies"
+
+  - name: TEST_PRESENTATION_SPEC
+    path: "^tests/presentation/(controllers|middlewares)"
+    description: "Presentation layer controller and middleware tests"
+
+  - name: TEST_VALIDATION_MOCK
+    path: "^tests/validation/mocks"
+    description: "Validation layer mocks/stubs"
+
+  - name: TEST_VALIDATION_SPEC
+    path: "^tests/validation/validators"
+    description: "Validation layer unit tests"
+
+  - name: TEST_MAIN_SPEC
+    path: "^tests/main"
+    description: "Composition root, routes, decorators and e2e-style tests"
 
 rules:
   - name: "Domain-Independence"
@@ -53,7 +140,36 @@ rules:
     from:
       role: [NOUN, VERB_CONTRACT]
     to:
-      role: [VERB_IMPLEMENTATION, ADVERB_ABSTRACT, ADVERB_CONCRETE, CONTEXT, COMPOSER]
+      role:
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+        - VALIDATION_PROTOCOL
+        - COMPOSER
+        - COMPOSER_CONTROLLER_FACTORY
+        - COMPOSER_VALIDATION_FACTORY
+        - NOUN_TEST_SUPPORT
+        - TEST_DOMAIN_LEXICON
+        - TEST_DATA_MOCK
+        - TEST_DATA_SPEC
+        - TEST_INFRA_SPEC
+        - TEST_PRESENTATION_MOCK
+        - TEST_PRESENTATION_SPEC
+        - TEST_VALIDATION_MOCK
+        - TEST_VALIDATION_SPEC
+        - TEST_MAIN_SPEC
     rule: "forbidden"
 
   - name: "Data-Dependency-Inversion"
@@ -62,16 +178,28 @@ rules:
     from:
       role: [VERB_IMPLEMENTATION]
     to:
-      role: [ADVERB_CONCRETE]
+      role:
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
     rule: "forbidden"
 
   - name: "Presentation-Isolation"
     severity: error
     comment: "Presentation layer must not directly depend on infrastructure implementations"
     from:
-      role: [CONTEXT]
+      role:
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
     to:
-      role: [ADVERB_CONCRETE]
+      role:
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
     rule: "forbidden"
 
   - name: "Protocol-Purity"
@@ -80,16 +208,94 @@ rules:
     from:
       role: [ADVERB_ABSTRACT]
     to:
-      role: [ADVERB_CONCRETE]
+      role:
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+        - VALIDATION_PROTOCOL
+    rule: "forbidden"
+
+  - name: "Validation-Protocol-Purity"
+    severity: error
+    comment: "Validation protocols must remain abstract and independent from infrastructure or data layers"
+    from:
+      role: [VALIDATION_PROTOCOL]
+    to:
+      role:
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - COMPOSER
+        - COMPOSER_CONTROLLER_FACTORY
+        - COMPOSER_VALIDATION_FACTORY
+    rule: "forbidden"
+
+  - name: "Validation-Isolation"
+    severity: error
+    comment: "Validation implementations should only rely on presentation contracts and validation protocols"
+    from:
+      role:
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+    to:
+      role:
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - COMPOSER
+        - COMPOSER_CONTROLLER_FACTORY
     rule: "forbidden"
 
   - name: "Data-No-Presentation"
     severity: warning
     comment: "Data layer should not depend on presentation layer"
     from:
-      role: [VERB_IMPLEMENTATION, ADVERB_ABSTRACT]
+      role:
+        - VERB_IMPLEMENTATION
+        - ADVERB_ABSTRACT
     to:
-      role: [CONTEXT]
+      role:
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+    rule: "forbidden"
+
+  - name: "Presentation-No-Data"
+    severity: error
+    comment: "Presentation layer must not depend on data layer implementations or protocols"
+    from:
+      role:
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+    to:
+      role:
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
     rule: "forbidden"
 
   # ============================================================================
@@ -107,7 +313,7 @@ rules:
     rule: "forbidden"
 
   # Feature 2: Required Dependencies (Enforce Good Practices)
-  # Note: Uses _ACTUAL roles to exclude barrel export files (index.ts)
+  # Note: Uses specialized roles to exclude barrel export files (index.ts)
   - name: "Use-Case-Implementations-Must-Implement-Contracts"
     severity: error
     comment: "Every use case implementation must depend on its corresponding domain contract"
@@ -119,11 +325,13 @@ rules:
 
   - name: "Adapters-Must-Implement-Protocols"
     severity: error
-    comment: "Infrastructure adapters must implement data layer protocols for proper dependency inversion"
+    comment: "Infrastructure adapters must implement data or validation layer protocols for proper dependency inversion"
     from:
       role: ADVERB_CONCRETE_ACTUAL
     to:
-      role: ADVERB_ABSTRACT
+      role:
+        - ADVERB_ABSTRACT
+        - VALIDATION_PROTOCOL
     rule: "required"
 
   - name: "Controllers-Must-Use-Domain"
@@ -133,6 +341,24 @@ rules:
       role: CONTEXT_ACTUAL
     to:
       role: VERB_CONTRACT
+    rule: "required"
+
+  - name: "Middlewares-Must-Use-Domain"
+    severity: error
+    comment: "Presentation middlewares must delegate to domain contracts"
+    from:
+      role: CONTEXT_MIDDLEWARE_ACTUAL
+    to:
+      role: VERB_CONTRACT
+    rule: "required"
+
+  - name: "Validators-Implement-Presentation-Contract"
+    severity: error
+    comment: "Validation implementations must implement the presentation Validation interface"
+    from:
+      role: VALIDATION_IMPLEMENTATION_ACTUAL
+    to:
+      role: CONTEXT_PROTOCOL
     rule: "required"
 
   # Feature 3: Naming Pattern Validation
@@ -157,8 +383,24 @@ rules:
     severity: warning
     comment: "Controller files should follow the .controller.ts naming convention"
     for:
-      role: CONTEXT
+      role: CONTEXT_ACTUAL
     pattern: "(\\.controller\\.ts|/index\\.ts)$"
+    rule: "naming_pattern"
+
+  - name: "Middleware-Files-Follow-Convention"
+    severity: warning
+    comment: "Middleware files should follow the .middleware.ts naming convention"
+    for:
+      role: CONTEXT_MIDDLEWARE_ACTUAL
+    pattern: "(\\.middleware\\.ts|/index\\.ts)$"
+    rule: "naming_pattern"
+
+  - name: "Validation-Files-Follow-Convention"
+    severity: warning
+    comment: "Validation files should follow the -validation.ts naming convention"
+    for:
+      role: VALIDATION_IMPLEMENTATION_ACTUAL
+    pattern: "(validation\\.ts|validation-composite\\.ts|/index\\.ts)$"
     rule: "naming_pattern"
 
   # ============================================================================
@@ -188,7 +430,7 @@ rules:
     options:
       similarity_threshold: 0.85
       thesaurus:
-        - [Parser, Adapter, Repository]
+        - [Parser, Adapter, Repository, Validator]
         - [Yaml, Yml, JSON]
     rule: "find_synonyms"
 
@@ -204,5 +446,218 @@ rules:
         - "/index\\.ts$"
         - "\\.spec\\.ts$"
         - "\\.test\\.ts$"
+        - "^tests/"
     rule: "detect_unreferenced"
 
+  # ============================================================================
+  # Test Containment Rules
+  # ============================================================================
+  - name: "Production-Does-Not-Depend-On-Tests"
+    severity: error
+    comment: "Production code must never depend on test files or fixtures"
+    from:
+      role:
+        - NOUN
+        - NOUN_TEST_SUPPORT
+        - VERB_CONTRACT
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - ADVERB_CONCRETE
+        - ADVERB_CONCRETE_ACTUAL
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+        - VALIDATION_PROTOCOL
+        - COMPOSER
+        - COMPOSER_CONTROLLER_FACTORY
+        - COMPOSER_VALIDATION_FACTORY
+    to:
+      role:
+        - TEST_DOMAIN_LEXICON
+        - TEST_DATA_MOCK
+        - TEST_DATA_SPEC
+        - TEST_INFRA_SPEC
+        - TEST_PRESENTATION_MOCK
+        - TEST_PRESENTATION_SPEC
+        - TEST_VALIDATION_MOCK
+        - TEST_VALIDATION_SPEC
+        - TEST_MAIN_SPEC
+    rule: "forbidden"
+
+
+  # ============================================================================
+  # NEW CRITICAL RULES: Based on architectural analysis (Oct 2025)
+  # These rules address the issues found when comparing with clean-ts-api
+  # ============================================================================
+
+  # 1. TEST COVERAGE ENFORCEMENT (Priority: CRITICAL)
+  # Current: 0 test files | Target: Every production file must have tests
+  # NOTE: This rule requires a new rule type 'test_coverage' not yet implemented
+  - name: "Test-Coverage-Required"
+    severity: error
+    comment: "Every production file must have a corresponding test file (currently 0% coverage)"
+    from:
+      role: [VERB_IMPLEMENTATION_ACTUAL, ADVERB_CONCRETE_ACTUAL, CONTEXT_ACTUAL]
+    to:
+      test_file: required
+    rule: "test_coverage"
+
+  # 2. FILE SIZE LIMITS (Priority: HIGH)
+  # Current: 87.3 LOC/file average | Target: < 100 LOC/file
+  # NOTE: Requires 'file_size' rule type not yet implemented
+  - name: "File-Size-Warning"
+    severity: warning
+    comment: "Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)"
+    for:
+      role: ALL
+    max_lines: 100
+    rule: "file_size"
+  
+  - name: "File-Size-Error"
+    severity: error
+    comment: "Files exceeding 200 lines violate SRP and must be refactored"
+    for:
+      role: ALL
+    max_lines: 200
+    rule: "file_size"
+
+  # 3. VALIDATION LAYER REQUIREMENTS (Priority: CRITICAL)
+  # Current: No validation layer | Target: Mandatory validation layer
+  - name: "Controllers-Must-Use-Validators"
+    severity: error
+    comment: "Controllers must use validation layer instead of embedding validation logic"
+    from:
+      role: CONTEXT_ACTUAL
+    to:
+      role: [VALIDATION_IMPLEMENTATION, VALIDATION_PROTOCOL]
+    rule: "required"
+
+  # 4. FACTORY PATTERN ENFORCEMENT (Priority: HIGH)
+  # Current: 3 factories | Target: Factory for each controller/use case
+  - name: "Controllers-Need-Factories"
+    severity: error
+    comment: "All controllers must be instantiated through factories for proper DI"
+    from:
+      role: COMPOSER
+    to:
+      role: COMPOSER_CONTROLLER_FACTORY
+    rule: "required"
+
+  # 5. SINGLE RESPONSIBILITY ENFORCEMENT (Priority: HIGH)
+  # Prevents consolidation of multiple responsibilities in one file
+  # NOTE: Requires 'forbidden_keywords' rule type not yet implemented
+  - name: "No-Business-Logic-In-Controllers"
+    severity: error
+    comment: "Controllers must not contain business logic - delegate to use cases"
+    from:
+      role: CONTEXT_ACTUAL
+    contains_forbidden:
+      - "calculate"
+      - "compute"
+      - "transform"
+      - "process"
+      - "parse"
+      - "validate"
+      - "isValid"
+    rule: "forbidden_keywords"
+
+  # 6. MINIMUM TEST RATIO (Priority: HIGH)
+  # Current: 0% test files | Target: 20% minimum (best practice: 24.6%)
+  - name: "Minimum-Test-File-Ratio"
+    severity: warning
+    comment: "Project should have at least 20% test files (current: 0%, target: 20%+)"
+    global:
+      test_ratio: 0.20
+    rule: "minimum_test_ratio"
+
+  # 7. REQUIRED ARCHITECTURAL LAYERS (Priority: CRITICAL)
+  # Current: Missing validation layer | Target: All Clean Architecture layers
+  # NOTE: Requires 'required_structure' rule type not yet implemented
+  - name: "All-Clean-Architecture-Layers-Required"
+    severity: error
+    comment: "Clean Architecture requires all layers to be present"
+    required_directories:
+      - "src/domain/models"
+      - "src/domain/usecases"
+      - "src/data/protocols"
+      - "src/data/usecases"
+      - "src/infra"
+      - "src/presentation/controllers"
+      - "src/validation/validators"
+      - "src/main/factories"
+    rule: "required_structure"
+
+  # 8. DOCUMENTATION FOR COMPLEX FILES (Priority: MEDIUM)
+  # Current: No JSDoc | Target: JSDoc for files > 50 lines
+  # NOTE: Requires 'documentation_required' rule type not yet implemented
+  - name: "Complex-Files-Need-Documentation"
+    severity: warning
+    comment: "Files over 50 lines should have JSDoc documentation"
+    for:
+      role: ALL
+    min_lines: 50
+    requires_jsdoc: true
+    rule: "documentation_required"
+
+  # 9. GOD OBJECT PREVENTION (Priority: HIGH)
+  # Prevents classes with too many responsibilities
+  # NOTE: Requires 'class_complexity' rule type not yet implemented
+  - name: "No-God-Objects"
+    severity: error
+    comment: "Classes should not exceed 10 public methods (God Object anti-pattern)"
+    for:
+      role: ALL
+    max_public_methods: 10
+    max_properties: 15
+    rule: "class_complexity"
+
+  # 10. FILE GRANULARITY CHECK (Priority: MEDIUM)
+  # Current: 22 files | Expected: ~138 files based on LOC/file ratio
+  - name: "File-Granularity-Check"
+    severity: info
+    comment: "Project should have adequate file granularity (target: 10-20 LOC/file)"
+    global:
+      target_loc_per_file: 20
+      warning_threshold_multiplier: 4.0
+    rule: "granularity_metric"
+
+  # 11. NO VALIDATION IN CONTROLLERS (Priority: CRITICAL)
+  # Enforces separation of validation from presentation layer
+  - name: "Validation-Logic-Not-In-Controllers"
+    severity: error
+    comment: "Controllers must not contain validation logic - use validation layer"
+    from:
+      role: CONTEXT_ACTUAL
+    contains_forbidden:
+      - "RegExp"
+      - "regex"
+      - "pattern"
+      - "\\.match\\("
+      - "\\.test\\("
+      - "isValid"
+      - "validate"
+    rule: "forbidden_patterns"
+
+  # 12. BARREL EXPORT PURITY (Priority: LOW)
+  # index.ts files should only re-export, not contain logic
+  - name: "Barrel-Exports-Must-Be-Pure"
+    severity: warning
+    comment: "Barrel exports (index.ts) should only re-export, not contain logic"
+    for:
+      file_pattern: "/index\\.ts$"
+    contains_forbidden:
+      - "class "
+      - "function "
+      - "const.*=.*\\{"
+      - "if.*\\{"
+      - "for.*\\{"
+      - "while.*\\{"
+    rule: "barrel_purity"

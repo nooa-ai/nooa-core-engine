@@ -63,7 +63,7 @@ export class CliController {
       process.exit(hasErrors ? 1 : 0);
     } catch (error) {
       // Handle errors gracefully
-      this.displayError(error);
+      this.displayError(error, process);
       process.exit(1);
     }
   }
@@ -208,8 +208,9 @@ export class CliController {
    * Displays an error message
    *
    * @param error - The error that occurred
+   * @param process - Node.js process object (for accessing env)
    */
-  private displayError(error: unknown): void {
+  private displayError(error: unknown, process: NodeJS.Process): void {
     console.error('');
     console.error('❌ Error during analysis:');
     console.error('');

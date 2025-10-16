@@ -164,6 +164,114 @@ export class YamlGrammarRepository implements IGrammarRepository {
         if (rule.options?.ignore_patterns && !Array.isArray(rule.options.ignore_patterns)) {
           throw new Error(`Invalid rule '${rule.name}': options.ignore_patterns must be an array in ${filePath}`);
         }
+      } else if (rule.rule === 'file_size') {
+        // File size rule validation
+        if (!rule.for || !rule.for.role) {
+          throw new Error(`Invalid rule '${rule.name}': file_size rules must have 'for.role' in ${filePath}`);
+        }
+        if (typeof rule.max_lines !== 'number' || rule.max_lines <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': file_size rules must have 'max_lines' as a positive number in ${filePath}`);
+        }
+      } else if (rule.rule === 'test_coverage') {
+        // Test coverage rule validation
+        if (!rule.from || !rule.from.role) {
+          throw new Error(`Invalid rule '${rule.name}': test_coverage rules must have 'from.role' in ${filePath}`);
+        }
+        if (!rule.to || !rule.to.test_file) {
+          throw new Error(`Invalid rule '${rule.name}': test_coverage rules must have 'to.test_file' in ${filePath}`);
+        }
+      } else if (rule.rule === 'forbidden_keywords') {
+        // Forbidden keywords rule validation
+        if (!rule.from || !rule.from.role) {
+          throw new Error(`Invalid rule '${rule.name}': forbidden_keywords rules must have 'from.role' in ${filePath}`);
+        }
+        if (!Array.isArray(rule.contains_forbidden) || rule.contains_forbidden.length === 0) {
+          throw new Error(`Invalid rule '${rule.name}': forbidden_keywords rules must have 'contains_forbidden' as a non-empty array in ${filePath}`);
+        }
+      } else if (rule.rule === 'required_structure') {
+        // Required structure rule validation
+        if (!Array.isArray(rule.required_directories) || rule.required_directories.length === 0) {
+          throw new Error(`Invalid rule '${rule.name}': required_structure rules must have 'required_directories' as a non-empty array in ${filePath}`);
+        }
+      } else if (rule.rule === 'documentation_required') {
+        // Documentation required rule validation
+        if (!rule.for || !rule.for.role) {
+          throw new Error(`Invalid rule '${rule.name}': documentation_required rules must have 'for.role' in ${filePath}`);
+        }
+        if (typeof rule.min_lines !== 'number' || rule.min_lines <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': documentation_required rules must have 'min_lines' as a positive number in ${filePath}`);
+        }
+        if (typeof rule.requires_jsdoc !== 'boolean') {
+          throw new Error(`Invalid rule '${rule.name}': documentation_required rules must have 'requires_jsdoc' as a boolean in ${filePath}`);
+        }
+      } else if (rule.rule === 'class_complexity') {
+        // Class complexity rule validation
+        if (!rule.for || !rule.for.role) {
+          throw new Error(`Invalid rule '${rule.name}': class_complexity rules must have 'for.role' in ${filePath}`);
+        }
+        if (typeof rule.max_public_methods !== 'number' || rule.max_public_methods <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': class_complexity rules must have 'max_public_methods' as a positive number in ${filePath}`);
+        }
+        if (typeof rule.max_properties !== 'number' || rule.max_properties <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': class_complexity rules must have 'max_properties' as a positive number in ${filePath}`);
+        }
+      } else if (rule.rule === 'minimum_test_ratio') {
+        // Minimum test ratio rule validation
+        if (!rule.global || typeof rule.global !== 'object') {
+          throw new Error(`Invalid rule '${rule.name}': minimum_test_ratio rules must have a 'global' object in ${filePath}`);
+        }
+        if (typeof rule.global.test_ratio !== 'number' || rule.global.test_ratio < 0 || rule.global.test_ratio > 1) {
+          throw new Error(`Invalid rule '${rule.name}': minimum_test_ratio rules must have 'global.test_ratio' as a number between 0 and 1 in ${filePath}`);
+        }
+      } else if (rule.rule === 'granularity_metric') {
+        // Granularity metric rule validation
+        if (!rule.global || typeof rule.global !== 'object') {
+          throw new Error(`Invalid rule '${rule.name}': granularity_metric rules must have a 'global' object in ${filePath}`);
+        }
+        if (typeof rule.global.target_loc_per_file !== 'number' || rule.global.target_loc_per_file <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': granularity_metric rules must have 'global.target_loc_per_file' as a positive number in ${filePath}`);
+        }
+        if (typeof rule.global.warning_threshold_multiplier !== 'number' || rule.global.warning_threshold_multiplier <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': granularity_metric rules must have 'global.warning_threshold_multiplier' as a positive number in ${filePath}`);
+        }
+      } else if (rule.rule === 'forbidden_patterns') {
+        // Forbidden patterns rule validation
+        if (!rule.from || !rule.from.role) {
+          throw new Error(`Invalid rule '${rule.name}': forbidden_patterns rules must have 'from.role' in ${filePath}`);
+        }
+        if (!Array.isArray(rule.contains_forbidden) || rule.contains_forbidden.length === 0) {
+          throw new Error(`Invalid rule '${rule.name}': forbidden_patterns rules must have 'contains_forbidden' as a non-empty array in ${filePath}`);
+        }
+        // Validate that patterns are valid regex
+        for (const pattern of rule.contains_forbidden) {
+          try {
+            new RegExp(pattern);
+          } catch (error) {
+            throw new Error(`Invalid rule '${rule.name}': pattern '${pattern}' is not a valid regular expression in ${filePath}`);
+          }
+        }
+      } else if (rule.rule === 'barrel_purity') {
+        // Barrel purity rule validation
+        if (!rule.for || !rule.for.file_pattern) {
+          throw new Error(`Invalid rule '${rule.name}': barrel_purity rules must have 'for.file_pattern' in ${filePath}`);
+        }
+        // Validate that file_pattern is a valid regex
+        try {
+          new RegExp(rule.for.file_pattern);
+        } catch (error) {
+          throw new Error(`Invalid rule '${rule.name}': file_pattern is not a valid regular expression in ${filePath}`);
+        }
+        if (!Array.isArray(rule.contains_forbidden) || rule.contains_forbidden.length === 0) {
+          throw new Error(`Invalid rule '${rule.name}': barrel_purity rules must have 'contains_forbidden' as a non-empty array in ${filePath}`);
+        }
+        // Validate that patterns are valid regex
+        for (const pattern of rule.contains_forbidden) {
+          try {
+            new RegExp(pattern);
+          } catch (error) {
+            throw new Error(`Invalid rule '${rule.name}': pattern '${pattern}' is not a valid regular expression in ${filePath}`);
+          }
+        }
       } else if (['allowed', 'forbidden', 'required'].includes(rule.rule)) {
         // Dependency rule validation
         if (!rule.from || !rule.from.role) {
@@ -177,7 +285,7 @@ export class YamlGrammarRepository implements IGrammarRepository {
         }
       } else {
         throw new Error(
-          `Invalid rule '${rule.name}': rule type must be 'allowed', 'forbidden', 'required', 'naming_pattern', 'find_synonyms', or 'detect_unreferenced' in ${filePath}`
+          `Invalid rule '${rule.name}': rule type must be 'allowed', 'forbidden', 'required', 'naming_pattern', 'find_synonyms', 'detect_unreferenced', 'file_size', 'test_coverage', 'forbidden_keywords', 'required_structure', 'documentation_required', 'class_complexity', 'minimum_test_ratio', 'granularity_metric', 'forbidden_patterns', or 'barrel_purity' in ${filePath}`
         );
       }
     }
@@ -233,6 +341,96 @@ export class YamlGrammarRepository implements IGrammarRepository {
                 }
               : undefined,
             rule: 'detect_unreferenced' as const,
+          };
+        } else if (rule.rule === 'file_size') {
+          return {
+            ...baseRule,
+            for: {
+              role: rule.for.role,
+            },
+            max_lines: rule.max_lines,
+            rule: 'file_size' as const,
+          };
+        } else if (rule.rule === 'test_coverage') {
+          return {
+            ...baseRule,
+            from: {
+              role: rule.from.role,
+            },
+            to: {
+              test_file: rule.to.test_file,
+            },
+            rule: 'test_coverage' as const,
+          };
+        } else if (rule.rule === 'forbidden_keywords') {
+          return {
+            ...baseRule,
+            from: {
+              role: rule.from.role,
+            },
+            contains_forbidden: rule.contains_forbidden,
+            rule: 'forbidden_keywords' as const,
+          };
+        } else if (rule.rule === 'required_structure') {
+          return {
+            ...baseRule,
+            required_directories: rule.required_directories,
+            rule: 'required_structure' as const,
+          };
+        } else if (rule.rule === 'documentation_required') {
+          return {
+            ...baseRule,
+            for: {
+              role: rule.for.role,
+            },
+            min_lines: rule.min_lines,
+            requires_jsdoc: rule.requires_jsdoc,
+            rule: 'documentation_required' as const,
+          };
+        } else if (rule.rule === 'class_complexity') {
+          return {
+            ...baseRule,
+            for: {
+              role: rule.for.role,
+            },
+            max_public_methods: rule.max_public_methods,
+            max_properties: rule.max_properties,
+            rule: 'class_complexity' as const,
+          };
+        } else if (rule.rule === 'minimum_test_ratio') {
+          return {
+            ...baseRule,
+            global: {
+              test_ratio: rule.global.test_ratio,
+            },
+            rule: 'minimum_test_ratio' as const,
+          };
+        } else if (rule.rule === 'granularity_metric') {
+          return {
+            ...baseRule,
+            global: {
+              target_loc_per_file: rule.global.target_loc_per_file,
+              warning_threshold_multiplier: rule.global.warning_threshold_multiplier,
+            },
+            rule: 'granularity_metric' as const,
+          };
+        } else if (rule.rule === 'forbidden_patterns') {
+          return {
+            ...baseRule,
+            from: {
+              role: rule.from.role,
+            },
+            contains_forbidden: rule.contains_forbidden,
+            rule: 'forbidden_patterns' as const,
+          };
+        } else if (rule.rule === 'barrel_purity') {
+          return {
+            ...baseRule,
+            for: {
+              file_pattern: rule.for.file_pattern,
+            },
+            contains_forbidden: rule.contains_forbidden,
+            rule: 'barrel_purity' as const,
           };
         } else {
           // Dependency rule

@@ -22,6 +22,16 @@ import {
   SynonymDetectionRule,
   UnreferencedCodeRule,
   RoleReference,
+  FileSizeRule,
+  TestCoverageRule,
+  ForbiddenKeywordsRule,
+  RequiredStructureRule,
+  DocumentationRequiredRule,
+  ClassComplexityRule,
+  MinimumTestRatioRule,
+  GranularityMetricRule,
+  ForbiddenPatternsRule,
+  BarrelPurityRule,
 } from '../../domain/models';
 import { ICodeParser, IGrammarRepository } from '../protocols';
 
@@ -64,7 +74,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     const symbolsWithRoles = this.assignRolesToSymbols(symbols, grammar);
 
     // Step 4: Validate dependencies and collect violations
-    const violations = this.validateArchitecture(symbolsWithRoles, grammar);
+    const violations = await this.validateArchitecture(symbolsWithRoles, grammar, projectPath);
 
     return violations;
   }
@@ -99,12 +109,14 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    *
    * @param symbols - Code symbols with assigned roles
    * @param grammar - Grammar configuration with rules
+   * @param projectPath - Project path for file system operations
    * @returns Array of architectural violations
    */
-  private validateArchitecture(
+  private async validateArchitecture(
     symbols: CodeSymbolModel[],
-    grammar: GrammarModel
-  ): ArchitecturalViolationModel[] {
+    grammar: GrammarModel,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
 
     // Create a map for quick symbol lookup by path
@@ -119,7 +131,18 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rule.rule !== 'naming_pattern' &&
         rule.rule !== 'find_synonyms' &&
         rule.rule !== 'detect_unreferenced' &&
+        rule.rule !== 'file_size' &&
+        rule.rule !== 'test_coverage' &&
+        rule.rule !== 'forbidden_keywords' &&
+        rule.rule !== 'required_structure' &&
+        rule.rule !== 'documentation_required' &&
+        rule.rule !== 'class_complexity' &&
+        rule.rule !== 'minimum_test_ratio' &&
+        rule.rule !== 'granularity_metric' &&
+        rule.rule !== 'forbidden_patterns' &&
+        rule.rule !== 'barrel_purity' &&
         'to' in rule &&
+        rule.to &&
         'circular' in rule.to &&
         rule.to.circular === true
     );
@@ -171,6 +194,116 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       for (const rule of unreferencedRules) {
         const unreferencedViolations = this.detectUnreferencedCode(symbols, rule);
         violations.push(...unreferencedViolations);
+      }
+    }
+
+    // Check for file size rules
+    const fileSizeRules = grammar.rules.filter(
+      (rule): rule is FileSizeRule => rule.rule === 'file_size'
+    );
+    if (fileSizeRules.length > 0) {
+      for (const rule of fileSizeRules) {
+        const fileSizeViolations = await this.validateFileSize(symbols, rule, projectPath);
+        violations.push(...fileSizeViolations);
+      }
+    }
+
+    // Check for test coverage rules
+    const testCoverageRules = grammar.rules.filter(
+      (rule): rule is TestCoverageRule => rule.rule === 'test_coverage'
+    );
+    if (testCoverageRules.length > 0) {
+      for (const rule of testCoverageRules) {
+        const testCoverageViolations = await this.validateTestCoverage(symbols, rule, projectPath);
+        violations.push(...testCoverageViolations);
+      }
+    }
+
+    // Check for forbidden keywords rules
+    const forbiddenKeywordsRules = grammar.rules.filter(
+      (rule): rule is ForbiddenKeywordsRule => rule.rule === 'forbidden_keywords'
+    );
+    if (forbiddenKeywordsRules.length > 0) {
+      for (const rule of forbiddenKeywordsRules) {
+        const forbiddenViolations = await this.validateForbiddenKeywords(symbols, rule, projectPath);
+        violations.push(...forbiddenViolations);
+      }
+    }
+
+    // Check for required structure rules
+    const requiredStructureRules = grammar.rules.filter(
+      (rule): rule is RequiredStructureRule => rule.rule === 'required_structure'
+    );
+    if (requiredStructureRules.length > 0) {
+      for (const rule of requiredStructureRules) {
+        const structureViolations = await this.validateRequiredStructure(rule, projectPath);
+        violations.push(...structureViolations);
+      }
+    }
+
+    // Check for documentation required rules
+    const documentationRules = grammar.rules.filter(
+      (rule): rule is DocumentationRequiredRule => rule.rule === 'documentation_required'
+    );
+    if (documentationRules.length > 0) {
+      for (const rule of documentationRules) {
+        const docViolations = await this.validateDocumentation(symbols, rule, projectPath);
+        violations.push(...docViolations);
+      }
+    }
+
+    // Check for class complexity rules
+    const classComplexityRules = grammar.rules.filter(
+      (rule): rule is ClassComplexityRule => rule.rule === 'class_complexity'
+    );
+    if (classComplexityRules.length > 0) {
+      for (const rule of classComplexityRules) {
+        const complexityViolations = await this.validateClassComplexity(symbols, rule, projectPath);
+        violations.push(...complexityViolations);
+      }
+    }
+
+    // Check for minimum test ratio rules
+    const minimumTestRatioRules = grammar.rules.filter(
+      (rule): rule is MinimumTestRatioRule => rule.rule === 'minimum_test_ratio'
+    );
+    if (minimumTestRatioRules.length > 0) {
+      for (const rule of minimumTestRatioRules) {
+        const testRatioViolations = this.validateMinimumTestRatio(symbols, rule);
+        violations.push(...testRatioViolations);
+      }
+    }
+
+    // Check for granularity metric rules
+    const granularityMetricRules = grammar.rules.filter(
+      (rule): rule is GranularityMetricRule => rule.rule === 'granularity_metric'
+    );
+    if (granularityMetricRules.length > 0) {
+      for (const rule of granularityMetricRules) {
+        const granularityViolations = await this.validateGranularityMetric(symbols, rule, projectPath);
+        violations.push(...granularityViolations);
+      }
+    }
+
+    // Check for forbidden patterns rules
+    const forbiddenPatternsRules = grammar.rules.filter(
+      (rule): rule is ForbiddenPatternsRule => rule.rule === 'forbidden_patterns'
+    );
+    if (forbiddenPatternsRules.length > 0) {
+      for (const rule of forbiddenPatternsRules) {
+        const patternViolations = await this.validateForbiddenPatterns(symbols, rule, projectPath);
+        violations.push(...patternViolations);
+      }
+    }
+
+    // Check for barrel purity rules
+    const barrelPurityRules = grammar.rules.filter(
+      (rule): rule is BarrelPurityRule => rule.rule === 'barrel_purity'
+    );
+    if (barrelPurityRules.length > 0) {
+      for (const rule of barrelPurityRules) {
+        const barrelViolations = await this.validateBarrelPurity(symbols, rule, projectPath);
+        violations.push(...barrelViolations);
       }
     }
 
@@ -260,7 +393,17 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       if (
         rule.rule === 'naming_pattern' ||
         rule.rule === 'find_synonyms' ||
-        rule.rule === 'detect_unreferenced'
+        rule.rule === 'detect_unreferenced' ||
+        rule.rule === 'file_size' ||
+        rule.rule === 'test_coverage' ||
+        rule.rule === 'forbidden_keywords' ||
+        rule.rule === 'required_structure' ||
+        rule.rule === 'documentation_required' ||
+        rule.rule === 'class_complexity' ||
+        rule.rule === 'minimum_test_ratio' ||
+        rule.rule === 'granularity_metric' ||
+        rule.rule === 'forbidden_patterns' ||
+        rule.rule === 'barrel_purity'
       ) {
         continue;
       }
@@ -771,5 +914,544 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       return ruleRole.includes(symbolRole);
     }
     return symbolRole === ruleRole;
+  }
+
+  /**
+   * Validates file size limits
+   *
+   * @param symbols - Code symbols
+   * @param rule - File size rule
+   * @param projectPath - Project path
+   * @returns Array of violations for files exceeding size limits
+   */
+  private async validateFileSize(
+    symbols: CodeSymbolModel[],
+    rule: FileSizeRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Find symbols matching the role
+    const symbolsToCheck = symbols.filter((symbol) =>
+      this.roleMatches(symbol.role, rule.for.role)
+    );
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+        const lines = content.split('\n').length;
+
+        if (lines > rule.max_lines) {
+          violations.push({
+            ruleName: rule.name,
+            severity: rule.severity,
+            file: symbol.path,
+            message: `${rule.name}: File ${symbol.path} has ${lines} lines (exceeds ${rule.max_lines} limit)${rule.comment ? ` - ${rule.comment}` : ''}`,
+            fromRole: symbol.role,
+            toRole: undefined,
+            dependency: undefined,
+          });
+        }
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates test coverage
+   *
+   * @param symbols - Code symbols
+   * @param rule - Test coverage rule
+   * @param projectPath - Project path
+   * @returns Array of violations for missing test files
+   */
+  private async validateTestCoverage(
+    symbols: CodeSymbolModel[],
+    rule: TestCoverageRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Find symbols matching the from role
+    const symbolsToCheck = symbols.filter((symbol) =>
+      this.roleMatches(symbol.role, rule.from.role)
+    );
+
+    for (const symbol of symbolsToCheck) {
+      // Check for corresponding test file
+      const testPatterns = [
+        symbol.path.replace(/\.ts$/, '.spec.ts'),
+        symbol.path.replace(/\.ts$/, '.test.ts'),
+        symbol.path.replace(/^src\//, 'tests/').replace(/\.ts$/, '.spec.ts'),
+        symbol.path.replace(/^src\//, 'tests/').replace(/\.ts$/, '.test.ts'),
+      ];
+
+      let hasTest = false;
+      for (const testPath of testPatterns) {
+        try {
+          const fullPath = path.join(projectPath, testPath);
+          await fs.access(fullPath);
+          hasTest = true;
+          break;
+        } catch {
+          // Test file doesn't exist, continue checking
+        }
+      }
+
+      if (!hasTest) {
+        violations.push({
+          ruleName: rule.name,
+          severity: rule.severity,
+          file: symbol.path,
+          message: `${rule.name}: ${symbol.path} has no corresponding test file${rule.comment ? ` - ${rule.comment}` : ''}`,
+          fromRole: symbol.role,
+          toRole: undefined,
+          dependency: undefined,
+        });
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates forbidden keywords in code
+   *
+   * @param symbols - Code symbols
+   * @param rule - Forbidden keywords rule
+   * @param projectPath - Project path
+   * @returns Array of violations for forbidden keywords found
+   */
+  private async validateForbiddenKeywords(
+    symbols: CodeSymbolModel[],
+    rule: ForbiddenKeywordsRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Find symbols matching the from role
+    const symbolsToCheck = symbols.filter((symbol) =>
+      this.roleMatches(symbol.role, rule.from.role)
+    );
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+
+        for (const keyword of rule.contains_forbidden) {
+          if (content.includes(keyword)) {
+            violations.push({
+              ruleName: rule.name,
+              severity: rule.severity,
+              file: symbol.path,
+              message: `${rule.name}: ${symbol.path} contains forbidden keyword '${keyword}'${rule.comment ? ` - ${rule.comment}` : ''}`,
+              fromRole: symbol.role,
+              toRole: undefined,
+              dependency: undefined,
+            });
+            break; // Only report once per file
+          }
+        }
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates required directory structure
+   *
+   * @param rule - Required structure rule
+   * @param projectPath - Project path
+   * @returns Array of violations for missing directories
+   */
+  private async validateRequiredStructure(
+    rule: RequiredStructureRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    for (const requiredDir of rule.required_directories) {
+      try {
+        const dirPath = path.join(projectPath, requiredDir);
+        const stats = await fs.stat(dirPath);
+        if (!stats.isDirectory()) {
+          violations.push({
+            ruleName: rule.name,
+            severity: rule.severity,
+            file: requiredDir,
+            message: `${rule.name}: Required directory '${requiredDir}' does not exist${rule.comment ? ` - ${rule.comment}` : ''}`,
+            fromRole: undefined,
+            toRole: undefined,
+            dependency: undefined,
+          });
+        }
+      } catch {
+        violations.push({
+          ruleName: rule.name,
+          severity: rule.severity,
+          file: requiredDir,
+          message: `${rule.name}: Required directory '${requiredDir}' does not exist${rule.comment ? ` - ${rule.comment}` : ''}`,
+          fromRole: undefined,
+          toRole: undefined,
+          dependency: undefined,
+        });
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates documentation requirements
+   *
+   * @param symbols - Code symbols
+   * @param rule - Documentation required rule
+   * @param projectPath - Project path
+   * @returns Array of violations for missing documentation
+   */
+  private async validateDocumentation(
+    symbols: CodeSymbolModel[],
+    rule: DocumentationRequiredRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Find symbols matching the role
+    const symbolsToCheck = symbols.filter((symbol) =>
+      this.roleMatches(symbol.role, rule.for.role)
+    );
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+        const lines = content.split('\n').length;
+
+        if (lines >= rule.min_lines) {
+          // Check for JSDoc
+          if (rule.requires_jsdoc && !content.includes('/**')) {
+            violations.push({
+              ruleName: rule.name,
+              severity: rule.severity,
+              file: symbol.path,
+              message: `${rule.name}: ${symbol.path} (${lines} lines) lacks JSDoc documentation${rule.comment ? ` - ${rule.comment}` : ''}`,
+              fromRole: symbol.role,
+              toRole: undefined,
+              dependency: undefined,
+            });
+          }
+        }
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates class complexity (God Object prevention)
+   *
+   * @param symbols - Code symbols
+   * @param rule - Class complexity rule
+   * @param projectPath - Project path
+   * @returns Array of violations for complex classes
+   */
+  private async validateClassComplexity(
+    symbols: CodeSymbolModel[],
+    rule: ClassComplexityRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Find symbols matching the role
+    const symbolsToCheck = symbols.filter((symbol) =>
+      this.roleMatches(symbol.role, rule.for.role)
+    );
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+
+        // Simple regex-based counting (could be improved with proper AST parsing)
+        const publicMethodPattern = /public\s+\w+\s*\(/g;
+        const publicMethods = content.match(publicMethodPattern) || [];
+
+        const propertyPattern = /(?:public|private|protected)?\s+\w+\s*[:=]/g;
+        const properties = content.match(propertyPattern) || [];
+
+        if (publicMethods.length > rule.max_public_methods) {
+          violations.push({
+            ruleName: rule.name,
+            severity: rule.severity,
+            file: symbol.path,
+            message: `${rule.name}: ${symbol.path} has ${publicMethods.length} public methods (exceeds ${rule.max_public_methods})${rule.comment ? ` - ${rule.comment}` : ''}`,
+            fromRole: symbol.role,
+            toRole: undefined,
+            dependency: undefined,
+          });
+        }
+
+        if (properties.length > rule.max_properties) {
+          violations.push({
+            ruleName: rule.name,
+            severity: rule.severity,
+            file: symbol.path,
+            message: `${rule.name}: ${symbol.path} has ${properties.length} properties (exceeds ${rule.max_properties})${rule.comment ? ` - ${rule.comment}` : ''}`,
+            fromRole: symbol.role,
+            toRole: undefined,
+            dependency: undefined,
+          });
+        }
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates minimum test ratio requirements
+   *
+   * @param symbols - Code symbols
+   * @param rule - Minimum test ratio rule
+   * @returns Array of violations if test ratio is below requirement
+   */
+  private validateMinimumTestRatio(
+    symbols: CodeSymbolModel[],
+    rule: MinimumTestRatioRule
+  ): ArchitecturalViolationModel[] {
+    const violations: ArchitecturalViolationModel[] = [];
+
+    // Classify files as test or production
+    const testFiles = symbols.filter((symbol) =>
+      symbol.path.includes('.spec.') ||
+      symbol.path.includes('.test.') ||
+      symbol.path.startsWith('tests/') ||
+      symbol.path.startsWith('test/')
+    );
+
+    const productionFiles = symbols.filter((symbol) =>
+      !symbol.path.includes('.spec.') &&
+      !symbol.path.includes('.test.') &&
+      !symbol.path.startsWith('tests/') &&
+      !symbol.path.startsWith('test/')
+    );
+
+    // Calculate ratio
+    if (productionFiles.length === 0) {
+      // No production files, no violation
+      return violations;
+    }
+
+    const currentRatio = testFiles.length / productionFiles.length;
+    const requiredRatio = rule.global.test_ratio;
+
+    if (currentRatio < requiredRatio) {
+      violations.push({
+        ruleName: rule.name,
+        severity: rule.severity,
+        file: 'PROJECT',
+        message: `${rule.name}: Test ratio is ${currentRatio.toFixed(2)} (${testFiles.length} test files / ${productionFiles.length} production files), minimum required: ${requiredRatio}${rule.comment ? ` - ${rule.comment}` : ''}`,
+        fromRole: undefined,
+        toRole: undefined,
+        dependency: undefined,
+      });
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates file granularity metrics
+   *
+   * @param symbols - Code symbols
+   * @param rule - Granularity metric rule
+   * @param projectPath - Project path
+   * @returns Array of violations if average file size exceeds threshold
+   */
+  private async validateGranularityMetric(
+    symbols: CodeSymbolModel[],
+    rule: GranularityMetricRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Skip empty projects
+    if (symbols.length === 0) {
+      return violations;
+    }
+
+    // Calculate average lines per file
+    let totalLines = 0;
+    let fileCount = 0;
+
+    for (const symbol of symbols) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+        const lines = content.split('\n').length;
+        totalLines += lines;
+        fileCount++;
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    // If no files could be read, no violation
+    if (fileCount === 0) {
+      return violations;
+    }
+
+    const averageLinesPerFile = totalLines / fileCount;
+    const targetLoc = rule.global.target_loc_per_file;
+    const threshold = targetLoc * rule.global.warning_threshold_multiplier;
+
+    if (averageLinesPerFile > threshold) {
+      violations.push({
+        ruleName: rule.name,
+        severity: rule.severity,
+        file: 'PROJECT',
+        message: `${rule.name}: Average lines per file: ${Math.round(averageLinesPerFile)}, target: ${targetLoc} (threshold: ${Math.round(threshold)})${rule.comment ? ` - ${rule.comment}` : ''}`,
+        fromRole: undefined,
+        toRole: undefined,
+        dependency: undefined,
+      });
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates forbidden patterns (regex) in code
+   *
+   * @param symbols - Code symbols
+   * @param rule - Forbidden patterns rule
+   * @param projectPath - Project path
+   * @returns Array of violations for forbidden patterns found
+   */
+  private async validateForbiddenPatterns(
+    symbols: CodeSymbolModel[],
+    rule: ForbiddenPatternsRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Find symbols matching the from role
+    const symbolsToCheck = symbols.filter((symbol) =>
+      this.roleMatches(symbol.role, rule.from.role)
+    );
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+
+        for (const pattern of rule.contains_forbidden) {
+          try {
+            const regex = new RegExp(pattern);
+            if (regex.test(content)) {
+              violations.push({
+                ruleName: rule.name,
+                severity: rule.severity,
+                file: symbol.path,
+                message: `${rule.name}: ${symbol.path} contains forbidden pattern '${pattern}'${rule.comment ? ` - ${rule.comment}` : ''}`,
+                fromRole: symbol.role,
+                toRole: undefined,
+                dependency: undefined,
+              });
+              break; // Only report once per file
+            }
+          } catch (error) {
+            // Invalid regex pattern, skip
+            continue;
+          }
+        }
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates barrel export purity (index.ts files should only re-export)
+   *
+   * @param symbols - Code symbols
+   * @param rule - Barrel purity rule
+   * @param projectPath - Project path
+   * @returns Array of violations for barrel files containing logic
+   */
+  private async validateBarrelPurity(
+    symbols: CodeSymbolModel[],
+    rule: BarrelPurityRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Filter symbols matching the file pattern
+    const filePattern = new RegExp(rule.for.file_pattern);
+    const symbolsToCheck = symbols.filter((symbol) => filePattern.test(symbol.path));
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+
+        for (const pattern of rule.contains_forbidden) {
+          try {
+            const regex = new RegExp(pattern);
+            if (regex.test(content)) {
+              violations.push({
+                ruleName: rule.name,
+                severity: rule.severity,
+                file: symbol.path,
+                message: `${rule.name}: Barrel file ${symbol.path} contains forbidden pattern '${pattern}' - should only re-export${rule.comment ? ` - ${rule.comment}` : ''}`,
+                fromRole: symbol.role,
+                toRole: undefined,
+                dependency: undefined,
+              });
+              break; // Only report once per file
+            }
+          } catch (error) {
+            // Invalid regex pattern, skip
+            continue;
+          }
+        }
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    return violations;
   }
 }

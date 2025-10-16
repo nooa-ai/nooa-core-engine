@@ -1,0 +1,291 @@
+# ============================================================================
+# NOVAS REGRAS SUGERIDAS PARA O NOOA.GRAMMAR.YAML
+# Baseadas nos problemas arquiteturais identificados no próprio Nooa
+# ============================================================================
+
+# 1. VALIDAÇÃO DE CAMADAS OBRIGATÓRIAS
+# ----------------------------------------------------------------------------
+# Problema: Nooa não tem camada de validation (eliminada 100%)
+
+  - name: "Validation-Layer-Must-Exist"
+    severity: error
+    comment: "Projects must have a validation layer to separate validation concerns from business logic"
+    from:
+      role: COMPOSER  # Main/composition root
+    to:
+      role: VALIDATION_IMPLEMENTATION
+    rule: "required"
+
+  - name: "Controllers-Must-Use-Validators"
+    severity: error
+    comment: "Controllers must use validators instead of embedding validation logic"
+    from:
+      role: CONTEXT_ACTUAL
+    to:
+      role:
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_PROTOCOL
+    rule: "required"
+
+# 2. TAMANHO E COMPLEXIDADE DE ARQUIVOS
+# ----------------------------------------------------------------------------
+# Problema: Arquivos do Nooa têm 87.3 LOC/arquivo (6.3x maior que ideal)
+
+  - name: "File-Size-Limit"
+    severity: warning
+    comment: "Files should not exceed 100 lines to maintain SRP and readability"
+    for:
+      role: ALL
+    options:
+      max_lines: 100
+      ignore_patterns:
+        - "/index\\.ts$"
+        - "\\.spec\\.ts$"
+        - "\\.test\\.ts$"
+        - "\\.(json|yaml|yml|md)$"
+    rule: "file_size_limit"
+
+  - name: "Excessive-File-Size"
+    severity: error
+    comment: "Files exceeding 200 lines violate SRP and must be refactored"
+    for:
+      role: ALL
+    options:
+      max_lines: 200
+      ignore_patterns:
+        - "/index\\.ts$"
+        - "\\.spec\\.ts$"
+        - "\\.test\\.ts$"
+        - "\\.(json|yaml|yml|md)$"
+    rule: "file_size_limit"
+
+# 3. COBERTURA DE TESTES OBRIGATÓRIA
+# ----------------------------------------------------------------------------
+# Problema: Nooa tem 0% de cobertura de testes (0 arquivos de teste)
+
+  - name: "Test-Coverage-Required"
+    severity: error
+    comment: "Every production file must have a corresponding test file"
+    for:
+      role:
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_CONCRETE_ACTUAL
+        - CONTEXT_ACTUAL
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+    options:
+      test_patterns:
+        - "${filename}.spec.ts"
+        - "${filename}.test.ts"
+        - "tests/**/${filename}.spec.ts"
+        - "tests/**/${filename}.test.ts"
+    rule: "test_coverage_required"
+
+  - name: "Minimum-Test-Ratio"
+    severity: warning
+    comment: "Project should have at least 20% test files (current best practice is 24.6%)"
+    global:
+      metric: "test_ratio"
+      min_ratio: 0.20
+      test_patterns:
+        - "\\.spec\\.ts$"
+        - "\\.test\\.ts$"
+        - "^tests/"
+    rule: "minimum_ratio"
+
+# 4. FACTORY PATTERN OBRIGATÓRIO
+# ----------------------------------------------------------------------------
+# Problema: Nooa reduziu factories em 97% (91 → 3 arquivos)
+
+  - name: "Factory-Pattern-Required"
+    severity: error
+    comment: "Controllers must be created through factories for proper dependency injection"
+    from:
+      role: COMPOSER
+    to:
+      role: COMPOSER_CONTROLLER_FACTORY
+    rule: "required"
+
+  - name: "Direct-Controller-Instantiation-Forbidden"
+    severity: error
+    comment: "Controllers should not be instantiated directly, use factories instead"
+    from:
+      role:
+        - COMPOSER
+        - CONTEXT_CONTROLLER
+    to:
+      instantiation: "new.*Controller"
+    rule: "forbidden_pattern"
+
+# 5. DECORATOR PATTERN
+# ----------------------------------------------------------------------------
+# Problema: Nooa não usa decorators (0 arquivos)
+
+  - name: "Error-Handling-Decorator-Required"
+    severity: warning
+    comment: "Controllers should use error handling decorators for consistent error management"
+    for:
+      role: CONTEXT_ACTUAL
+    options:
+      must_be_decorated_by:
+        - "LogControllerDecorator"
+        - "ErrorHandlerDecorator"
+    rule: "decorator_required"
+
+# 6. SEPARAÇÃO DE RESPONSABILIDADES
+# ----------------------------------------------------------------------------
+# Problema: Arquivos do Nooa consolidam múltiplas responsabilidades
+
+  - name: "Single-Export-Per-File"
+    severity: warning
+    comment: "Files should export only one main class/interface to maintain SRP"
+    for:
+      role:
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_CONCRETE_ACTUAL
+        - CONTEXT_ACTUAL
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+    options:
+      max_exports: 1
+      ignore_types: ["type", "interface", "enum"]
+    rule: "export_limit"
+
+  - name: "Validation-Not-In-Controllers"
+    severity: error
+    comment: "Controllers must not contain validation logic, use validation layer instead"
+    from:
+      role: CONTEXT_ACTUAL
+    to:
+      pattern: "(validate|isValid|check.*Format|.*Regex|.*Pattern)"
+    rule: "forbidden_code_pattern"
+
+  - name: "Business-Logic-Not-In-Controllers"
+    severity: error
+    comment: "Controllers must not contain business logic, delegate to use cases"
+    from:
+      role: CONTEXT_ACTUAL
+    to:
+      pattern: "(calculate|compute|transform|process|parse)"
+    rule: "forbidden_code_pattern"
+
+# 7. MÉTRICAS DE GRANULARIDADE
+# ----------------------------------------------------------------------------
+# Problema: Nooa tem apenas 22 arquivos vs 181 esperados
+
+  - name: "Minimum-File-Granularity"
+    severity: info
+    comment: "Project should have adequate file granularity (target: 10-20 LOC per file)"
+    global:
+      metric: "file_granularity"
+      target_loc_per_file: 15
+      max_loc_per_file: 50
+      warning_threshold: 2.0  # Warn if average is 2x target
+    rule: "granularity_check"
+
+# 8. ARQUITETURA HEXAGONAL COMPLETA
+# ----------------------------------------------------------------------------
+
+  - name: "All-Layers-Must-Exist"
+    severity: error
+    comment: "Clean Architecture requires all layers to be present"
+    global:
+      required_paths:
+        - "src/domain/models"
+        - "src/domain/usecases"
+        - "src/data/protocols"
+        - "src/data/usecases"
+        - "src/infra"
+        - "src/presentation/controllers"
+        - "src/validation/validators"
+        - "src/main/factories"
+    rule: "required_structure"
+
+# 9. DOCUMENTAÇÃO E EXEMPLOS
+# ----------------------------------------------------------------------------
+
+  - name: "Complex-Files-Need-Documentation"
+    severity: warning
+    comment: "Files over 50 lines should have JSDoc documentation"
+    for:
+      role: ALL
+    options:
+      min_lines: 50
+      must_contain: ["/**", "@description", "@param", "@returns"]
+    rule: "documentation_required"
+
+# 10. ANTI-PATTERNS ESPECÍFICOS
+# ----------------------------------------------------------------------------
+
+  - name: "No-God-Objects"
+    severity: error
+    comment: "Classes should not have more than 10 public methods (God Object anti-pattern)"
+    for:
+      role: ALL
+    options:
+      max_public_methods: 10
+      max_properties: 15
+    rule: "class_complexity_limit"
+
+  - name: "No-Barrel-Exports-Abuse"
+    severity: warning
+    comment: "Barrel exports (index.ts) should only re-export, not contain logic"
+    for:
+      file: "/index\\.ts$"
+    options:
+      forbidden_patterns:
+        - "class "
+        - "function "
+        - "const.*=.*{"
+        - "if.*{"
+    rule: "barrel_export_purity"
+
+# ============================================================================
+# MÉTRICAS AGREGADAS (DASHBOARD)
+# ============================================================================
+
+  - name: "Architecture-Health-Score"
+    severity: info
+    comment: "Overall architecture health score based on multiple metrics"
+    global:
+      metrics:
+        - name: "test_coverage"
+          weight: 0.3
+          target: 0.8
+        - name: "average_file_size"
+          weight: 0.2
+          target: 20
+          max: 100
+        - name: "layer_separation"
+          weight: 0.3
+          required_layers: 7
+        - name: "circular_dependencies"
+          weight: 0.2
+          target: 0
+    rule: "health_score"
+
+# ============================================================================
+# EXEMPLO DE USO COM O NOOA ATUAL
+# ============================================================================
+
+# Se aplicássemos essas regras no nooa-core-engine atual:
+#
+# ERROS (10+):
+# ❌ Validation-Layer-Must-Exist: src/validation não existe
+# ❌ Controllers-Must-Use-Validators: controllers não usam validators
+# ❌ Test-Coverage-Required: 0 arquivos de teste
+# ❌ Factory-Pattern-Required: apenas 3 factories vs 20+ esperadas
+# ❌ Validation-Not-In-Controllers: validação embutida nos controllers
+# ❌ All-Layers-Must-Exist: validation layer ausente
+# ❌ Excessive-File-Size: vários arquivos > 200 LOC
+#
+# WARNINGS (15+):
+# ⚠️ File-Size-Limit: média de 87.3 LOC/arquivo
+# ⚠️ Minimum-Test-Ratio: 0% vs 20% mínimo
+# ⚠️ Error-Handling-Decorator-Required: sem decorators
+# ⚠️ Single-Export-Per-File: múltiplas responsabilidades
+# ⚠️ Complex-Files-Need-Documentation: falta JSDoc
+# ⚠️ Minimum-File-Granularity: 87.3 LOC/arquivo vs 15 target
+#
+# INFO (5+):
+# ℹ️ Architecture-Health-Score: ~25% (crítico)
+# ℹ️ File count: 22 vs 138 esperados
+# ℹ️ Missing patterns: decorators, factories, validators

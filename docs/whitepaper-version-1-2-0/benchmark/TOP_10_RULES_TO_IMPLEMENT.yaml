@@ -1,0 +1,118 @@
+# TOP 10 RULES TO IMPLEMENT IN NOOA.GRAMMAR.YAML
+# Priority rules based on the architectural issues found
+
+# 1. TEST COVERAGE CHECK (CRITICAL)
+# Current: 0 test files | Target: 20%+ test files
+  - name: "Test-Coverage-Required"
+    severity: error
+    comment: "Every production file must have a corresponding test file"
+    for:
+      role: [VERB_IMPLEMENTATION_ACTUAL, ADVERB_CONCRETE_ACTUAL, CONTEXT_ACTUAL]
+    options:
+      test_patterns: ["${filename}.spec.ts", "${filename}.test.ts"]
+    rule: "test_coverage_required"
+
+# 2. FILE SIZE LIMIT (HIGH IMPACT)
+# Current: 87.3 LOC/file average | Target: < 100 LOC/file
+  - name: "File-Size-Limit"
+    severity: warning
+    comment: "Files should not exceed 100 lines to maintain SRP"
+    for:
+      role: ALL
+    options:
+      max_lines: 100
+      ignore_patterns: ["/index\\.ts$", "\\.spec\\.ts$"]
+    rule: "file_size_limit"
+
+# 3. VALIDATION LAYER REQUIRED (ARCHITECTURAL)
+# Current: No validation layer | Target: Dedicated validation layer
+  - name: "Validation-Layer-Must-Exist"
+    severity: error
+    comment: "Projects must have a validation layer"
+    from:
+      role: CONTEXT_ACTUAL
+    to:
+      role: [VALIDATION_IMPLEMENTATION, VALIDATION_PROTOCOL]
+    rule: "required"
+
+# 4. FACTORY PATTERN ENFORCEMENT (DESIGN PATTERN)
+# Current: 3 factories | Target: Factory for each controller/use case
+  - name: "Factory-Pattern-Required"
+    severity: error
+    comment: "Controllers must be created through factories"
+    from:
+      role: COMPOSER
+    to:
+      role: COMPOSER_CONTROLLER_FACTORY
+    rule: "required"
+
+# 5. SINGLE RESPONSIBILITY CHECK (SOLID)
+# Current: Multiple exports per file | Target: 1 main export
+  - name: "Single-Export-Per-File"
+    severity: warning
+    comment: "Files should export only one main class/interface"
+    for:
+      role: [VERB_IMPLEMENTATION_ACTUAL, CONTEXT_ACTUAL]
+    options:
+      max_exports: 1
+      ignore_types: ["type", "interface"]
+    rule: "export_limit"
+
+# 6. NO BUSINESS LOGIC IN CONTROLLERS (CLEAN ARCH)
+# Current: Business logic in controllers | Target: Delegation to use cases
+  - name: "Business-Logic-Not-In-Controllers"
+    severity: error
+    comment: "Controllers must delegate to use cases"
+    from:
+      role: CONTEXT_ACTUAL
+    to:
+      pattern: "(calculate|compute|transform|process|parse)"
+    rule: "forbidden_code_pattern"
+
+# 7. MINIMUM TEST RATIO (QUALITY)
+# Current: 0% test files | Target: 20% minimum
+  - name: "Minimum-Test-Ratio"
+    severity: warning
+    comment: "Project should have at least 20% test files"
+    global:
+      metric: "test_ratio"
+      min_ratio: 0.20
+    rule: "minimum_ratio"
+
+# 8. REQUIRED ARCHITECTURAL LAYERS (STRUCTURE)
+# Current: Missing validation layer | Target: All layers present
+  - name: "All-Layers-Must-Exist"
+    severity: error
+    comment: "Clean Architecture requires all layers"
+    global:
+      required_paths:
+        - "src/domain"
+        - "src/data"
+        - "src/infra"
+        - "src/presentation"
+        - "src/validation"
+        - "src/main/factories"
+    rule: "required_structure"
+
+# 9. DOCUMENTATION FOR COMPLEX FILES (MAINTAINABILITY)
+# Current: No JSDoc | Target: JSDoc for files > 50 lines
+  - name: "Complex-Files-Need-Documentation"
+    severity: warning
+    comment: "Files over 50 lines should have JSDoc"
+    for:
+      role: ALL
+    options:
+      min_lines: 50
+      must_contain: ["/**", "@description"]
+    rule: "documentation_required"
+
+# 10. GOD OBJECT PREVENTION (ANTI-PATTERN)
+# Current: Large classes | Target: < 10 public methods
+  - name: "No-God-Objects"
+    severity: error
+    comment: "Classes should not exceed 10 public methods"
+    for:
+      role: ALL
+    options:
+      max_public_methods: 10
+    rule: "class_complexity_limit"
