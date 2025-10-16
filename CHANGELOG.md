@@ -304,6 +304,7 @@ rules:
 
 ### Added
 - feat(learning): add rule Test-Pattern-Rule (discovered via #7)
+- feat(learning): add rule nested-locks (discovered via #23)
 
 ### Planned Features
 - Multiple language support (JavaScript, Python, Java)

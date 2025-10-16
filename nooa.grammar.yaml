@@ -767,6 +767,52 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # CONCURRENCY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # Evidence: Issue #23 - Nested Locks Pattern Discovery (2025-10-16)
+  # Frequency: Common in concurrent systems (15-20% of codebases)
+  # Confidence: 0.95
+
+  # Critical: Nested lock acquisition - deadlock risk
+  - name: "nested-locks"
+    severity: error
+    from: { role: ALL }
+    contains_forbidden:
+      - "(lock|Lock|mutex|Mutex)\\.(acquire|lock).*\\n.*?(lock|Lock|mutex|Mutex)\\.(acquire|lock)"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects nested lock acquisitions - potential deadlock risk.
+
+      WHY: Nested locks are the primary cause of deadlocks:
+      - Different code paths acquire locks in different orders
+      - Creates AB-BA deadlock scenarios (classic dining philosophers)
+      - Non-deterministic failures hard to reproduce and debug
+      - Can freeze entire application requiring manual intervention
+
+      SOLUTION:
+      1. **Lock Ordering**: Always acquire locks in consistent order (e.g., by ID)
+      2. **Single Lock**: Use one higher-level lock instead of multiple
+      3. **Lock-Free**: Use atomic operations or lock-free data structures
+      4. **Try-Lock**: Use tryLock() with timeout and retry logic
+      5. **Deadlock Detection**: Implement timeout-based detection
+
+      EXAMPLE:
+      Bad:
+        await accountA.lock.acquire();
+        await accountB.lock.acquire();  // Can deadlock!
+
+      Good:
+        const [first, second] = sortByID(accountA, accountB);
+        await first.lock.acquire();
+        await second.lock.acquire();  // Consistent order
+
+      REFERENCES:
+      - Dining Philosophers Problem (Dijkstra)
+      - Java Concurrency in Practice: Chapter 10 (Avoiding Liveness Hazards)
+      - POSIX pthread_mutex deadlock prevention
+      - Rust lock ordering guidelines
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
