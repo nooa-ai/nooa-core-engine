@@ -766,6 +766,17 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Evidence: Learning Insight #13 (2025-10-16)
+  # Pattern discovered through community best practices analysis
+  - name: "No-Divide-By-Zero-Risk"
+    severity: warning
+    comment: "AI NOTE: Division operation without zero check - causes runtime errors (Infinity/NaN), breaks calculations, creates undefined behavior. REFACTOR: Always validate divisor before division. Add guard clause or use Math.max for default. Handle edge case explicitly. EXAMPLE: If code has 'average = total / count' without checking count, this is WRONG (count could be 0). Instead: 'if (count === 0) return 0; const average = total / count' or 'const average = total / Math.max(count, 1)' with safe default. Make zero case explicit. BENEFIT: Prevents division by zero errors, handles edge cases gracefully, makes assumptions explicit in code, improves robustness, reduces production errors, better error handling."
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\/\\s*\\b(count|length|size|total|sum|num|quantity)\\b(?!.*\\b(if|\\?|check|guard|Math\\.max|max\\(|\\|\\||&&)\\b)"
+    rule: "forbidden_patterns"
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
