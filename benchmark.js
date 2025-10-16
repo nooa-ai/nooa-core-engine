@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('yaml');
 
-const BENCHMARK_DIR = path.join(__dirname, 'docs', 'whitepaper-version-1-2-0', 'benchmark');
+const BENCHMARK_DIR = path.join(__dirname, 'docs', 'whitepaper-version-1-3-0', 'benchmark');
 const ITERATIONS = 100;
 
 // Cores para output
