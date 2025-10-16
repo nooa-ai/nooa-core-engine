@@ -23,7 +23,7 @@ export class DependencyValidator extends BaseRuleValidator {
   private readonly requiredValidator: RequiredDependencyValidator;
   private readonly circularDetector: CircularDependencyDetector;
 
-  constructor(private readonly rules: DependencyRule[]) {
+  constructor(rules: DependencyRule[]) {
     super();
     this.forbiddenChecker = new ForbiddenDependencyChecker(rules);
     this.requiredValidator = new RequiredDependencyValidator(rules);
