@@ -17,7 +17,7 @@
  */
 
 import { IAnalyzeCodebase } from '../../domain/usecases';
-import { ArchitecturalViolationModel } from '../../domain/models';
+import { ArchitecturalViolationModel, CodeSymbolModel, GrammarModel } from '../../domain/models';
 import { ICodeParser, IGrammarRepository, IFileReader, IFileExistenceChecker } from '../protocols';
 import {
   FileCacheBuilderHelper,
@@ -109,15 +109,15 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    * @returns Deduplicated architectural violations
    */
   private async orchestrateValidators(
-    symbols: any[],
-    grammar: any,
+    symbols: CodeSymbolModel[],
+    grammar: GrammarModel,
     projectPath: string,
     fileCache: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const rules = this.ruleExtractor.extract(grammar.rules);
 
     // Early return if no rules
-    const hasRules = Object.values(rules).some((ruleArray: any) => ruleArray.length > 0);
+    const hasRules = Object.values(rules).some((ruleArray) => ruleArray.length > 0);
     if (!hasRules) return [];
 
     const validationPromises: Promise<ArchitecturalViolationModel[]>[] = [];
