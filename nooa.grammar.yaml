@@ -767,6 +767,57 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # CONCURRENCY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # Evidence: Issue #26 - Learning Insight Discovery (2025-10-16)
+  # Frequency: 5-10% of Java/C# codebases | Confidence: 0.96
+
+  - name: "double-checked-lock-broken"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "if\\s*\\([^)]*==\\s*null\\)\\s*\\{[^}]*synchronized[^}]*if\\s*\\([^)]*==\\s*null\\)(?!.*volatile)"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects broken double-checked locking without volatile.
+
+      WHY: Double-checked locking is broken without volatile:
+      - JVM/CLR can reorder object construction steps
+      - Thread A: allocate → assign reference → initialize
+      - Thread B: sees non-null reference to uninitialized object
+      - Accessing uninitialized object = undefined behavior/crashes
+      - This is a well-documented broken optimization pattern
+
+      SOLUTION:
+      1. **Add volatile**: Makes pattern safe (Java 5+, C# with proper barriers)
+      2. **Holder Pattern**: Better - thread-safe by language spec
+      3. **Enum Singleton**: Best for Java - inherently thread-safe
+      4. **Simple Synchronization**: Just synchronize getInstance() (simpler)
+      5. **Eager Initialization**: Initialize at class load (safest)
+
+      EXAMPLE:
+      Bad:
+        private static Singleton instance;  // No volatile!
+        if (instance == null) {
+          synchronized { if (instance == null) instance = new Singleton(); }
+        }
+
+      Good:
+        private static volatile Singleton instance;  // volatile!
+
+      Better:
+        private static class Holder {
+          static final Singleton INSTANCE = new Singleton();
+        }
+
+      REFERENCES:
+      - Java Memory Model (JSR-133): volatile semantics
+      - "Double-Checked Locking is Broken" (1999 paper)
+      - Effective Java Item 83: Use lazy initialization judiciously
+      - CLR Memory Model and volatile
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding

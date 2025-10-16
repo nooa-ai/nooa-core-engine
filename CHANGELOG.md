@@ -304,6 +304,7 @@ rules:
 
 ### Added
 - feat(learning): add rule Test-Pattern-Rule (discovered via #7)
+- feat(learning): add rule double-checked-lock-broken (discovered via #26)
 
 ### Planned Features
 - Multiple language support (JavaScript, Python, Java)
