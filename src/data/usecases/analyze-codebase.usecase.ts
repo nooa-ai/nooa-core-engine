@@ -9,11 +9,22 @@
  * - Depends on abstractions (protocols) not concretions
  * - Contains the core application logic
  * - Has no knowledge of infrastructure details (databases, file systems, etc.)
+ *
+ * Refactored in v1.4.0 to apply Extract Class pattern:
+ * - Extracted FileCacheBuilderHelper (file caching logic)
+ * - Extracted RoleAssignmentHelper (role assignment logic)
+ * - Orchestration remains in use case (following Clean Architecture guidelines)
  */
 
 import { IAnalyzeCodebase } from '../../domain/usecases';
 import { ArchitecturalViolationModel, CodeSymbolModel, GrammarModel } from '../../domain/models';
 import { ICodeParser, IGrammarRepository, IFileReader, IFileExistenceChecker } from '../protocols';
+import {
+  FileCacheBuilderHelper,
+  RoleAssignmentHelper,
+  ViolationDeduplicatorHelper,
+  RuleExtractorHelper,
+} from '../helpers';
 import {
   NamingPatternValidator,
   DependencyValidator,
@@ -22,15 +33,13 @@ import {
   CodePatternValidator,
   StructureValidator,
 } from '../validators';
-import {
-  ViolationDeduplicatorHelper,
-  RuleExtractorHelper,
-} from '../helpers';
 
 /**
  * Implementation of the Analyze Codebase use case
  */
 export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
+  private readonly fileCacheBuilder: FileCacheBuilderHelper;
+  private readonly roleAssignment: RoleAssignmentHelper;
   private readonly deduplicator: ViolationDeduplicatorHelper;
   private readonly ruleExtractor: RuleExtractorHelper;
 
@@ -47,9 +56,11 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
   constructor(
     private readonly codeParser: ICodeParser,
     private readonly grammarRepository: IGrammarRepository,
-    private readonly fileReader: IFileReader,
+    fileReader: IFileReader,
     private readonly fileExistenceChecker: IFileExistenceChecker
   ) {
+    this.fileCacheBuilder = new FileCacheBuilderHelper(fileReader);
+    this.roleAssignment = new RoleAssignmentHelper();
     this.deduplicator = new ViolationDeduplicatorHelper();
     this.ruleExtractor = new RuleExtractorHelper();
   }
@@ -62,111 +73,42 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    * 2. Parse the codebase to extract symbols
    * 3. Assign roles to symbols based on path patterns
    * 4. Cache file contents in memory (performance optimization)
-   * 5. Validate dependencies against architectural rules
-   * 6. Return all violations found
+   * 5. Extract and orchestrate validators based on rules
+   * 6. Return deduplicated violations
+   *
+   * Performance: Runs validators in parallel using Promise.all()
    */
   async analyze(params: IAnalyzeCodebase.Params): Promise<IAnalyzeCodebase.Result> {
     const { projectPath } = params;
 
-    // Step 1: Load grammar configuration
+    // Steps 1-4: Load, parse, assign roles, and cache files
     const grammar = await this.grammarRepository.load(projectPath);
-
-    // Step 2: Parse codebase
     const symbols = await this.codeParser.parse(projectPath);
+    const symbolsWithRoles = this.roleAssignment.assign(symbols, grammar);
+    const fileCache = this.fileCacheBuilder.build(symbolsWithRoles, projectPath);
 
-    // Step 3: Assign roles to symbols
-    const symbolsWithRoles = this.assignRolesToSymbols(symbols, grammar);
-
-    // Step 4: Cache all file contents in memory (eliminates redundant I/O)
-    const fileCache = this.buildFileCache(symbolsWithRoles, projectPath);
-
-    // Step 5: Validate architecture and collect violations
-    const violations = await this.validateArchitecture(symbolsWithRoles, grammar, projectPath, fileCache);
+    // Step 5: Orchestrate validators
+    const violations = await this.orchestrateValidators(
+      symbolsWithRoles,
+      grammar,
+      projectPath,
+      fileCache
+    );
 
     return violations;
   }
 
   /**
-   * Builds cache of file contents in memory
-   *
-   * Performance: Read all files once and cache in Map to eliminate redundant I/O.
-   * Multiple validators need the same file content, so we read once and share.
-   *
-   * Uses IFileReader abstraction instead of direct fs for DIP compliance.
-   *
-   * @param symbols - Code symbols with file paths
-   * @param projectPath - Root project path
-   * @returns Map of filePath → fileContent
-   */
-  private buildFileCache(
-    symbols: CodeSymbolModel[],
-    projectPath: string
-  ): Map<string, string> {
-    const fileCache = new Map<string, string>();
-
-    // Get unique file paths
-    const uniqueFilePaths = [...new Set(symbols.map((s) => s.path))];
-
-    // Read all files using injected fileReader (respects DIP)
-    uniqueFilePaths.forEach((symbolPath) => {
-      try {
-        // Build full path: projectPath + symbolPath
-        const fullPath = `${projectPath}/${symbolPath}`.replace(/\/+/g, '/');
-        const content = this.fileReader.readFileSync(fullPath, 'utf-8');
-        fileCache.set(symbolPath, content);
-      } catch (error) {
-        // File might not exist or be readable, skip (cache miss handled by validators)
-      }
-    });
-
-    return fileCache;
-  }
-
-  /**
-   * Assigns architectural roles to code symbols based on path patterns
-   *
-   * Performance: Compiles regex patterns once and reuses them for all symbols
-   *
-   * @param symbols - Code symbols extracted from the codebase
-   * @param grammar - Grammar configuration with role definitions
-   * @returns Symbols with assigned roles
-   */
-  private assignRolesToSymbols(
-    symbols: CodeSymbolModel[],
-    grammar: GrammarModel
-  ): CodeSymbolModel[] {
-    // Compile regex patterns once (performance optimization)
-    const rolesWithPatterns = grammar.roles.map((role) => ({
-      name: role.name,
-      pattern: new RegExp(role.path),
-    }));
-
-    return symbols.map((symbol) => {
-      // Find the first role whose path pattern matches the symbol's path
-      const matchingRole = rolesWithPatterns.find((role) =>
-        role.pattern.test(symbol.path)
-      );
-
-      return {
-        ...symbol,
-        role: matchingRole?.name || 'UNKNOWN',
-      };
-    });
-  }
-
-  /**
-   * Validates architectural dependencies and detects violations
-   *
-   * Performance: Runs validators in parallel using Promise.all()
-   * Optimization: Only creates and runs validators when rules exist
+   * Orchestrates all validators based on defined rules
+   * Creates validators only for rules that exist, runs them in parallel
    *
    * @param symbols - Code symbols with assigned roles
-   * @param grammar - Grammar configuration with rules
-   * @param projectPath - Project path for file system operations
-   * @param fileCache - Cached file contents (eliminates redundant I/O)
-   * @returns Array of architectural violations
+   * @param grammar - Grammar configuration
+   * @param projectPath - Project root path
+   * @param fileCache - Cached file contents
+   * @returns Deduplicated architectural violations
    */
-  private async validateArchitecture(
+  private async orchestrateValidators(
     symbols: CodeSymbolModel[],
     grammar: GrammarModel,
     projectPath: string,
@@ -174,28 +116,29 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
   ): Promise<ArchitecturalViolationModel[]> {
     const rules = this.ruleExtractor.extract(grammar.rules);
 
-    // Early return if no rules defined
+    // Early return if no rules
     const hasRules = Object.values(rules).some((ruleArray) => ruleArray.length > 0);
-    if (!hasRules) {
-      return [];
-    }
+    if (!hasRules) return [];
 
     const validationPromises: Promise<ArchitecturalViolationModel[]>[] = [];
 
-    // Run all validators in parallel (performance optimization)
+    // Create validators conditionally based on rules (avoids unnecessary instantiation)
     if (rules.namingPatternRules.length > 0) {
-      const validator = new NamingPatternValidator(rules.namingPatternRules);
-      validationPromises.push(validator.validate(symbols, projectPath));
+      validationPromises.push(
+        new NamingPatternValidator(rules.namingPatternRules).validate(symbols, projectPath)
+      );
     }
 
     if (rules.dependencyRules.length > 0) {
-      const validator = new DependencyValidator(rules.dependencyRules);
-      validationPromises.push(validator.validate(symbols, projectPath));
+      validationPromises.push(
+        new DependencyValidator(rules.dependencyRules).validate(symbols, projectPath)
+      );
     }
 
     if (rules.synonymRules.length > 0 || rules.unreferencedRules.length > 0) {
-      const validator = new HygieneValidator(rules.synonymRules, rules.unreferencedRules);
-      validationPromises.push(validator.validate(symbols, projectPath));
+      validationPromises.push(
+        new HygieneValidator(rules.synonymRules, rules.unreferencedRules).validate(symbols, projectPath)
+      );
     }
 
     if (
@@ -205,16 +148,16 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       rules.classComplexityRules.length > 0 ||
       rules.granularityMetricRules.length > 0
     ) {
-      const validator = new FileMetricsValidator(
-        rules.fileSizeRules,
-        rules.testCoverageRules,
-        rules.documentationRules,
-        rules.classComplexityRules,
-        rules.granularityMetricRules,
-        this.fileExistenceChecker
+      validationPromises.push(
+        new FileMetricsValidator(
+          rules.fileSizeRules,
+          rules.testCoverageRules,
+          rules.documentationRules,
+          rules.classComplexityRules,
+          rules.granularityMetricRules,
+          this.fileExistenceChecker
+        ).validate(symbols, projectPath, fileCache)
       );
-      // Pass fileCache to eliminate redundant file reads
-      validationPromises.push(validator.validate(symbols, projectPath, fileCache));
     }
 
     if (
@@ -222,38 +165,31 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       rules.forbiddenPatternsRules.length > 0 ||
       rules.barrelPurityRules.length > 0
     ) {
-      const validator = new CodePatternValidator(
-        rules.forbiddenKeywordsRules,
-        rules.forbiddenPatternsRules,
-        rules.barrelPurityRules
+      validationPromises.push(
+        new CodePatternValidator(
+          rules.forbiddenKeywordsRules,
+          rules.forbiddenPatternsRules,
+          rules.barrelPurityRules
+        ).validate(symbols, projectPath, fileCache)
       );
-      // Pass fileCache to eliminate redundant file reads
-      validationPromises.push(validator.validate(symbols, projectPath, fileCache));
     }
 
     if (rules.requiredStructureRules.length > 0 || rules.minimumTestRatioRules.length > 0) {
-      const validator = new StructureValidator(
-        rules.requiredStructureRules,
-        rules.minimumTestRatioRules,
-        this.fileExistenceChecker
+      validationPromises.push(
+        new StructureValidator(
+          rules.requiredStructureRules,
+          rules.minimumTestRatioRules,
+          this.fileExistenceChecker
+        ).validate(symbols, projectPath)
       );
-      validationPromises.push(validator.validate(symbols, projectPath));
     }
 
-    // Early return if no validators to run
-    if (validationPromises.length === 0) {
-      return [];
-    }
+    if (validationPromises.length === 0) return [];
 
-    // Wait for all validators to complete in parallel
+    // Run all validators in parallel and deduplicate
     const results = await Promise.all(validationPromises);
     const violations = results.flat();
 
-    // Only deduplicate if we have violations
-    if (violations.length === 0) {
-      return violations;
-    }
-
-    return this.deduplicator.deduplicate(violations);
+    return violations.length > 0 ? this.deduplicator.deduplicate(violations) : violations;
   }
 }
