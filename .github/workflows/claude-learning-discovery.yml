@@ -1,17 +1,17 @@
 name: Claude Learning - Pattern Discovery
 
 on:
-  # Executa semanalmente para descobrir padrões
-  schedule:
-    - cron: '0 2 * * 0'  # Domingo às 2AM UTC
-
-  # Pode ser ativado manualmente
+  # Manual trigger for testing
   workflow_dispatch:
     inputs:
       analysis_depth:
         description: 'Depth of analysis (quick, medium, thorough)'
         required: false
         default: 'medium'
+
+  # TODO: Enable after testing
+  # schedule:
+  #   - cron: '0 2 * * 0'  # Domingo às 2AM UTC
 
   # Quando há muitas violations (threshold)
   # repository_dispatch:

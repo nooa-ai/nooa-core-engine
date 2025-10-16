@@ -15,12 +15,12 @@ on:
       - 'src/**/*.ts'
       - 'nooa.grammar.yaml'
 
-  # Diariamente às 3AM UTC
-  schedule:
-    - cron: '0 3 * * *'
-
-  # Manual
+  # Manual trigger
   workflow_dispatch:
+
+  # TODO: Enable after testing
+  # schedule:
+  #   - cron: '0 3 * * *'  # Diariamente às 3AM UTC
 
 jobs:
   dogfood-validation:
