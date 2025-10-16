@@ -1,0 +1,257 @@
+name: Claude Dogfooding - Continuous Self-Validation
+
+on:
+  # A cada push na main
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**/*.ts'
+      - 'nooa.grammar.yaml'
+      - 'package.json'
+
+  # A cada PR
+  pull_request:
+    paths:
+      - 'src/**/*.ts'
+      - 'nooa.grammar.yaml'
+
+  # Manual trigger
+  workflow_dispatch:
+
+  # TODO: Enable after testing
+  # schedule:
+  #   - cron: '0 3 * * *'  # Diariamente às 3AM UTC
+
+jobs:
+  dogfood-validation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      checks: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Para trend analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Nooa
+        run: npm run build
+
+      - name: Self-validate with Nooa
+        id: validation
+        continue-on-error: true
+        run: |
+          echo "🔍 Running Nooa self-validation..."
+          npm start . > validation-report.txt 2>&1
+
+          # Extrair métricas
+          violations=$(grep -oP 'Found \K\d+(?= architectural violation)' validation-report.txt || echo "0")
+          errors=$(grep -oP '\K\d+(?= errors)' validation-report.txt || echo "0")
+          warnings=$(grep -oP '\K\d+(?= warnings)' validation-report.txt || echo "0")
+
+          echo "violations=$violations" >> $GITHUB_OUTPUT
+          echo "errors=$errors" >> $GITHUB_OUTPUT
+          echo "warnings=$warnings" >> $GITHUB_OUTPUT
+
+          # Salvar histórico
+          mkdir -p .nooa/dogfooding
+          timestamp=$(date -u +"%Y-%m-%d_%H-%M-%S")
+          cat > .nooa/dogfooding/validation-${timestamp}.json <<EOF
+          {
+            "timestamp": "$timestamp",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "violations": $violations,
+            "errors": $errors,
+            "warnings": $warnings,
+            "event": "${{ github.event_name }}"
+          }
+          EOF
+
+          # Status check
+          if [ "$errors" -gt 0 ]; then
+            echo "❌ CRITICAL: Nooa has $errors architectural errors!"
+            exit 1
+          fi
+
+          echo "✅ Dogfooding passed: $violations total violations ($errors errors, $warnings warnings)"
+
+      - name: Analyze dogfooding results with Claude
+        if: always()
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            🐶 NOOA DOGFOODING: Self-Validation Analysis
+
+            CONTEXT:
+            - Repository: ${{ github.repository }}
+            - Event: ${{ github.event_name }}
+            - Branch: ${{ github.ref_name }}
+            - Commit: ${{ github.sha }}
+
+            VALIDATION RESULTS:
+            - Total Violations: ${{ steps.validation.outputs.violations }}
+            - Errors: ${{ steps.validation.outputs.errors }}
+            - Warnings: ${{ steps.validation.outputs.warnings }}
+
+            TASK:
+            You are the Nooa Dogfooding Analyzer. Analyze the self-validation results and trends.
+
+            1. **Read validation report**:
+               ```bash
+               cat validation-report.txt
+               ```
+
+            2. **Analyze trends**:
+               ```bash
+               # Compare with previous validations
+               ls -la .nooa/dogfooding/
+               cat .nooa/dogfooding/validation-*.json | tail -5
+               ```
+
+            3. **If errors > 0** (CRITICAL):
+               - Create HIGH PRIORITY issue
+               - Title: "🚨 DOGFOODING FAILURE: Nooa has architectural errors"
+               - Assign to maintainers
+               - Block merges until fixed
+               - List all errors with file locations
+
+            4. **If warnings increased by >20%**:
+               - Create issue with label "dogfooding-regression"
+               - Analyze what changed (git diff)
+               - Suggest refactoring priorities
+
+            5. **Track metrics**:
+               - Update `.nooa/dogfooding/metrics.json` with:
+                 * Violation trend (last 30 days)
+                 * Error-free streak (days)
+                 * Refactoring velocity (violations fixed per week)
+                 * Most common violation types
+
+            6. **Generate report** (write to `.nooa/dogfooding/latest-report.md`):
+               ```markdown
+               # Dogfooding Report - [timestamp]
+
+               ## Status: ✅ PASSING / ❌ FAILING
+
+               ## Metrics
+               - Errors: [count]
+               - Warnings: [count]
+               - Error-free streak: [days]
+
+               ## Trends
+               [Violation count over last 30 days - ASCII graph]
+
+               ## Top Issues
+               1. [Most common violation]
+               2. [Second most common]
+
+               ## Recommendations
+               [Prioritized list of refactorings]
+               ```
+
+            7. **Comment on PR** (if this is a pull_request event):
+               ```bash
+               # Check if running in PR context
+               if [ "${{ github.event_name }}" == "pull_request" ]; then
+                 gh pr comment ${{ github.event.pull_request.number }} --body "$(cat <<'COMMENT_EOF'
+               ## 🐶 Dogfooding Validation Results
+
+               **Status**: $(if [ "${{ steps.validation.outputs.errors }}" -eq 0 ]; then echo "✅ PASSING"; else echo "❌ FAILING"; fi)
+
+               ### Metrics
+               - **Total Violations**: ${{ steps.validation.outputs.violations }}
+               - **Errors**: ${{ steps.validation.outputs.errors }} $(if [ "${{ steps.validation.outputs.errors }}" -gt 0 ]; then echo "🔴"; fi)
+               - **Warnings**: ${{ steps.validation.outputs.warnings }}
+
+               ### Analysis
+               [Include trend analysis from metrics.json if available]
+
+               ### Recommendations
+               [List top 3 refactoring priorities]
+
+               ---
+               📊 [Full Report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+               COMMENT_EOF
+               )"
+               fi
+               ```
+
+            CONSTRAINTS:
+            - Errors = BLOCKING (must fix before merge)
+            - Warnings = INFORMATIONAL (track but don't block)
+            - Always maintain historical data
+            - Be encouraging about progress
+            - ALWAYS comment on PR if event is pull_request
+
+          claude_args: '--allowed-tools "Bash(gh pr comment:*),Bash(gh issue create:*),Bash(git:*),Bash(cat:*),Bash(ls:*),Read,Write,Glob,Grep"'
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dogfooding-report-${{ github.sha }}
+          path: |
+            validation-report.txt
+            .nooa/dogfooding/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Commit dogfooding data
+        if: github.event_name != 'pull_request'
+        run: |
+          git config --local user.email "nooa-dogfooding@users.noreply.github.com"
+          git config --local user.name "Nooa Dogfooding Bot"
+          git add .nooa/dogfooding/
+          git diff --staged --quiet || git commit -m "chore(dogfooding): update self-validation data [skip ci]"
+          git push origin HEAD:refs/heads/dogfooding-data || true
+
+      - name: Create status check
+        if: always()
+        run: |
+          if [ "${{ steps.validation.outputs.errors }}" -gt 0 ]; then
+            echo "::error::❌ Dogfooding FAILED: ${{ steps.validation.outputs.errors }} errors detected"
+            exit 1
+          else
+            echo "::notice::✅ Dogfooding PASSED: 0 errors"
+          fi
+
+      - name: Generate summary
+        if: always()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # 🐶 Dogfooding Results
+
+          ## Validation Status
+          $(if [ "${{ steps.validation.outputs.errors }}" -eq 0 ]; then echo "✅ **PASSING**"; else echo "❌ **FAILING**"; fi)
+
+          ## Metrics
+          | Metric | Count |
+          |--------|-------|
+          | Total Violations | ${{ steps.validation.outputs.violations }} |
+          | Errors | ${{ steps.validation.outputs.errors }} |
+          | Warnings | ${{ steps.validation.outputs.warnings }} |
+
+          ## Details
+          $(if [ "${{ steps.validation.outputs.errors }}" -gt 0 ]; then
+            echo "**🚨 CRITICAL**: Nooa has architectural errors and must be fixed immediately!"
+          else
+            echo "Nooa validates itself successfully. Check warnings for improvement opportunities."
+          fi)
+
+          [View full report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOF

@@ -5,6 +5,8 @@
  * - Forbidden keywords
  * - Forbidden regex patterns
  * - Barrel purity (index files should only re-export)
+ *
+ * Refactored in v1.4.1 to extract pattern checking logic to PatternCheckerHelper.
  */
 import {
   ArchitecturalViolationModel,
@@ -15,14 +17,18 @@ import {
 } from '../../domain/models';
 import { BaseRuleValidator } from './base-rule.validator';
 import { readFileContent } from '../helpers';
+import { PatternCheckerHelper } from './patterns/pattern-checker.helper';
 
 export class CodePatternValidator extends BaseRuleValidator {
+  private readonly patternChecker: PatternCheckerHelper;
+
   constructor(
     private readonly forbiddenKeywordsRules: ForbiddenKeywordsRule[],
     private readonly forbiddenPatternsRules: ForbiddenPatternsRule[],
     private readonly barrelPurityRules: BarrelPurityRule[]
   ) {
     super();
+    this.patternChecker = new PatternCheckerHelper();
   }
 
   async validate(
@@ -57,33 +63,14 @@ export class CodePatternValidator extends BaseRuleValidator {
     rule: ForbiddenKeywordsRule,
     fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const symbolsToCheck = symbols.filter((symbol) =>
-      this.roleMatcher.matches(symbol.role, rule.from.role)
+    return this.validateContent(
+      symbols,
+      rule,
+      fileCache,
+      (symbol) => this.roleMatcher.matches(symbol.role, rule.from.role),
+      (content) => this.patternChecker.findForbiddenKeyword(content, rule.contains_forbidden),
+      (match) => `contains forbidden keyword '${match}'`
     );
-
-    // Performance: Use cache if available
-    const validationPromises = symbolsToCheck.map(async (symbol) => {
-      const content = readFileContent(symbol.path, fileCache);
-      if (!content) return null;
-
-      for (const keyword of rule.contains_forbidden) {
-        if (content.includes(keyword)) {
-          return {
-            ruleName: rule.name,
-            severity: rule.severity,
-            file: symbol.path,
-            message: `${rule.name}: ${symbol.path} contains forbidden keyword '${keyword}'${rule.comment ? ` - ${rule.comment}` : ''}`,
-            fromRole: symbol.role,
-            toRole: undefined,
-            dependency: undefined,
-          };
-        }
-      }
-      return null;
-    });
-
-    const results = await Promise.all(validationPromises);
-    return results.filter((v) => v !== null) as ArchitecturalViolationModel[];
   }
 
   private async validateForbiddenPatterns(
@@ -91,39 +78,14 @@ export class CodePatternValidator extends BaseRuleValidator {
     rule: ForbiddenPatternsRule,
     fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const symbolsToCheck = symbols.filter((symbol) =>
-      this.roleMatcher.matches(symbol.role, rule.from.role)
+    return this.validateContent(
+      symbols,
+      rule,
+      fileCache,
+      (symbol) => this.roleMatcher.matches(symbol.role, rule.from.role),
+      (content) => this.patternChecker.findForbiddenPattern(content, rule.contains_forbidden),
+      (match) => `contains forbidden pattern '${match}'`
     );
-
-    // Performance: Use cache if available
-    const validationPromises = symbolsToCheck.map(async (symbol) => {
-      const content = readFileContent(symbol.path, fileCache);
-      if (!content) return null;
-
-      for (const pattern of rule.contains_forbidden) {
-        try {
-          const regex = new RegExp(pattern);
-          if (regex.test(content)) {
-            return {
-              ruleName: rule.name,
-              severity: rule.severity,
-              file: symbol.path,
-              message: `${rule.name}: ${symbol.path} contains forbidden pattern '${pattern}'${rule.comment ? ` - ${rule.comment}` : ''}`,
-              fromRole: symbol.role,
-              toRole: undefined,
-              dependency: undefined,
-            };
-          }
-        } catch (error) {
-          // Invalid regex pattern, skip
-          continue;
-        }
-      }
-      return null;
-    });
-
-    const results = await Promise.all(validationPromises);
-    return results.filter((v) => v !== null) as ArchitecturalViolationModel[];
   }
 
   private async validateBarrelPurity(
@@ -132,36 +94,60 @@ export class CodePatternValidator extends BaseRuleValidator {
     fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const filePattern = new RegExp(rule.for.file_pattern);
-    const symbolsToCheck = symbols.filter((symbol) => filePattern.test(symbol.path));
+    return this.validateContent(
+      symbols,
+      rule,
+      fileCache,
+      (symbol) => filePattern.test(symbol.path),
+      (content) => this.patternChecker.findForbiddenPattern(content, rule.contains_forbidden),
+      (match) => `Barrel file contains forbidden pattern '${match}' - should only re-export`
+    );
+  }
 
-    // Performance: Use cache if available
+  /**
+   * Generic content validation method to reduce duplication
+   */
+  private async validateContent(
+    symbols: CodeSymbolModel[],
+    rule: ForbiddenKeywordsRule | ForbiddenPatternsRule | BarrelPurityRule,
+    fileCache: Map<string, string> | undefined,
+    filterFn: (symbol: CodeSymbolModel) => boolean,
+    checkFn: (content: string) => string | null,
+    messageFn: (match: string) => string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const symbolsToCheck = symbols.filter(filterFn);
+
     const validationPromises = symbolsToCheck.map(async (symbol) => {
       const content = readFileContent(symbol.path, fileCache);
       if (!content) return null;
 
-      for (const pattern of rule.contains_forbidden) {
-        try {
-          const regex = new RegExp(pattern);
-          if (regex.test(content)) {
-            return {
-              ruleName: rule.name,
-              severity: rule.severity,
-              file: symbol.path,
-              message: `${rule.name}: Barrel file ${symbol.path} contains forbidden pattern '${pattern}' - should only re-export${rule.comment ? ` - ${rule.comment}` : ''}`,
-              fromRole: symbol.role,
-              toRole: undefined,
-              dependency: undefined,
-            };
-          }
-        } catch (error) {
-          // Invalid regex pattern, skip
-          continue;
-        }
+      const match = checkFn(content);
+      if (match) {
+        return this.createViolation(rule, symbol, messageFn(match));
       }
       return null;
     });
 
     const results = await Promise.all(validationPromises);
     return results.filter((v) => v !== null) as ArchitecturalViolationModel[];
+  }
+
+  /**
+   * Creates a violation object with consistent structure
+   */
+  private createViolation(
+    rule: ForbiddenKeywordsRule | ForbiddenPatternsRule | BarrelPurityRule,
+    symbol: CodeSymbolModel,
+    reason: string
+  ): ArchitecturalViolationModel {
+    return {
+      ruleName: rule.name,
+      severity: rule.severity,
+      file: symbol.path,
+      message: `${rule.name}: ${symbol.path} ${reason}${rule.comment ? ` - ${rule.comment}` : ''}`,
+      fromRole: symbol.role,
+      toRole: undefined,
+      dependency: undefined,
+    };
   }
 }

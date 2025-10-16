@@ -8,18 +8,25 @@
  * - Implements a protocol from the Data layer
  * - Contains infrastructure-specific code (ts-morph library)
  * - Can be replaced with another parser without affecting business logic
+ *
+ * Refactored in v1.4.1 to extract dependency resolution logic.
  */
 
 import { Project, SourceFile } from 'ts-morph';
 import * as path from 'path';
 import { ICodeParser } from '../../data/protocols';
 import { CodeSymbolModel } from '../../domain/models';
-import { SymbolExtractorHelper } from './helpers';
+import { SymbolExtractorHelper, DependencyResolverHelper } from './helpers';
 
 /**
  * TypeScript code parser implementation using ts-morph
  */
 export class TSMorphParserAdapter implements ICodeParser {
+  private readonly dependencyResolver: DependencyResolverHelper;
+
+  constructor() {
+    this.dependencyResolver = new DependencyResolverHelper();
+  }
   /**
    * Parses a TypeScript project and extracts code symbols with dependencies
    *
@@ -123,34 +130,16 @@ export class TSMorphParserAdapter implements ICodeParser {
   ): void {
     if (!moduleSpecifier) return;
 
-    if (!(moduleSpecifier.startsWith('.') || moduleSpecifier.startsWith('/'))) {
-      return; // Ignore external packages/aliases for now
-    }
+    const sourceFileDir = path.dirname(sourceFile.getFilePath());
+    const resolvedPath = this.dependencyResolver.resolve(
+      sourceFile.getProject(),
+      sourceFileDir,
+      moduleSpecifier,
+      projectPath
+    );
 
-    try {
-      const sourceFileDir = path.dirname(sourceFile.getFilePath());
-      const basePath = path.resolve(sourceFileDir, moduleSpecifier);
-      const candidateFiles = [
-        '',
-        '.ts',
-        '.tsx',
-        '.d.ts',
-        '/index.ts',
-        '/index.tsx',
-      ].map((ext) => basePath + ext);
-
-      for (const candidate of candidateFiles) {
-        const foundFile = sourceFile.getProject().getSourceFile(candidate);
-        if (!foundFile) {
-          continue;
-        }
-
-        const relativePath = this.getRelativePath(foundFile.getFilePath(), projectPath);
-        dependencies.add(relativePath);
-        break;
-      }
-    } catch {
-      // Ignore resolution errors: aliases or missing files are handled elsewhere
+    if (resolvedPath) {
+      dependencies.add(resolvedPath);
     }
   }
 
