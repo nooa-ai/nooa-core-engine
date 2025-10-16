@@ -215,6 +215,25 @@ export class YamlGrammarRepository implements IGrammarRepository {
         if (typeof rule.max_properties !== 'number' || rule.max_properties <= 0) {
           throw new Error(`Invalid rule '${rule.name}': class_complexity rules must have 'max_properties' as a positive number in ${filePath}`);
         }
+      } else if (rule.rule === 'minimum_test_ratio') {
+        // Minimum test ratio rule validation
+        if (!rule.global || typeof rule.global !== 'object') {
+          throw new Error(`Invalid rule '${rule.name}': minimum_test_ratio rules must have a 'global' object in ${filePath}`);
+        }
+        if (typeof rule.global.test_ratio !== 'number' || rule.global.test_ratio < 0 || rule.global.test_ratio > 1) {
+          throw new Error(`Invalid rule '${rule.name}': minimum_test_ratio rules must have 'global.test_ratio' as a number between 0 and 1 in ${filePath}`);
+        }
+      } else if (rule.rule === 'granularity_metric') {
+        // Granularity metric rule validation
+        if (!rule.global || typeof rule.global !== 'object') {
+          throw new Error(`Invalid rule '${rule.name}': granularity_metric rules must have a 'global' object in ${filePath}`);
+        }
+        if (typeof rule.global.target_loc_per_file !== 'number' || rule.global.target_loc_per_file <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': granularity_metric rules must have 'global.target_loc_per_file' as a positive number in ${filePath}`);
+        }
+        if (typeof rule.global.warning_threshold_multiplier !== 'number' || rule.global.warning_threshold_multiplier <= 0) {
+          throw new Error(`Invalid rule '${rule.name}': granularity_metric rules must have 'global.warning_threshold_multiplier' as a positive number in ${filePath}`);
+        }
       } else if (['allowed', 'forbidden', 'required'].includes(rule.rule)) {
         // Dependency rule validation
         if (!rule.from || !rule.from.role) {
@@ -228,7 +247,7 @@ export class YamlGrammarRepository implements IGrammarRepository {
         }
       } else {
         throw new Error(
-          `Invalid rule '${rule.name}': rule type must be 'allowed', 'forbidden', 'required', 'naming_pattern', 'find_synonyms', 'detect_unreferenced', 'file_size', 'test_coverage', 'forbidden_keywords', 'required_structure', 'documentation_required', or 'class_complexity' in ${filePath}`
+          `Invalid rule '${rule.name}': rule type must be 'allowed', 'forbidden', 'required', 'naming_pattern', 'find_synonyms', 'detect_unreferenced', 'file_size', 'test_coverage', 'forbidden_keywords', 'required_structure', 'documentation_required', 'class_complexity', 'minimum_test_ratio', or 'granularity_metric' in ${filePath}`
         );
       }
     }
@@ -339,6 +358,23 @@ export class YamlGrammarRepository implements IGrammarRepository {
             max_public_methods: rule.max_public_methods,
             max_properties: rule.max_properties,
             rule: 'class_complexity' as const,
+          };
+        } else if (rule.rule === 'minimum_test_ratio') {
+          return {
+            ...baseRule,
+            global: {
+              test_ratio: rule.global.test_ratio,
+            },
+            rule: 'minimum_test_ratio' as const,
+          };
+        } else if (rule.rule === 'granularity_metric') {
+          return {
+            ...baseRule,
+            global: {
+              target_loc_per_file: rule.global.target_loc_per_file,
+              warning_threshold_multiplier: rule.global.warning_threshold_multiplier,
+            },
+            rule: 'granularity_metric' as const,
           };
         } else {
           // Dependency rule

@@ -28,6 +28,8 @@ import {
   RequiredStructureRule,
   DocumentationRequiredRule,
   ClassComplexityRule,
+  MinimumTestRatioRule,
+  GranularityMetricRule,
 } from '../../domain/models';
 import { ICodeParser, IGrammarRepository } from '../protocols';
 
@@ -133,6 +135,8 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rule.rule !== 'required_structure' &&
         rule.rule !== 'documentation_required' &&
         rule.rule !== 'class_complexity' &&
+        rule.rule !== 'minimum_test_ratio' &&
+        rule.rule !== 'granularity_metric' &&
         'to' in rule &&
         rule.to &&
         'circular' in rule.to &&
@@ -255,6 +259,28 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       }
     }
 
+    // Check for minimum test ratio rules
+    const minimumTestRatioRules = grammar.rules.filter(
+      (rule): rule is MinimumTestRatioRule => rule.rule === 'minimum_test_ratio'
+    );
+    if (minimumTestRatioRules.length > 0) {
+      for (const rule of minimumTestRatioRules) {
+        const testRatioViolations = this.validateMinimumTestRatio(symbols, rule);
+        violations.push(...testRatioViolations);
+      }
+    }
+
+    // Check for granularity metric rules
+    const granularityMetricRules = grammar.rules.filter(
+      (rule): rule is GranularityMetricRule => rule.rule === 'granularity_metric'
+    );
+    if (granularityMetricRules.length > 0) {
+      for (const rule of granularityMetricRules) {
+        const granularityViolations = await this.validateGranularityMetric(symbols, rule, projectPath);
+        violations.push(...granularityViolations);
+      }
+    }
+
     // Check each symbol's dependencies against forbidden/allowed rules
     for (const symbol of symbols) {
       for (const dependency of symbol.dependencies) {
@@ -347,7 +373,9 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rule.rule === 'forbidden_keywords' ||
         rule.rule === 'required_structure' ||
         rule.rule === 'documentation_required' ||
-        rule.rule === 'class_complexity'
+        rule.rule === 'class_complexity' ||
+        rule.rule === 'minimum_test_ratio' ||
+        rule.rule === 'granularity_metric'
       ) {
         continue;
       }
@@ -1171,6 +1199,120 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       } catch (error) {
         // File might not exist or be readable, skip
       }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates minimum test ratio requirements
+   *
+   * @param symbols - Code symbols
+   * @param rule - Minimum test ratio rule
+   * @returns Array of violations if test ratio is below requirement
+   */
+  private validateMinimumTestRatio(
+    symbols: CodeSymbolModel[],
+    rule: MinimumTestRatioRule
+  ): ArchitecturalViolationModel[] {
+    const violations: ArchitecturalViolationModel[] = [];
+
+    // Classify files as test or production
+    const testFiles = symbols.filter((symbol) =>
+      symbol.path.includes('.spec.') ||
+      symbol.path.includes('.test.') ||
+      symbol.path.startsWith('tests/') ||
+      symbol.path.startsWith('test/')
+    );
+
+    const productionFiles = symbols.filter((symbol) =>
+      !symbol.path.includes('.spec.') &&
+      !symbol.path.includes('.test.') &&
+      !symbol.path.startsWith('tests/') &&
+      !symbol.path.startsWith('test/')
+    );
+
+    // Calculate ratio
+    if (productionFiles.length === 0) {
+      // No production files, no violation
+      return violations;
+    }
+
+    const currentRatio = testFiles.length / productionFiles.length;
+    const requiredRatio = rule.global.test_ratio;
+
+    if (currentRatio < requiredRatio) {
+      violations.push({
+        ruleName: rule.name,
+        severity: rule.severity,
+        file: 'PROJECT',
+        message: `${rule.name}: Test ratio is ${currentRatio.toFixed(2)} (${testFiles.length} test files / ${productionFiles.length} production files), minimum required: ${requiredRatio}${rule.comment ? ` - ${rule.comment}` : ''}`,
+        fromRole: undefined,
+        toRole: undefined,
+        dependency: undefined,
+      });
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates file granularity metrics
+   *
+   * @param symbols - Code symbols
+   * @param rule - Granularity metric rule
+   * @param projectPath - Project path
+   * @returns Array of violations if average file size exceeds threshold
+   */
+  private async validateGranularityMetric(
+    symbols: CodeSymbolModel[],
+    rule: GranularityMetricRule,
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Skip empty projects
+    if (symbols.length === 0) {
+      return violations;
+    }
+
+    // Calculate average lines per file
+    let totalLines = 0;
+    let fileCount = 0;
+
+    for (const symbol of symbols) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+        const lines = content.split('\n').length;
+        totalLines += lines;
+        fileCount++;
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    // If no files could be read, no violation
+    if (fileCount === 0) {
+      return violations;
+    }
+
+    const averageLinesPerFile = totalLines / fileCount;
+    const targetLoc = rule.global.target_loc_per_file;
+    const threshold = targetLoc * rule.global.warning_threshold_multiplier;
+
+    if (averageLinesPerFile > threshold) {
+      violations.push({
+        ruleName: rule.name,
+        severity: rule.severity,
+        file: 'PROJECT',
+        message: `${rule.name}: Average lines per file: ${Math.round(averageLinesPerFile)}, target: ${targetLoc} (threshold: ${Math.round(threshold)})${rule.comment ? ` - ${rule.comment}` : ''}`,
+        fromRole: undefined,
+        toRole: undefined,
+        dependency: undefined,
+      });
     }
 
     return violations;

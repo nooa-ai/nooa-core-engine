@@ -571,13 +571,12 @@ rules:
 
   # 6. MINIMUM TEST RATIO (Priority: HIGH)
   # Current: 0% test files | Target: 20% minimum (best practice: 24.6%)
-  # NOTE: Requires 'minimum_test_ratio' rule type not yet implemented
-  # - name: "Minimum-Test-File-Ratio"
-  #   severity: warning
-  #   comment: "Project should have at least 20% test files (current: 0%, target: 20%+)"
-  #   global:
-  #     test_ratio: 0.20
-  #   rule: "minimum_test_ratio"
+  - name: "Minimum-Test-File-Ratio"
+    severity: warning
+    comment: "Project should have at least 20% test files (current: 0%, target: 20%+)"
+    global:
+      test_ratio: 0.20
+    rule: "minimum_test_ratio"
 
   # 7. REQUIRED ARCHITECTURAL LAYERS (Priority: CRITICAL)
   # Current: Missing validation layer | Target: All Clean Architecture layers
@@ -622,14 +621,13 @@ rules:
 
   # 10. FILE GRANULARITY CHECK (Priority: MEDIUM)
   # Current: 22 files | Expected: ~138 files based on LOC/file ratio
-  # NOTE: Requires 'granularity_metric' rule type not yet implemented
-  # - name: "File-Granularity-Check"
-  #   severity: info
-  #   comment: "Project should have adequate file granularity (target: 10-20 LOC/file)"
-  #   global:
-  #     target_loc_per_file: 20
-  #     warning_threshold_multiplier: 4.0
-  #   rule: "granularity_metric"
+  - name: "File-Granularity-Check"
+    severity: info
+    comment: "Project should have adequate file granularity (target: 10-20 LOC/file)"
+    global:
+      target_loc_per_file: 20
+      warning_threshold_multiplier: 4.0
+    rule: "granularity_metric"
 
   # 11. NO VALIDATION IN CONTROLLERS (Priority: CRITICAL)
   # Enforces separation of validation from presentation layer
