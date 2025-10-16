@@ -365,10 +365,10 @@ rules:
   # Note: index.ts files are barrel exports and are exempt from naming conventions
   - name: "Adapter-Files-Follow-Convention"
     severity: warning
-    comment: "AI NOTE: Infrastructure file doesn't follow .adapter.ts or .repository.ts naming convention - breaks discoverability, creates confusion about file purpose, inconsistent codebase navigation. REFACTOR: Rename file to match convention. Files implementing ICodeParser should be named something.adapter.ts. Files implementing data storage should be named something.repository.ts. Use descriptive prefix indicating what is being adapted (ts-morph-parser.adapter.ts, yaml-grammar.repository.ts). EXAMPLE: If file is named parser.ts in infra/parsers/, this is WRONG. Instead: ts-morph-parser.adapter.ts. Clearly indicates it's an adapter for ts-morph. Role obvious from filename. BENEFIT: Immediate recognition of file role from name, easier codebase navigation, consistent file organization, new developers find files faster, grep/search more effective, prevents ambiguous names like 'handler.ts' or 'service.ts'."
+    comment: "AI NOTE: Infrastructure file doesn't follow naming convention (.adapter.ts, .repository.ts, .validator.ts, .helper.ts, or .transformer.ts) - breaks discoverability, creates confusion about file purpose, inconsistent codebase navigation. REFACTOR: Rename file to match convention. Files implementing ICodeParser should be named something.adapter.ts. Files implementing data storage should be named something.repository.ts. Validation logic should be named something.validator.ts. Data transformers should be named something.transformer.ts. Internal utilities should be named something.helper.ts. Use descriptive prefix indicating purpose (ts-morph-parser.adapter.ts, yaml-grammar.repository.ts, schema.validator.ts, hygiene-rule.transformer.ts, symbol-extractor.helper.ts). EXAMPLE: If file is named parser.ts in infra/parsers/, this is WRONG. Instead: ts-morph-parser.adapter.ts. Clearly indicates it's an adapter for ts-morph. Role obvious from filename. BENEFIT: Immediate recognition of file role from name, easier codebase navigation, consistent file organization, new developers find files faster, grep/search more effective, prevents ambiguous names like 'handler.ts' or 'service.ts'."
     for:
       role: ADVERB_CONCRETE
-    pattern: "(\\.(adapter|repository)\\.ts|/index\\.ts)$"
+    pattern: "(\\.(adapter|repository|validator|helper|transformer)\\.ts|/index\\.ts)$"
     rule: "naming_pattern"
 
   - name: "UseCase-Files-Follow-Convention"

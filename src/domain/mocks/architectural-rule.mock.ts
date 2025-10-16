@@ -1,3 +1,46 @@
+/**
+ * Architectural Rule Test Mocks
+ *
+ * Provides factory functions for creating test fixtures of architectural rules.
+ * These mocks enable consistent, DRY testing of use cases and validators that
+ * work with architectural rules from the grammar.
+ *
+ * @module domain/mocks/architectural-rule
+ *
+ * Design rationale:
+ * - **Test Data Builder Pattern:** Each factory function creates a valid rule
+ *   with sensible defaults, accepting overrides for specific test scenarios
+ * - **Type Safety:** Leverages TypeScript discriminated unions to ensure only
+ *   valid rule combinations can be created
+ * - **Reusability:** Centralizes test data creation, making tests more maintainable
+ *   and reducing duplication across test suites
+ *
+ * @example Basic usage
+ * ```typescript
+ * // Create a forbidden dependency rule
+ * const rule = makeDependencyRuleMock({ rule: 'forbidden' });
+ *
+ * // Create a naming pattern rule with custom pattern
+ * const naming = makeNamingPatternRuleMock({
+ *   pattern: '.*\\.controller\\.ts$',
+ *   for: { role: 'CONTROLLER' }
+ * });
+ * ```
+ *
+ * @example Testing use cases
+ * ```typescript
+ * it('Should detect forbidden dependencies', () => {
+ *   const rule = makeDependencyRuleMock({
+ *     from: { role: 'DOMAIN' },
+ *     to: { role: 'INFRA' },
+ *     rule: 'forbidden'
+ *   });
+ *   const result = analyzeCodebase({ rules: [rule] });
+ *   expect(result.violations).toContainViolation(rule.name);
+ * });
+ * ```
+ */
+
 import {
   ArchitecturalRuleModel,
   DependencyRule,
