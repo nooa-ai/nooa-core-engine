@@ -739,6 +739,34 @@ rules:
     comment: "AI NOTE: Discovered via manual testing of learning system. This test rule validates the grammar evolution workflow by checking use case naming patterns."
 
   # ============================================================================
+  # BUSINESS LOGIC ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # These patterns prevent common business logic errors that cause bugs in
+  # production systems. Discovered through community knowledge and adapted
+  # to Nooa's architecture.
+
+  # Critical: Money calculations with floating point
+  - name: "No-Float-For-Money-Calculations"
+    severity: error
+    comment: "AI NOTE: Using float/double for money calculations - precision loss risk leads to financial errors. REFACTOR: Use integer representation (cents) or decimal library. Never use parseFloat/Number for money. Store amounts as integers (multiply by 100). Use libraries like decimal.js or big.js for precise arithmetic. EXAMPLE: If code has 'const total = price * 1.07' with float, this is WRONG. Instead: use cents: 'const totalCents = priceCents * 107 / 100 | 0' or library: 'const total = new Decimal(price).times(1.07)'. BENEFIT: Eliminates floating-point precision errors (0.1 + 0.2 !== 0.3), prevents financial calculation bugs, ensures accurate money handling, meets accounting standards, avoids rounding errors in currency conversions."
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(price|cost|amount|total|balance|payment|fee|money)\\s*[\\*\\+\\-\\/].*\\b(float|Float|double|Double|parseFloat)\\b"
+    rule: "forbidden_patterns"
+
+  # Critical: Percentage calculation operator precedence errors
+  - name: "No-Percentage-Calculation-Errors"
+    severity: error
+    comment: "AI NOTE: Percentage calculation missing parentheses - operator precedence bug causes incorrect results. REFACTOR: Always use parentheses in percentage calculations to ensure correct order of operations. Formula: (value * percentage) / 100 or value * (percentage / 100). EXAMPLE: If code has 'discount = price / 100 * 15', this calculates (price / 100) * 15 instead of price * (15 / 100) - WRONG order! Instead: 'discount = (price * 15) / 100' or 'discount = price * (15 / 100)'. Make intent explicit with parentheses. BENEFIT: Prevents mathematical errors from operator precedence, makes calculation intent clear, ensures consistent results, easier code review, reduces debugging time, prevents business logic bugs."
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\b\\d+\\s*\\/\\s*100\\s*\\*(?!\\s*\\()"
+      - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
+    rule: "forbidden_patterns"
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding

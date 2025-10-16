@@ -8,6 +8,7 @@
     "start": "node dist/main/server.js",
     "dev": "ts-node src/main/server.ts",
     "analyze": "npm run build && npm start",
+    "dogfooding": "npm run build && npm start .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

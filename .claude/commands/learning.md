@@ -79,6 +79,113 @@ ls -la .nooa/dogfooding/validation-*.json | tail -5
 
 ---
 
+## Pattern Types Supported
+
+Nooa's continuous learning can discover and evolve these rule types:
+
+### 1. Architectural Patterns (`forbidden`/`required`)
+Dependency rules between layers:
+```yaml
+- name: "Domain-Independence"
+  from: { role: NOUN }
+  to: { role: ADVERB_CONCRETE }
+  rule: "forbidden"
+```
+
+### 2. Business Logic Anti-Patterns (`forbidden_patterns`)
+Regex-based code pattern detection:
+```yaml
+- name: "No-Float-For-Money-Calculations"
+  severity: error
+  from: { role: ALL }
+  contains_forbidden:
+    - "(price|cost|amount)\\s*[\\*\\+\\-\\/].*\\b(parseFloat|Float)\\b"
+  rule: "forbidden_patterns"
+  comment: "AI NOTE: [detailed explanation]"
+```
+
+**Common business logic patterns:**
+- Money calculations with floats
+- Percentage calculation errors
+- Timezone-naive datetime usage
+- Email regex validation
+- Division by zero risks
+- Unsafe type coercion
+
+### 3. Code Quality Patterns (`forbidden_keywords`)
+Simple keyword detection:
+```yaml
+- name: "No-Console-Log"
+  from: { role: ALL }
+  contains_forbidden: ["console.log", "debugger"]
+  rule: "forbidden_keywords"
+```
+
+### 4. Naming Conventions (`naming_pattern`)
+File naming rules:
+```yaml
+- name: "UseCase-Files-Follow-Convention"
+  for: { role: VERB_IMPLEMENTATION }
+  pattern: "(\\.usecase\\.ts|/index\\.ts)$"
+  rule: "naming_pattern"
+```
+
+### 5. Size Limits (`file_size`)
+File complexity rules:
+```yaml
+- name: "File-Size-Error"
+  for: { role: ALL }
+  max_lines: 200
+  rule: "file_size"
+```
+
+---
+
+## Example: Proposing a Business Logic Pattern
+
+When creating a learning insight issue for a business logic pattern:
+
+```markdown
+## 🔍 Pattern Discovery
+
+**Pattern Name**: `unsafe-array-access`
+**Severity**: `warning`
+**Category**: Business Logic Anti-Pattern
+
+## 📊 Analysis
+
+### Problem
+Accessing array elements without bounds checking causes runtime errors.
+
+### Detection Pattern
+```regex
+\[\s*\d+\s*\](?!.*\b(length|size|check|if)\b)
+```
+
+### Frequency
+- 23 occurrences across 12 files
+- Confidence: 0.92
+
+## 🎯 Proposed Grammar Rule
+
+```yaml
+- name: "No-Unsafe-Array-Access"
+  severity: warning
+  from: { role: ALL }
+  contains_forbidden:
+    - "\\[\\s*\\d+\\s*\\](?!.*\\b(length|size|check|if)\\b)"
+  rule: "forbidden_patterns"
+  comment: "AI NOTE: Array access without bounds check..."
+```
+
+## ✅ Evidence
+- Issue #42 - Array access crash in production
+- 23 files affected in last 6 months
+- Pattern correlates with 15% of runtime errors
+```
+
+---
+
 ## Workflow
 
 Based on user choice, execute the corresponding section above and provide clear feedback about:
