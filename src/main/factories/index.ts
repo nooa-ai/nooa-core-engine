@@ -4,3 +4,4 @@
  */
 
 export * from './analyze-codebase.factory';
+export * from './controllers/cli-controller.factory';

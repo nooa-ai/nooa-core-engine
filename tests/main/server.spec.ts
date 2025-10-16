@@ -1,16 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CliController } from '../../src/presentation/controllers/cli.controller';
-import { makeAnalyzeCodebaseUseCase } from '../../src/main/factories/analyze-codebase.factory';
+import { makeCliController } from '../../src/main/factories/controllers/cli-controller.factory';
 
 // Mock the modules
-vi.mock('../../src/presentation/controllers/cli.controller', () => ({
-  CliController: vi.fn().mockImplementation(() => ({
-    handle: vi.fn()
-  }))
-}));
-
-vi.mock('../../src/main/factories/analyze-codebase.factory', () => ({
-  makeAnalyzeCodebaseUseCase: vi.fn()
+vi.mock('../../src/main/factories/controllers/cli-controller.factory', () => ({
+  makeCliController: vi.fn()
 }));
 
 // Mock console methods
@@ -23,12 +16,10 @@ describe('Main Server', () => {
   });
 
   it('should bootstrap the application and handle CLI commands', async () => {
-    const mockUseCase = { analyze: vi.fn() };
     const mockHandle = vi.fn();
     const mockController = { handle: mockHandle };
 
-    vi.mocked(makeAnalyzeCodebaseUseCase).mockReturnValue(mockUseCase);
-    vi.mocked(CliController).mockImplementation(() => mockController);
+    vi.mocked(makeCliController).mockReturnValue(mockController);
 
     // Import and run the server
     await import('../../src/main/server');
@@ -36,8 +27,7 @@ describe('Main Server', () => {
     // Wait for async execution
     await new Promise(resolve => setTimeout(resolve, 10));
 
-    expect(makeAnalyzeCodebaseUseCase).toHaveBeenCalled();
-    expect(CliController).toHaveBeenCalledWith(mockUseCase);
+    expect(makeCliController).toHaveBeenCalled();
     expect(mockHandle).toHaveBeenCalledWith(process);
   });
 
@@ -46,21 +36,16 @@ describe('Main Server', () => {
     const mockHandle = vi.fn().mockRejectedValue(error);
     const mockController = { handle: mockHandle };
 
-    vi.mocked(makeAnalyzeCodebaseUseCase).mockReturnValue({ analyze: vi.fn() });
-    vi.mocked(CliController).mockImplementation(() => mockController);
+    vi.mocked(makeCliController).mockReturnValue(mockController);
 
     // Clear module cache to re-import
     vi.resetModules();
 
     // Re-mock after reset
-    vi.mock('../../src/presentation/controllers/cli.controller', () => ({
-      CliController: vi.fn().mockImplementation(() => ({
+    vi.mock('../../src/main/factories/controllers/cli-controller.factory', () => ({
+      makeCliController: vi.fn(() => ({
         handle: mockHandle
       }))
-    }));
-
-    vi.mock('../../src/main/factories/analyze-codebase.factory', () => ({
-      makeAnalyzeCodebaseUseCase: vi.fn(() => ({ analyze: vi.fn() }))
     }));
 
     // Import and run the server

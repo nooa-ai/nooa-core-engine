@@ -13,6 +13,7 @@
 
 import { IAnalyzeCodebase } from '../../domain/usecases';
 import { ArchitecturalViolationModel } from '../../domain/models';
+import { IValidation } from '../../validation/protocols';
 
 /**
  * CLI Controller for the Nooa architectural analysis tool
@@ -22,8 +23,12 @@ export class CliController {
    * Constructor with dependency injection
    *
    * @param analyzeCodebase - The use case for analyzing codebases
+   * @param validator - Validates CLI arguments before processing
    */
-  constructor(private readonly analyzeCodebase: IAnalyzeCodebase) {}
+  constructor(
+    private readonly analyzeCodebase: IAnalyzeCodebase,
+    private readonly validator: IValidation,
+  ) {}
 
   /**
    * Handles the CLI command execution
@@ -35,13 +40,21 @@ export class CliController {
       // Parse command line arguments
       const args = process.argv.slice(2);
 
-      // Display usage if no arguments
-      if (args.length === 0) {
+      // Validate CLI arguments
+      const validationResult = this.validator.validate({ args });
+
+      // Display usage if validation fails
+      if (!validationResult.isValid) {
         this.displayUsage();
-        process.exit(0);
+        console.log('');
+        console.error('❌ Validation errors:');
+        validationResult.errors.forEach((error) => {
+          console.error(`  • ${error.message}`);
+        });
+        process.exit(1);
       }
 
-      // Get project path from arguments
+      // Get project path from arguments (already validated)
       const projectPath = args[0];
 
       console.log('🔍 Nooa Core Engine - Architectural Analysis');

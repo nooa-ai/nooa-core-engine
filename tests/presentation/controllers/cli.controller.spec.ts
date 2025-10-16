@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CliController } from '../../../src/presentation/controllers/cli.controller';
 import { IAnalyzeCodebase } from '../../../src/domain/usecases';
 import { ArchitecturalViolationModel } from '../../../src/domain/models';
+import { IValidation } from '../../../src/presentation/protocols/validation';
 
 // Mock console methods
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -10,6 +11,7 @@ const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 describe('CliController', () => {
   let sut: CliController;
   let mockAnalyzeCodebase: IAnalyzeCodebase;
+  let mockValidator: IValidation;
   let mockProcess: NodeJS.Process;
 
   beforeEach(() => {
@@ -17,7 +19,10 @@ describe('CliController', () => {
     mockAnalyzeCodebase = {
       analyze: vi.fn()
     };
-    sut = new CliController(mockAnalyzeCodebase);
+    mockValidator = {
+      validate: vi.fn().mockReturnValue({ isValid: true, errors: [] })
+    };
+    sut = new CliController(mockAnalyzeCodebase, mockValidator);
 
     // Create mock process object
     mockProcess = {
@@ -30,12 +35,16 @@ describe('CliController', () => {
   describe('handle', () => {
     it('should display usage when no arguments provided', async () => {
       mockProcess.argv = ['node', 'script.js'];
-      vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue([]);
+      vi.mocked(mockValidator.validate).mockReturnValue({
+        isValid: false,
+        errors: [{ field: 'args', message: 'At least one argument is required (project path)' }]
+      });
 
       await sut.handle(mockProcess);
 
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Usage:'));
-      expect(mockProcess.exit).toHaveBeenCalledWith(0);
+      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Validation errors'));
+      expect(mockProcess.exit).toHaveBeenCalledWith(1);
     });
 
     it('should analyze the provided path from arguments', async () => {

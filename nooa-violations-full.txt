@@ -1,0 +1,413 @@
+
+> nooa-core-engine@1.3.0 start
+> node dist/main/server.js .
+
+🔍 Nooa Core Engine - Architectural Analysis
+==================================================
+📁 Analyzing project: .
+
+❌ Found 95 architectural violation(s):
+
+🔴 ERRORS (63):
+  1. [Controllers-Must-Use-Validators]
+     File: src/presentation/controllers/cli.controller.ts
+     CONTEXT_ACTUAL → VALIDATION_IMPLEMENTATION or VALIDATION_PROTOCOL
+     Controllers-Must-Use-Validators: src/presentation/controllers/cli.controller.ts (CONTEXT_ACTUAL) must depend on at least one VALIDATION_IMPLEMENTATION or VALIDATION_PROTOCOL - Controllers must use validation layer instead of embedding validation logic
+
+  2. [Controllers-Need-Factories]
+     File: src/main/server.ts
+     COMPOSER → COMPOSER_CONTROLLER_FACTORY
+     Controllers-Need-Factories: src/main/server.ts (COMPOSER) must depend on at least one COMPOSER_CONTROLLER_FACTORY - All controllers must be instantiated through factories for proper DI
+
+  3. [Controllers-Need-Factories]
+     File: src/main/factories/analyze-codebase.factory.ts
+     COMPOSER → COMPOSER_CONTROLLER_FACTORY
+     Controllers-Need-Factories: src/main/factories/analyze-codebase.factory.ts (COMPOSER) must depend on at least one COMPOSER_CONTROLLER_FACTORY - All controllers must be instantiated through factories for proper DI
+
+  4. [Controllers-Need-Factories]
+     File: src/main/factories/index.ts
+     COMPOSER → COMPOSER_CONTROLLER_FACTORY
+     Controllers-Need-Factories: src/main/factories/index.ts (COMPOSER) must depend on at least one COMPOSER_CONTROLLER_FACTORY - All controllers must be instantiated through factories for proper DI
+
+  5. [File-Size-Error]
+     File: src/data/usecases/analyze-codebase.usecase.ts
+     File-Size-Error: File src/data/usecases/analyze-codebase.usecase.ts has 1458 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  6. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  7. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  8. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  9. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  10. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  11. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  12. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  13. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  14. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  15. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  16. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  17. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  18. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  19. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  20. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  21. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  22. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  23. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  24. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  25. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  26. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  27. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  28. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  29. [File-Size-Error]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Error: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  30. [File-Size-Error]
+     File: src/infra/parsers/ts-morph-parser.adapter.ts
+     File-Size-Error: File src/infra/parsers/ts-morph-parser.adapter.ts has 219 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  31. [File-Size-Error]
+     File: src/infra/repositories/yaml-grammar.repository.ts
+     File-Size-Error: File src/infra/repositories/yaml-grammar.repository.ts has 454 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  32. [File-Size-Error]
+     File: src/presentation/controllers/cli.controller.ts
+     File-Size-Error: File src/presentation/controllers/cli.controller.ts has 232 lines (exceeds 200 limit) - Files exceeding 200 lines violate SRP and must be refactored
+
+  33. [No-Business-Logic-In-Controllers]
+     File: src/presentation/controllers/cli.controller.ts
+     No-Business-Logic-In-Controllers: src/presentation/controllers/cli.controller.ts contains forbidden keyword 'process' - Controllers must not contain business logic - delegate to use cases
+
+  34. [All-Clean-Architecture-Layers-Required]
+     File: src/validation/validators
+     All-Clean-Architecture-Layers-Required: Required directory 'src/validation/validators' does not exist - Clean Architecture requires all layers to be present
+
+  35. [No-God-Objects]
+     File: src/data/usecases/analyze-codebase.usecase.ts
+     No-God-Objects: src/data/usecases/analyze-codebase.usecase.ts has 402 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  36. [No-God-Objects]
+     File: src/domain/mocks/architectural-rule.mock.ts
+     No-God-Objects: src/domain/mocks/architectural-rule.mock.ts has 57 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  37. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  38. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  39. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  40. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  41. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  42. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  43. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  44. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  45. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  46. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  47. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  48. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  49. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  50. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  51. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  52. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  53. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  54. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  55. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  56. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  57. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  58. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  59. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  60. [No-God-Objects]
+     File: src/domain/models/architectural-rule.model.ts
+     No-God-Objects: src/domain/models/architectural-rule.model.ts has 78 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  61. [No-God-Objects]
+     File: src/infra/parsers/ts-morph-parser.adapter.ts
+     No-God-Objects: src/infra/parsers/ts-morph-parser.adapter.ts has 56 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  62. [No-God-Objects]
+     File: src/infra/repositories/yaml-grammar.repository.ts
+     No-God-Objects: src/infra/repositories/yaml-grammar.repository.ts has 89 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+  63. [No-God-Objects]
+     File: src/presentation/controllers/cli.controller.ts
+     No-God-Objects: src/presentation/controllers/cli.controller.ts has 31 properties (exceeds 15) - Classes should not exceed 10 public methods (God Object anti-pattern)
+
+
+🟡 WARNINGS (31):
+  1. [File-Size-Warning]
+     File: src/data/usecases/analyze-codebase.usecase.ts
+     File-Size-Warning: File src/data/usecases/analyze-codebase.usecase.ts has 1458 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  2. [File-Size-Warning]
+     File: src/domain/mocks/architectural-rule.mock.ts
+     File-Size-Warning: File src/domain/mocks/architectural-rule.mock.ts has 119 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  3. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  4. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  5. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  6. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  7. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  8. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  9. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  10. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  11. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  12. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  13. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  14. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  15. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  16. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  17. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  18. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  19. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  20. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  21. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  22. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  23. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  24. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  25. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  26. [File-Size-Warning]
+     File: src/domain/models/architectural-rule.model.ts
+     File-Size-Warning: File src/domain/models/architectural-rule.model.ts has 308 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  27. [File-Size-Warning]
+     File: src/infra/parsers/ts-morph-parser.adapter.ts
+     File-Size-Warning: File src/infra/parsers/ts-morph-parser.adapter.ts has 219 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  28. [File-Size-Warning]
+     File: src/infra/repositories/yaml-grammar.repository.ts
+     File-Size-Warning: File src/infra/repositories/yaml-grammar.repository.ts has 454 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  29. [File-Size-Warning]
+     File: src/presentation/controllers/cli.controller.ts
+     File-Size-Warning: File src/presentation/controllers/cli.controller.ts has 232 lines (exceeds 100 limit) - Files should not exceed 100 lines to maintain SRP (current avg: 87.3 LOC)
+
+  30. [Complex-Files-Need-Documentation]
+     File: src/domain/mocks/architectural-rule.mock.ts
+     Complex-Files-Need-Documentation: src/domain/mocks/architectural-rule.mock.ts (119 lines) lacks JSDoc documentation - Files over 50 lines should have JSDoc documentation
+
+  31. [Minimum-Test-File-Ratio]
+     File: PROJECT
+     Minimum-Test-File-Ratio: Test ratio is 0.00 (0 test files / 51 production files), minimum required: 0.2 - Project should have at least 20% test files (current: 0%, target: 20%+)
+
+
+🔵 INFO (1):
+  1. [File-Granularity-Check]
+     File: PROJECT
+     File-Granularity-Check: Average lines per file: 202, target: 20 (threshold: 80) - Project should have adequate file granularity (target: 10-20 LOC/file)
+
+
+==================================================
+Summary: 63 errors, 31 warnings, 1 info
+
+📊 Performance Metrics
+──────────────────────────────────────────────────
+⏱️  Analysis Time: 498ms
+📋 Rules Triggered: 10
+🔍 Total Violations: 95
+📌 Most Common Issues:
+   • File-Size-Warning: 29 violations
+   • No-God-Objects: 29 violations
+   • File-Size-Error: 28 violations
+──────────────────────────────────────────────────

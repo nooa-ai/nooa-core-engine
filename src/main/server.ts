@@ -11,18 +11,14 @@
  * - Delegates execution to the Presentation layer
  */
 
-import { CliController } from '../presentation/controllers';
-import { makeAnalyzeCodebaseUseCase } from './factories';
+import { makeCliController } from './factories';
 
 /**
  * Bootstrap the application
  */
 async function main() {
-  // Create the use case using the factory
-  const analyzeCodebaseUseCase = makeAnalyzeCodebaseUseCase();
-
-  // Create the CLI controller with the use case
-  const cliController = new CliController(analyzeCodebaseUseCase);
+  // Create the CLI controller with all dependencies using the factory
+  const cliController = makeCliController();
 
   // Handle the CLI command
   await cliController.handle(process);
