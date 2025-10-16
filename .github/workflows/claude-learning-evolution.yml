@@ -81,7 +81,13 @@ jobs:
             3. **Validate the rule**:
                - Check it follows Nooa grammar format
                - Ensure it has proper "AI NOTE" comment
-               - Verify severity is appropriate
+               - Verify severity is appropriate (error, warning, info)
+               - Validate rule type is supported:
+                 * `forbidden`/`required`: Dependency rules (from/to roles)
+                 * `forbidden_patterns`: Regex patterns (business logic anti-patterns)
+                 * `forbidden_keywords`: Keyword detection
+                 * `naming_pattern`: File naming conventions
+                 * `file_size`: Size limits
                - Check it doesn't conflict with existing rules
 
             4. **Add rule to nooa.grammar.yaml**:
@@ -101,10 +107,12 @@ jobs:
                ```bash
                npm ci
                npm run build
-               npm start .
+               npm run dogfooding
                ```
                - Ensure Nooa still validates itself with 0 errors
                - New rule should not break existing validation
+               - For `forbidden_patterns` rules: verify regex syntax is valid
+               - Run unit tests to ensure pattern matching works: `npm test`
 
             7. **Create Pull Request**:
                ```bash

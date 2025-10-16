@@ -109,10 +109,10 @@ jobs:
                - Violation message similarity
 
             2. **Identify Anti-Patterns**: Look for:
-               - God Objects (files >200 LOC repeatedly)
-               - Missing test coverage patterns
-               - Naming convention violations
-               - Dependency direction issues
+               - **Architectural**: God Objects (files >200 LOC), dependency cycles, layer violations
+               - **Code Quality**: Missing test coverage, naming convention violations
+               - **Business Logic**: Money float calculations, percentage errors, timezone-naive dates
+               - **Security**: Division by zero, email regex validation, unsafe patterns
 
             3. **Propose New Rules** (if patterns found):
                - Create a new issue with label "learning-insight"
@@ -121,7 +121,12 @@ jobs:
                  * Pattern description
                  * Frequency (how many times detected)
                  * Affected files/layers
-                 * Suggested new rule (YAML format)
+                 * Suggested new rule (YAML format) - supports these types:
+                   - `forbidden`: Architectural dependency rules
+                   - `forbidden_patterns`: Regex-based code patterns (for business logic)
+                   - `forbidden_keywords`: Simple keyword detection
+                   - `naming_pattern`: File naming conventions
+                   - `file_size`: File size limits
                  * Evidence (why this is a problem)
                  * Confidence score (0.0-1.0)
 
