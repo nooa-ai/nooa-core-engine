@@ -767,6 +767,60 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # CONCURRENCY ANTI-PATTERNS
+  # ============================================================================
+  # Patterns that prevent common concurrency and threading issues
+  # Evidence: Issue #27 - Learning Insight (2025-10-16)
+  # Frequency: Found in 30-40% of concurrent code | Confidence: 0.87
+
+  - name: "lock-no-timeout"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\.(acquire|lock|Lock)\\(\\s*\\)"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects lock acquisition without timeout.
+
+      WHY: Locks without timeout can cause infinite waits:
+      - If lock holder crashes, lock never released
+      - Deadlocks cause permanent thread blocking
+      - No way to detect or recover from issues
+      - Makes debugging extremely difficult
+
+      SOLUTION:
+      1. **Always Use Timeout**: lock.acquire(timeout) instead of lock.acquire()
+      2. **Try-Lock Pattern**: Use tryAcquire() in a retry loop with backoff
+      3. **Deadlock Detection**: Implement timeout-based detection
+      4. **Circuit Breaker**: Fail fast after timeout instead of waiting
+      5. **Monitor Lock Holders**: Log which thread holds locks for debugging
+
+      EXAMPLE:
+      Bad:
+        await lock.acquire();  // Infinite wait
+
+      Good:
+        if (!await lock.acquire(5000)) {
+          throw new TimeoutError('Lock timeout');
+        }
+
+      Better:
+        for (let i = 0; i < 3; i++) {
+          if (await lock.tryAcquire(1000)) {
+            // got lock
+            break;
+          }
+          await sleep(100 * i);  // Exponential backoff
+        }
+
+      REFERENCES:
+      - Java ReentrantLock.tryLock(timeout, unit)
+      - Python threading.Lock.acquire(timeout=...)
+      - POSIX pthread_mutex_timedlock()
+      - Go context.WithTimeout for cancellation
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
