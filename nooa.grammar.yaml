@@ -767,6 +767,65 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # RESOURCE MANAGEMENT ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # These patterns prevent resource leaks and ensure proper cleanup of system
+  # resources (files, connections, handles). Discovered through community
+  # pattern analysis.
+  # Evidence: Issue #28 - Learning Insight Discovery (2025-10-16)
+  # Frequency: 20-30% of codebases | Confidence: 0.90
+
+  - name: "file-no-close-finally"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(?<!with\\s)open\\([^)]+\\)(?!.*?(finally|defer|using).*?close)"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects files opened without cleanup in finally/defer/using.
+
+      WHY: Unclosed files cause resource leaks:
+      - OS has finite file handle limits
+      - Leaked handles accumulate over time
+      - Eventually exhausts system resources
+      - Causes production crashes and requires restart
+
+      SOLUTION:
+      1. **try-finally**: Always close in finally block
+      2. **with statement**: Use context managers (Python)
+      3. **using statement**: Use IDisposable pattern (C#)
+      4. **defer**: Defer cleanup to end of function (Go)
+      5. **RAII/Scope Guards**: Use destructors (C++, Rust)
+
+      EXAMPLE:
+      Bad:
+        const file = open('data.txt');
+        processData(file);
+        close(file);  // Never reached if exception
+
+      Good:
+        const file = open('data.txt');
+        try {
+          processData(file);
+        } finally {
+          close(file);  // Always executed
+        }
+
+      Best:
+        with open('data.txt') as file:  # Python
+          process_data(file)
+
+        using (var file = Open('data.txt'))  # C#
+          ProcessData(file);
+
+      REFERENCES:
+      - Python context managers (PEP 343)
+      - C# IDisposable pattern
+      - Go defer statement
+      - Java try-with-resources (JSR 334)
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding

@@ -304,6 +304,7 @@ rules:
 
 ### Added
 - feat(learning): add rule Test-Pattern-Rule (discovered via #7)
+- feat(learning): add rule file-no-close-finally (discovered via #28)
 
 ### Planned Features
 - Multiple language support (JavaScript, Python, Java)
