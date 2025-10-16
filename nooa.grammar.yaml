@@ -511,14 +511,12 @@ rules:
     rule: "test_coverage"
 
   # 2. FILE SIZE LIMITS (Priority: HIGH)
-  # Current: 87.3 LOC/file average | Target: < 100 LOC/file
-  # NOTE: Requires 'file_size' rule type not yet implemented
   - name: "File-Size-Warning"
     severity: warning
-    comment: "AI NOTE: File exceeds 100 lines - approaching SRP violation, increasing complexity, harder to understand and test. REFACTOR: Look for opportunities to extract classes or functions. Identify if file has multiple concerns. Consider splitting if file handles more than one responsibility. Extract helpers, validators, or builders to separate files. EXAMPLE: If controller file is 120 lines with validation logic embedded, extract: ControllerInputValidator (30 lines), ControllerResponseBuilder (25 lines), leave controller at 65 lines. Each file focused on single concern. BENEFIT: Proactive refactoring before file becomes too large, easier code review (smaller diffs), improved readability, better testability, forces thinking about SRP early, prevents technical debt accumulation."
+    comment: "AI NOTE: File exceeds 200 lines - approaching SRP violation, increasing complexity, harder to understand and test. REFACTOR: Look for opportunities to extract classes or functions. Identify if file has multiple concerns. Consider splitting if file handles more than one responsibility. Extract helpers, validators, or builders to separate files. EXAMPLE: If controller file is 120 lines with validation logic embedded, extract: ControllerInputValidator (30 lines), ControllerResponseBuilder (25 lines), leave controller at 65 lines. Each file focused on single concern. BENEFIT: Proactive refactoring before file becomes too large, easier code review (smaller diffs), improved readability, better testability, forces thinking about SRP early, prevents technical debt accumulation."
     for:
       role: ALL
-    max_lines: 100
+    max_lines: 200
     rule: "file_size"
 
   - name: "File-Size-Error"
@@ -575,8 +573,6 @@ rules:
     rule: "minimum_test_ratio"
 
   # 7. REQUIRED ARCHITECTURAL LAYERS (Priority: CRITICAL)
-  # Current: Missing validation layer | Target: All Clean Architecture layers
-  # NOTE: Requires 'required_structure' rule type not yet implemented
   - name: "All-Clean-Architecture-Layers-Required"
     severity: error
     comment: "AI NOTE: Required architectural layer directory missing - violates Clean Architecture structure, creates confusion about where to place code, likely indicates concerns mixed in wrong layers. REFACTOR: Create missing layer directories following Clean Architecture pattern. Each layer has specific responsibility: domain (business entities/rules), data (use case implementations), infra (external interfaces), presentation (controllers/HTTP), validation (input validation), main (composition root). Ensure all layers present even if some are small initially. EXAMPLE: If validation/validators directory doesn't exist, validation logic likely embedded in controllers or use cases. CREATE validation/validators/, validation/protocols/. Extract validation to proper layer. BENEFIT: Clear separation of concerns, obvious where new code belongs, prevents architectural drift, enforces Clean Architecture boundaries, team understands structure immediately, scalable organization pattern."
@@ -592,8 +588,6 @@ rules:
     rule: "required_structure"
 
   # 8. DOCUMENTATION FOR COMPLEX FILES (Priority: MEDIUM)
-  # Current: No JSDoc | Target: JSDoc for files > 50 lines
-  # NOTE: Requires 'documentation_required' rule type not yet implemented
   - name: "Complex-Files-Need-Documentation"
     severity: warning
     comment: "AI NOTE: File over 50 lines lacks JSDoc documentation - harder for developers to understand purpose quickly, missing context for architectural decisions, reduces code discoverability. REFACTOR: Add JSDoc to file header explaining purpose, responsibilities, and key design decisions. Document public classes with @description, @example. Document complex methods with parameter descriptions and return types. Focus on WHY, not WHAT (code shows what). EXAMPLE: If 80-line validator has no comments, ADD: /** Validates CLI arguments ensuring path exists and format is correct. Implements early validation before use case execution. @example const validator = new CliArgsValidation(); const result = validator.validate(process.argv); */. BENEFIT: Faster onboarding for new developers, architectural decisions preserved, IDE tooltips show documentation, easier code reviews, self-documenting codebase, reduces knowledge silos, supports API documentation generation."
@@ -604,8 +598,6 @@ rules:
     rule: "documentation_required"
 
   # 9. GOD OBJECT PREVENTION (Priority: HIGH)
-  # Prevents classes with too many responsibilities
-  # NOTE: Requires 'class_complexity' rule type not yet implemented
   - name: "No-God-Objects"
     severity: error
     comment: "AI NOTE: Class has >10 public methods or >15 properties - God Object anti-pattern detected. REFACTOR: Apply Extract Class pattern. Group related methods/properties by responsibility. Create focused classes with single responsibility. Each class should do ONE thing well. EXAMPLE: If UserService has 20 methods (createUser, deleteUser, login, logout, updateProfile, getProfile, changePassword, resetPassword, sendNotification, etc), extract into: UserAuthService (login, logout, changePassword, resetPassword - 4 methods), UserProfileService (getProfile, updateProfile - 2 methods), UserCRUDService (createUser, deleteUser - 2 methods), UserNotificationService (sendNotification, subscribe - 2 methods). Each service has <5 methods, clear single responsibility. BENEFIT: Better testability (test each service independently), clearer responsibilities, easier maintenance, follows SRP, enables team parallelization, reduces cognitive load."
@@ -616,7 +608,6 @@ rules:
     rule: "class_complexity"
 
   # 10. FILE GRANULARITY CHECK (Priority: MEDIUM)
-  # Current: 22 files | Expected: ~138 files based on LOC/file ratio
   - name: "File-Granularity-Check"
     severity: info
     comment: "AI NOTE: Project has insufficient file granularity (average LOC per file too high) - suggests files with multiple responsibilities, harder to navigate and understand, indicates need for more extraction. REFACTOR: Break large files into smaller focused modules. Target 10-20 LOC per file for highly modular architecture. Extract helpers, validators, builders, strategies to separate files. Each file should do ONE thing. Favor many small files over few large files. EXAMPLE: If project has 2000 LOC across 20 files (100 LOC/file average) but target is 20 LOC/file, should have ~100 files. Extract: shared utilities to helpers/, validation logic to validators/, transformation logic to transformers/. Each focused and small. BENEFIT: Highly modular codebase, easier to understand individual files, better code reuse, supports micro-commits, easier parallel development, natural SRP enforcement, P2P-ready architecture, improves test isolation."

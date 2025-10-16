@@ -1,0 +1,158 @@
+name: Claude Learning - Pattern Discovery
+
+on:
+  # TEMPORARY: Pull request trigger for testing
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '.github/workflows/claude-learning-discovery.yml'
+
+  # Manual trigger (only works after merge to main)
+  workflow_dispatch:
+    inputs:
+      analysis_depth:
+        description: 'Depth of analysis (quick, medium, thorough)'
+        required: false
+        default: 'medium'
+
+  # TODO: Enable after merge to main and testing complete
+  # schedule:
+  #   - cron: '0 2 * * 0'  # Domingo às 2AM UTC
+
+  # Quando há muitas violations (threshold)
+  # repository_dispatch:
+  #   types: [high-violation-count]
+
+jobs:
+  discover-patterns:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for trend analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Nooa
+        run: npm run build
+
+      - name: Run Nooa validation and collect data
+        id: validation
+        run: |
+          # Executa validação e salva resultado
+          npm start . > validation-report.txt 2>&1 || true
+
+          # Extrai métricas
+          violations=$(grep -oP 'Found \K\d+(?= architectural violation)' validation-report.txt || echo "0")
+          errors=$(grep -oP '\K\d+(?= errors)' validation-report.txt || echo "0")
+          warnings=$(grep -oP '\K\d+(?= warnings)' validation-report.txt || echo "0")
+
+          echo "violations=$violations" >> $GITHUB_OUTPUT
+          echo "errors=$errors" >> $GITHUB_OUTPUT
+          echo "warnings=$warnings" >> $GITHUB_OUTPUT
+
+          # Salva histórico
+          mkdir -p .nooa/analytics
+          timestamp=$(date -u +"%Y-%m-%d_%H-%M-%S")
+          cat > .nooa/analytics/latest.json <<EOF
+          {
+            "timestamp": "$timestamp",
+            "violations": $violations,
+            "errors": $errors,
+            "warnings": $warnings,
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+
+      - name: Analyze patterns with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            🧠 NOOA LEARNING: Pattern Discovery Analysis
+
+            CONTEXT:
+            - Repository: ${{ github.repository }}
+            - Violations detected: ${{ steps.validation.outputs.violations }}
+            - Errors: ${{ steps.validation.outputs.errors }}
+            - Warnings: ${{ steps.validation.outputs.warnings }}
+
+            TASK:
+            You are the Nooa Learning Engine. Analyze the validation report and codebase to discover recurring architectural patterns.
+
+            Read the validation report:
+            ```
+            cat validation-report.txt
+            ```
+
+            Then perform pattern discovery:
+
+            1. **Cluster Violations**: Group similar violations by:
+               - Rule name patterns
+               - File path patterns (which layers are affected)
+               - Violation message similarity
+
+            2. **Identify Anti-Patterns**: Look for:
+               - God Objects (files >200 LOC repeatedly)
+               - Missing test coverage patterns
+               - Naming convention violations
+               - Dependency direction issues
+
+            3. **Propose New Rules** (if patterns found):
+               - Create a new issue with label "learning-insight"
+               - Title: "🧠 Learning Insight: [Pattern Name]"
+               - Body should include:
+                 * Pattern description
+                 * Frequency (how many times detected)
+                 * Affected files/layers
+                 * Suggested new rule (YAML format)
+                 * Evidence (why this is a problem)
+                 * Confidence score (0.0-1.0)
+
+            4. **Update Analytics**: Create/update `.nooa/analytics/patterns.json` with discovered patterns
+
+            CONSTRAINTS:
+            - Only propose rules with confidence >0.8
+            - Minimum 5 occurrences to be considered a pattern
+            - Follow Nooa's grammar format (see nooa.grammar.yaml)
+            - Include "AI NOTE" comments in proposed rules
+
+            Use gh commands to create issues for significant insights.
+
+          claude_args: '--allowed-tools "Bash(gh issue create:*),Bash(gh issue list:*),Read,Write,Glob,Grep"'
+
+      - name: Commit analytics data
+        if: success()
+        run: |
+          git config --local user.email "nooa-learning@users.noreply.github.com"
+          git config --local user.name "Nooa Learning Bot"
+          git add .nooa/analytics/
+          git diff --staged --quiet || git commit -m "chore(learning): update pattern discovery analytics [skip ci]"
+          git push origin HEAD:refs/heads/learning-analytics || true
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "## 🧠 Pattern Discovery Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Violations Found:** ${{ steps.validation.outputs.violations }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Errors:** ${{ steps.validation.outputs.errors }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Warnings:** ${{ steps.validation.outputs.warnings }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check [learning-insight issues](https://github.com/${{ github.repository }}/issues?q=label%3Alearning-insight) for discovered patterns." >> $GITHUB_STEP_SUMMARY
