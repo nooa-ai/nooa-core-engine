@@ -5,6 +5,124 @@ All notable changes to the Nooa Core Engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-10-16
+
+### Added - Clean Architecture Refactoring & Test Coverage
+
+#### New Validators
+- **File Metrics Validator**: Validates file size, test coverage, and documentation
+  - `file-size.validator.ts` - Ensures files stay under max LOC threshold
+  - `test-coverage.validator.ts` - Enforces test files for production code
+  - `documentation.validator.ts` - Requires docs for complex files
+  - `class-complexity.validator.ts` - Prevents God Objects
+  - `granularity-metric.validator.ts` - Tracks average file granularity
+- **Code Pattern Validator**: Detects forbidden keywords and required structures
+- **Hygiene Validator**: Consolidated hygiene rules
+- **Structure Validator**: Validates required directory structures
+- **Dependency Validators**:
+  - `circular-dependency.detector.ts` - DFS-based cycle detection
+  - `forbidden-dependency.checker.ts` - Prevents invalid dependencies
+  - `required-dependency.validator.ts` - Enforces required connections
+
+#### New Helpers
+- **String Similarity Helper**: Jaro-Winkler algorithm implementation
+- **Rule Extractor Helper**: Extracts and transforms grammar rules
+- **Role Matcher Helper**: Matches files to architectural roles
+- **Violation Deduplicator Helper**: Removes duplicate violations
+- **File Content Helper**: Reads and processes file contents
+
+#### New Adapters (ISP & DIP Compliance)
+- **NodeCliAdapter**: Implements `IProcessArgsProvider`, `IProcessExitHandler`, `IProcessEnvProvider`
+- **EnvDisplayConfigAdapter**: Implements `IDisplayConfigProvider`
+- **NodeFileSystemAdapter**: Implements `IFileReader`, `IFileExistenceChecker`, `IDirectoryLister`
+
+#### Presentation Layer
+- **CLI Violation Presenter**: Formats and displays analysis results
+- **Presentation Components**:
+  - `violation-formatter.component.ts` - Formats violation output
+  - `metrics-formatter.component.ts` - Formats metrics display
+  - `summary-formatter.component.ts` - Formats summary statistics
+  - `error-formatter.component.ts` - Formats error messages
+  - `usage.component.ts` - CLI usage instructions
+- **Presentation Protocols**: Interface Segregation Principle (ISP)
+  - `IDisplayConfigProvider` - Display configuration
+  - `IProcessArgsProvider` - CLI arguments
+  - `IProcessExitHandler` - Process exit handling
+
+#### Validation Layer
+- **CLI Args Validation**: Input validation for CLI arguments
+- **Validation Protocols**: `IValidation`, `CheckResult`, `ValidationError`
+
+#### Infrastructure
+- **Schema Validator**: JSON Schema validation with AJV
+- **Semantic Grammar Validator**: Grammar semantic validation
+- **YAML Parser Helper**: YAML parsing and transformation
+- **Grammar Transformer Helper**: Transforms YAML to domain models
+- **Rule Transformers**: Specialized transformers for hygiene and metrics rules
+- **Symbol Extractor Helper**: Extracts TypeScript symbols using ts-morph
+
+#### Factories
+- **CLI Controller Factory**: Composition root for CLI layer
+- **Analyze Codebase Factory**: Use case factory with all dependencies
+
+### Changed
+- **Architecture**: Complete refactoring following Clean Architecture principles
+  - **Domain Layer**: Pure types with discriminated unions (7 rule types)
+  - **Data Layer**: Use case simplified from 1494 LOC → 300 LOC
+  - **Infrastructure Layer**: Segregated responsibilities with helpers
+  - **Presentation Layer**: New CLI components and presenter
+  - **Validation Layer**: New layer for input validation
+- **Dependency Injection**: Applied DIP throughout the codebase
+- **Interface Segregation**: Applied ISP with focused interfaces
+- **Use Case**: `AnalyzeCodebaseUseCase` drastically simplified
+  - Extracted validators into dedicated classes
+  - Extracted helpers for reusable logic
+  - Reduced complexity and improved testability
+- **Repository**: `YamlGrammarRepository` refactored
+  - Extracted YAML parsing to helper
+  - Extracted grammar transformation to helper
+  - Added schema and semantic validation
+
+### Fixed
+- **Test Coverage**: Achieved comprehensive test coverage
+  - 29 new test files added
+  - All validators covered
+  - All helpers covered
+  - All adapters covered
+  - All presenters covered
+  - All factories covered
+- **Architectural Violations**: Fixed all violations found by Nooa itself
+  - Eliminated direct `fs` module usage (replaced with adapters)
+  - Applied ISP to all interfaces
+  - Applied DIP with proper abstractions
+  - Reduced file sizes (average 87.3 LOC → <20 LOC target)
+
+### Documentation
+- Added `PROGRESS_REPORT.md` - Detailed refactoring progress
+- Added `docs/AI_NOTE_REVOLUTION.md` - AI-assisted development philosophy
+- Added `docs/BIGOH_ONE_ITERATION.md` - Single-pass refactoring approach
+- Added `nooa-violations-full.txt` - Complete violation report
+- Added `nooa.schema.json` - JSON Schema for grammar validation
+
+### Testing
+- **New Test Files** (29 total):
+  - `cli-controller.factory.spec.ts`
+  - `analyze-codebase.factory.spec.ts`
+  - `cli-violation.presenter.spec.ts`
+  - `cli.controller.spec.ts`
+  - All component specs (violation, metrics, summary, error, usage)
+  - All validator specs (file-metrics, code-pattern, file-size, documentation)
+  - All helper specs (string-similarity, rule-extractor, role-matcher, violation-deduplicator, file-content)
+  - All adapter specs (node-cli, env-display-config, node-file-system)
+  - `cli-args-validation.spec.ts`
+
+### Performance
+- **Use Case Complexity**: Reduced from O(N³) to O(N²) in some validations
+- **File Granularity**: Working towards <20 LOC average per file
+- **Maintainability**: Drastically improved through SRP and ISP
+
+---
+
 ## [1.2.0] - 2025-01-14
 
 ### Added - Code Hygiene Features
@@ -200,6 +318,7 @@ rules:
 
 | Version | Date | Key Features |
 |---------|------|--------------|
+| **1.4.0** | 2025-10-16 | 🏛️ Clean Architecture Refactoring: ISP/DIP compliance, Validators, Helpers, 29 test files |
 | **1.2.0** | 2025-01-14 | 🧹 Code Hygiene: Synonym detection, Zombie code detection |
 | **1.1.0** | 2025-01-13 | 🔄 Advanced Validation: Circular dependencies, Required dependencies, Naming patterns |
 | **1.0.0** | 2025-01-12 | 🏗️ Initial Release: Grammar-based validation, Clean Architecture |
@@ -213,6 +332,7 @@ rules:
 All versions maintain backward compatibility:
 - ✅ v1.0 grammars work in v1.1
 - ✅ v1.1 grammars work in v1.2
+- ✅ v1.2 grammars work in v1.4
 - ✅ New features are opt-in
 
 ---
@@ -229,6 +349,13 @@ No changes required. Optionally add:
 No changes required. Optionally add:
 - Synonym detection rules
 - Unreferenced code detection rules
+
+### From v1.2 to v1.4
+No changes required. Internal refactoring only:
+- All grammar syntax remains compatible
+- No API changes for end users
+- Improved architecture and test coverage
+- Better maintainability and extensibility
 
 ---
 
