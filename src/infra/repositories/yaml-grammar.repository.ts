@@ -14,10 +14,10 @@ import { IGrammarRepository } from '../../data/protocols';
 import { GrammarModel } from '../../domain/models';
 import {
   YamlParserHelper,
-  GrammarValidatorHelper,
   GrammarTransformerHelper,
 } from './helpers';
 import { SchemaValidator } from '../validators/schema.validator';
+import { SemanticGrammarValidator } from '../validators/semantic-grammar.validator';
 import * as path from 'path';
 
 /**
@@ -26,13 +26,13 @@ import * as path from 'path';
 export class YamlGrammarRepository implements IGrammarRepository {
   private yamlParser: YamlParserHelper;
   private schemaValidator: SchemaValidator;
-  private validator: GrammarValidatorHelper;
+  private semanticValidator: SemanticGrammarValidator;
   private transformer: GrammarTransformerHelper;
 
   constructor() {
     this.yamlParser = new YamlParserHelper();
     this.schemaValidator = new SchemaValidator();
-    this.validator = new GrammarValidatorHelper();
+    this.semanticValidator = new SemanticGrammarValidator();
     this.transformer = new GrammarTransformerHelper();
 
     // Load JSON schema (from project root)
@@ -70,7 +70,9 @@ export class YamlGrammarRepository implements IGrammarRepository {
    *
    * Two-layer validation:
    * 1. Schema validation (structural - via JSON schema)
-   * 2. Semantic validation (business rules - existing validator)
+   *    - Types, required fields, enums, ranges
+   * 2. Semantic validation (business rules)
+   *    - Regex validity, role references, rule name uniqueness
    *
    * @param content - Parsed YAML content
    * @param projectPath - Path to the project (for error messages)
@@ -95,8 +97,8 @@ export class YamlGrammarRepository implements IGrammarRepository {
       }
     }
 
-    // Layer 2: Semantic validation
-    this.validator.validate(content, filePath);
+    // Layer 2: Semantic validation (regex, role references, uniqueness)
+    this.semanticValidator.validate(content, filePath);
 
     // Transform
     return this.transformer.transform(content);
