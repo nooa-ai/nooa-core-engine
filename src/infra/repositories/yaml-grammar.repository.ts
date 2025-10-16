@@ -234,6 +234,44 @@ export class YamlGrammarRepository implements IGrammarRepository {
         if (typeof rule.global.warning_threshold_multiplier !== 'number' || rule.global.warning_threshold_multiplier <= 0) {
           throw new Error(`Invalid rule '${rule.name}': granularity_metric rules must have 'global.warning_threshold_multiplier' as a positive number in ${filePath}`);
         }
+      } else if (rule.rule === 'forbidden_patterns') {
+        // Forbidden patterns rule validation
+        if (!rule.from || !rule.from.role) {
+          throw new Error(`Invalid rule '${rule.name}': forbidden_patterns rules must have 'from.role' in ${filePath}`);
+        }
+        if (!Array.isArray(rule.contains_forbidden) || rule.contains_forbidden.length === 0) {
+          throw new Error(`Invalid rule '${rule.name}': forbidden_patterns rules must have 'contains_forbidden' as a non-empty array in ${filePath}`);
+        }
+        // Validate that patterns are valid regex
+        for (const pattern of rule.contains_forbidden) {
+          try {
+            new RegExp(pattern);
+          } catch (error) {
+            throw new Error(`Invalid rule '${rule.name}': pattern '${pattern}' is not a valid regular expression in ${filePath}`);
+          }
+        }
+      } else if (rule.rule === 'barrel_purity') {
+        // Barrel purity rule validation
+        if (!rule.for || !rule.for.file_pattern) {
+          throw new Error(`Invalid rule '${rule.name}': barrel_purity rules must have 'for.file_pattern' in ${filePath}`);
+        }
+        // Validate that file_pattern is a valid regex
+        try {
+          new RegExp(rule.for.file_pattern);
+        } catch (error) {
+          throw new Error(`Invalid rule '${rule.name}': file_pattern is not a valid regular expression in ${filePath}`);
+        }
+        if (!Array.isArray(rule.contains_forbidden) || rule.contains_forbidden.length === 0) {
+          throw new Error(`Invalid rule '${rule.name}': barrel_purity rules must have 'contains_forbidden' as a non-empty array in ${filePath}`);
+        }
+        // Validate that patterns are valid regex
+        for (const pattern of rule.contains_forbidden) {
+          try {
+            new RegExp(pattern);
+          } catch (error) {
+            throw new Error(`Invalid rule '${rule.name}': pattern '${pattern}' is not a valid regular expression in ${filePath}`);
+          }
+        }
       } else if (['allowed', 'forbidden', 'required'].includes(rule.rule)) {
         // Dependency rule validation
         if (!rule.from || !rule.from.role) {
@@ -247,7 +285,7 @@ export class YamlGrammarRepository implements IGrammarRepository {
         }
       } else {
         throw new Error(
-          `Invalid rule '${rule.name}': rule type must be 'allowed', 'forbidden', 'required', 'naming_pattern', 'find_synonyms', 'detect_unreferenced', 'file_size', 'test_coverage', 'forbidden_keywords', 'required_structure', 'documentation_required', 'class_complexity', 'minimum_test_ratio', or 'granularity_metric' in ${filePath}`
+          `Invalid rule '${rule.name}': rule type must be 'allowed', 'forbidden', 'required', 'naming_pattern', 'find_synonyms', 'detect_unreferenced', 'file_size', 'test_coverage', 'forbidden_keywords', 'required_structure', 'documentation_required', 'class_complexity', 'minimum_test_ratio', 'granularity_metric', 'forbidden_patterns', or 'barrel_purity' in ${filePath}`
         );
       }
     }
@@ -375,6 +413,24 @@ export class YamlGrammarRepository implements IGrammarRepository {
               warning_threshold_multiplier: rule.global.warning_threshold_multiplier,
             },
             rule: 'granularity_metric' as const,
+          };
+        } else if (rule.rule === 'forbidden_patterns') {
+          return {
+            ...baseRule,
+            from: {
+              role: rule.from.role,
+            },
+            contains_forbidden: rule.contains_forbidden,
+            rule: 'forbidden_patterns' as const,
+          };
+        } else if (rule.rule === 'barrel_purity') {
+          return {
+            ...baseRule,
+            for: {
+              file_pattern: rule.for.file_pattern,
+            },
+            contains_forbidden: rule.contains_forbidden,
+            rule: 'barrel_purity' as const,
           };
         } else {
           // Dependency rule

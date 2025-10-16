@@ -137,6 +137,8 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rule.rule !== 'class_complexity' &&
         rule.rule !== 'minimum_test_ratio' &&
         rule.rule !== 'granularity_metric' &&
+        rule.rule !== 'forbidden_patterns' &&
+        rule.rule !== 'barrel_purity' &&
         'to' in rule &&
         rule.to &&
         'circular' in rule.to &&
@@ -281,6 +283,28 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       }
     }
 
+    // Check for forbidden patterns rules
+    const forbiddenPatternsRules = grammar.rules.filter(
+      (rule): rule is any => rule.rule === 'forbidden_patterns'
+    );
+    if (forbiddenPatternsRules.length > 0) {
+      for (const rule of forbiddenPatternsRules) {
+        const patternViolations = await this.validateForbiddenPatterns(symbols, rule, projectPath);
+        violations.push(...patternViolations);
+      }
+    }
+
+    // Check for barrel purity rules
+    const barrelPurityRules = grammar.rules.filter(
+      (rule): rule is any => rule.rule === 'barrel_purity'
+    );
+    if (barrelPurityRules.length > 0) {
+      for (const rule of barrelPurityRules) {
+        const barrelViolations = await this.validateBarrelPurity(symbols, rule, projectPath);
+        violations.push(...barrelViolations);
+      }
+    }
+
     // Check each symbol's dependencies against forbidden/allowed rules
     for (const symbol of symbols) {
       for (const dependency of symbol.dependencies) {
@@ -375,7 +399,9 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rule.rule === 'documentation_required' ||
         rule.rule === 'class_complexity' ||
         rule.rule === 'minimum_test_ratio' ||
-        rule.rule === 'granularity_metric'
+        rule.rule === 'granularity_metric' ||
+        rule.rule === 'forbidden_patterns' ||
+        rule.rule === 'barrel_purity'
       ) {
         continue;
       }
@@ -1313,6 +1339,115 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         toRole: undefined,
         dependency: undefined,
       });
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates forbidden patterns (regex) in code
+   *
+   * @param symbols - Code symbols
+   * @param rule - Forbidden patterns rule
+   * @param projectPath - Project path
+   * @returns Array of violations for forbidden patterns found
+   */
+  private async validateForbiddenPatterns(
+    symbols: CodeSymbolModel[],
+    rule: any, // ForbiddenPatternsRule
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Find symbols matching the from role
+    const symbolsToCheck = symbols.filter((symbol) =>
+      this.roleMatches(symbol.role, rule.from.role)
+    );
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+
+        for (const pattern of rule.contains_forbidden) {
+          try {
+            const regex = new RegExp(pattern);
+            if (regex.test(content)) {
+              violations.push({
+                ruleName: rule.name,
+                severity: rule.severity,
+                file: symbol.path,
+                message: `${rule.name}: ${symbol.path} contains forbidden pattern '${pattern}'${rule.comment ? ` - ${rule.comment}` : ''}`,
+                fromRole: symbol.role,
+                toRole: undefined,
+                dependency: undefined,
+              });
+              break; // Only report once per file
+            }
+          } catch (error) {
+            // Invalid regex pattern, skip
+            continue;
+          }
+        }
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Validates barrel export purity (index.ts files should only re-export)
+   *
+   * @param symbols - Code symbols
+   * @param rule - Barrel purity rule
+   * @param projectPath - Project path
+   * @returns Array of violations for barrel files containing logic
+   */
+  private async validateBarrelPurity(
+    symbols: CodeSymbolModel[],
+    rule: any, // BarrelPurityRule
+    projectPath: string
+  ): Promise<ArchitecturalViolationModel[]> {
+    const violations: ArchitecturalViolationModel[] = [];
+    const fs = await import('fs').then(m => m.promises);
+    const path = await import('path');
+
+    // Filter symbols matching the file pattern
+    const filePattern = new RegExp(rule.for.file_pattern);
+    const symbolsToCheck = symbols.filter((symbol) => filePattern.test(symbol.path));
+
+    for (const symbol of symbolsToCheck) {
+      try {
+        const filePath = path.join(projectPath, symbol.path);
+        const content = await fs.readFile(filePath, 'utf-8');
+
+        for (const pattern of rule.contains_forbidden) {
+          try {
+            const regex = new RegExp(pattern);
+            if (regex.test(content)) {
+              violations.push({
+                ruleName: rule.name,
+                severity: rule.severity,
+                file: symbol.path,
+                message: `${rule.name}: Barrel file ${symbol.path} contains forbidden pattern '${pattern}' - should only re-export${rule.comment ? ` - ${rule.comment}` : ''}`,
+                fromRole: symbol.role,
+                toRole: undefined,
+                dependency: undefined,
+              });
+              break; // Only report once per file
+            }
+          } catch (error) {
+            // Invalid regex pattern, skip
+            continue;
+          }
+        }
+      } catch (error) {
+        // File might not exist or be readable, skip
+      }
     }
 
     return violations;
