@@ -3,6 +3,5 @@
  * These interfaces define contracts that will be implemented by the Infrastructure layer
  */
 
-export * from './command-line-adapter';
 export * from './i-code-parser';
 export * from './i-grammar-repository';

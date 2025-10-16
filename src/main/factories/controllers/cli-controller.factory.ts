@@ -8,6 +8,7 @@
 import { CliController } from '../../../presentation/controllers';
 import { CliArgsValidation } from '../../../validation/validators';
 import { NodeCliAdapter } from '../../../infra/adapters/node-cli.adapter';
+import { CliViolationPresenter } from '../../../presentation/presenters/cli-violation.presenter';
 import { makeAnalyzeCodebaseUseCase } from '../usecases/analyze-codebase.factory';
 
 /**
@@ -19,10 +20,11 @@ export function makeCliController(): CliController {
   // Create infrastructure adapters
   const processAdapter = new NodeCliAdapter();
   const validator = new CliArgsValidation();
+  const presenter = new CliViolationPresenter(processAdapter);
 
   // Create the use case
   const analyzeCodebaseUseCase = makeAnalyzeCodebaseUseCase();
 
   // Create and return the controller with all dependencies
-  return new CliController(analyzeCodebaseUseCase, validator, processAdapter);
+  return new CliController(analyzeCodebaseUseCase, validator, processAdapter, presenter);
 }
