@@ -766,6 +766,19 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Critical: SQL string concatenation vulnerability
+  # Evidence: Learning Insight #15 | Discovered: 2025-10-16 | Confidence: Critical
+  - name: "sql-string-concat"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(query|execute|exec|prepare)\\s*\\([^)]*\\+"
+      - "\"SELECT.*\"\\s*\\+"
+      - "'SELECT.*'\\s*\\+"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: SQL query built with string concatenation - creates SQL injection vulnerability, OWASP #1 risk. REFACTOR: Use parameterized queries/prepared statements. NEVER concatenate user input into SQL. Use query builders (Knex, TypeORM) or ORM with parameterized queries. EXAMPLE: If code has 'query = \"SELECT * FROM users WHERE id = \" + userId', this is CRITICAL VULNERABILITY. Instead: use prepared statement: 'db.query(\"SELECT * FROM users WHERE id = ?\", [userId])' or ORM: 'repository.findOne({ where: { id: userId } })'. Parameters are escaped automatically. BENEFIT: Eliminates SQL injection attacks, separates data from code, automatic escaping, prevents database compromise, protects user data, meets OWASP security standards, enables safe dynamic queries."
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
