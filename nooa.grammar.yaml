@@ -766,6 +766,17 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Critical: Database transaction reliability - ensure rollback in error paths
+  # Evidence: Learning Insight #16 | Discovered: 2025-10-16 | Pattern: Database reliability anti-pattern
+  - name: "transaction-not-rolled-back"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(BEGIN|START TRANSACTION|beginTransaction|begin_transaction)(?!.*\\b(rollback|ROLLBACK)\\b)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Transaction started but no rollback in error path - causes resource leaks, locks held indefinitely, connection pool exhaustion, data inconsistency. REFACTOR: Always pair BEGIN with both COMMIT and ROLLBACK. Use try-catch-finally or transaction wrapper. Ensure ROLLBACK in all error paths. EXAMPLE: If code has 'await db.beginTransaction(); await query1(); await query2(); await db.commit()' without rollback, this is HIGH RISK. Instead: use try-catch: 'try { await db.begin(); await query1(); await query2(); await db.commit(); } catch(e) { await db.rollback(); throw e; }' or transaction helper: 'await db.transaction(async (trx) => { ... })' (auto-rollback on error). BENEFIT: Prevents resource leaks, releases locks promptly, maintains data consistency, prevents connection exhaustion, enables graceful error handling, follows ACID principles, improves database reliability."
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
