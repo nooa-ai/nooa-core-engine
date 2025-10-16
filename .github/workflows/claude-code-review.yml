@@ -31,27 +31,197 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies and build Nooa
+        run: |
+          npm ci
+          npm run build
+
+      - name: Run Nooa validation on PR
+        id: nooa-validation
+        continue-on-error: true
+        run: |
+          echo "Running Nooa architectural validation..."
+          npm start . > pr-validation-report.txt 2>&1 || true
+
+          # Extract metrics
+          violations=$(grep -oP 'Found \K\d+(?= architectural violation)' pr-validation-report.txt || echo "0")
+          errors=$(grep -oP '\K\d+(?= errors)' pr-validation-report.txt || echo "0")
+          warnings=$(grep -oP '\K\d+(?= warnings)' pr-validation-report.txt || echo "0")
+
+          echo "violations=$violations" >> $GITHUB_OUTPUT
+          echo "errors=$errors" >> $GITHUB_OUTPUT
+          echo "warnings=$warnings" >> $GITHUB_OUTPUT
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
+            🏗️ NOOA ARCHITECTURAL CODE REVIEW
+
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+            CONTEXT:
+            You are reviewing code for Nooa Core Engine, a tool that treats Clean Architecture as a formal grammar.
+            This project follows rigorous architectural principles and uses linguistic metaphors.
 
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+            NOOA VALIDATION RESULTS:
+            - Violations: ${{ steps.nooa-validation.outputs.violations }}
+            - Errors: ${{ steps.nooa-validation.outputs.errors }}
+            - Warnings: ${{ steps.nooa-validation.outputs.warnings }}
 
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+            TASK:
+            Review this PR with focus on Clean Architecture compliance and Nooa's grammatical principles.
+
+            1. **Read PR details**:
+               ```bash
+               gh pr view ${{ github.event.pull_request.number }}
+               gh pr diff ${{ github.event.pull_request.number }}
+               ```
+
+            2. **Read Nooa validation report**:
+               ```bash
+               cat pr-validation-report.txt
+               ```
+
+            3. **Review against Nooa Grammar**:
+               ```bash
+               cat nooa.grammar.yaml
+               ```
+
+            4. **Check architectural documentation**:
+               - Read `docs/CLEAN_ARCHITECTURE_GRAMMAR_ANALYSIS.md` for principles
+               - Read `docs/CLEAN_ARCHITECTURE_TEST_GRAMMAR_ANALYSIS.md` for test patterns
+
+            5. **Architectural Review Checklist**:
+
+               **🔴 CRITICAL (Blocking)**:
+               - [ ] **Dependency Direction**: Does code respect dependency arrows (Domain ← Data ← Infra ← Presentation)?
+               - [ ] **DIP Compliance**: Are concrete implementations injected via protocols?
+               - [ ] **Layer Isolation**: Do files only import from allowed layers?
+               - [ ] **Naming Conventions**: Do files follow .usecase.ts, .adapter.ts, .controller.ts patterns?
+               - [ ] **File Size**: Are files under 200 LOC (error threshold)?
+               - [ ] **Nooa Errors**: Are there 0 architectural errors from Nooa validation?
+
+               **🟡 IMPORTANT (Should Fix)**:
+               - [ ] **Single Responsibility**: Does each file have one clear purpose?
+               - [ ] **Test Coverage**: Are new files accompanied by tests?
+               - [ ] **ISP Compliance**: Are interfaces small and focused (prefer 1-2 methods)?
+               - [ ] **God Objects**: Do classes have <10 public methods?
+               - [ ] **Extract Class**: Can large files be split into helpers/validators?
+
+               **🟢 NICE TO HAVE**:
+               - [ ] **Documentation**: Do complex files have JSDoc?
+               - [ ] **AI NOTE Comments**: Do grammar rules include explanatory comments?
+               - [ ] **Performance**: Are there obvious optimization opportunities?
+
+            6. **Specific Code Patterns to Check**:
+
+               **Anti-Patterns (REJECT)**:
+               ```typescript
+               // ❌ Use case importing concrete infrastructure
+               import { TsMorphParser } from '@/infra/parsers'
+
+               // ❌ Controller with business logic
+               class Controller {
+                 handle() {
+                   const result = this.calculateTotal() // Business logic!
+                 }
+               }
+
+               // ❌ Domain importing data layer
+               import { SomeUseCase } from '@/data/usecases'
+               ```
+
+               **Good Patterns (APPROVE)**:
+               ```typescript
+               // ✅ Use case depending on protocol
+               constructor(private readonly parser: ICodeParser)
+
+               // ✅ Thin controller
+               class Controller {
+                 constructor(private readonly useCase: IAnalyzeCodebase) {}
+                 async handle() {
+                   return await this.useCase.analyze(params)
+                 }
+               }
+
+               // ✅ Helper with single responsibility
+               class FileCacheBuilderHelper {
+                 build(symbols, projectPath) { ... }
+               }
+               ```
+
+            7. **Grammar Evolution Check**:
+               - Is this PR adding a new rule from learning insight?
+               - If yes, verify rule format matches existing patterns
+               - Check that rule includes "AI NOTE" comment with REFACTOR/EXAMPLE/BENEFIT
+
+            8. **Dogfooding Check**:
+               - If Nooa has errors, this is BLOCKING
+               - If warnings increased significantly (>20%), request explanation
+               - If new code introduces violations, suggest refactoring
+
+            9. **Create Review Comment**:
+               Use `gh pr comment` with structured feedback:
+
+               ```markdown
+               ## 🏗️ Nooa Architectural Review
+
+               ### Validation Status
+               - Errors: [count] $(if errors > 0 then "🔴 BLOCKING" else "✅")
+               - Warnings: [count]
+               - Total Violations: [count]
+
+               ### Architecture Compliance
+
+               **✅ Approved**:
+               - [List good patterns found]
+
+               **⚠️ Suggestions**:
+               - [List improvements]
+
+               **🔴 Required Changes** (if any):
+               - [List blocking issues]
+
+               ### Code Quality
+
+               [Specific feedback on:]
+               - Dependency direction
+               - Layer isolation
+               - File sizes
+               - Naming conventions
+               - Test coverage
+
+               ### Clean Architecture Grammar Notes
+
+               [Explain violations in grammatical terms, e.g.:]
+               - "This file mixes NOUN (domain) with ADVERB (infrastructure) concerns"
+               - "Controller acts as VERB (use case) instead of CONTEXT (adapter)"
+
+               ---
+               🤖 Powered by Nooa Architectural Validation
+               ```
+
+            GUIDELINES:
+            - Be rigorous but constructive
+            - Explain WHY patterns matter (not just WHAT is wrong)
+            - Reference grammar rules by name (e.g., "Domain-Independence")
+            - Use linguistic metaphors when helpful
+            - Praise good architectural decisions
+            - If PR is excellent, say so clearly!
+
+            CRITICAL: If Nooa reports errors, the PR should NOT be approved until fixed.
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: '--allowed-tools "Bash(gh pr comment:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(cat:*),Read,Grep,Glob"'
 

@@ -1,0 +1,149 @@
+name: Claude Learning - Grammar Evolution
+
+on:
+  # Quando uma issue de learning-insight é aprovada
+  issues:
+    types: [labeled]
+
+  # Manual trigger para evolução de regras
+  workflow_dispatch:
+    inputs:
+      pattern_issue:
+        description: 'Issue number with learning insight'
+        required: true
+      auto_merge:
+        description: 'Auto-merge if tests pass (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  evolve-grammar:
+    # Só executa se a issue tem label "learning-insight-approved"
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.label.name == 'learning-insight-approved' && contains(github.event.issue.title, '🧠 Learning Insight'))
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Get issue number
+        id: issue
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "number=${{ github.event.inputs.pattern_issue }}" >> $GITHUB_OUTPUT
+          else
+            echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Evolve grammar with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            🧬 NOOA EVOLUTION: Grammar Rule Evolution
+
+            CONTEXT:
+            - Repository: ${{ github.repository }}
+            - Learning Insight Issue: #${{ steps.issue.outputs.number }}
+
+            TASK:
+            You are the Nooa Evolution Engine. Your job is to evolve the grammar by adding a new rule based on the approved learning insight.
+
+            1. **Read the insight issue**:
+               ```bash
+               gh issue view ${{ steps.issue.outputs.number }}
+               ```
+
+            2. **Extract the proposed rule** from the issue body (should be in YAML format)
+
+            3. **Validate the rule**:
+               - Check it follows Nooa grammar format
+               - Ensure it has proper "AI NOTE" comment
+               - Verify severity is appropriate
+               - Check it doesn't conflict with existing rules
+
+            4. **Add rule to nooa.grammar.yaml**:
+               - Read current grammar: `nooa.grammar.yaml`
+               - Add new rule in appropriate section
+               - Follow existing comment structure
+               - Include evidence section with:
+                 * Issue number
+                 * Discovery date
+                 * Pattern frequency
+
+            5. **Update CHANGELOG.md**:
+               - Add entry in "Unreleased" section
+               - Format: "- feat(learning): add rule [RuleName] (discovered via #${{ steps.issue.outputs.number }})"
+
+            6. **Test the evolved grammar**:
+               ```bash
+               npm ci
+               npm run build
+               npm start .
+               ```
+               - Ensure Nooa still validates itself with 0 errors
+               - New rule should not break existing validation
+
+            7. **Create Pull Request**:
+               ```bash
+               git checkout -b learning/rule-from-issue-${{ steps.issue.outputs.number }}
+               git add nooa.grammar.yaml CHANGELOG.md
+               git commit -m "feat(learning): add rule from learning insight #${{ steps.issue.outputs.number }}"
+               git push origin learning/rule-from-issue-${{ steps.issue.outputs.number }}
+               gh pr create \
+                 --title "🧬 Grammar Evolution: Rule from Learning Insight #${{ steps.issue.outputs.number }}" \
+                 --body "## Grammar Evolution
+
+            This PR adds a new rule discovered through continuous learning.
+
+            **Source**: Learning Insight #${{ steps.issue.outputs.number }}
+            **Discovered**: Automated pattern discovery
+            **Confidence**: [extract from issue]
+
+            ### Changes
+            - Added new rule to \`nooa.grammar.yaml\`
+            - Updated \`CHANGELOG.md\`
+
+            ### Validation
+            - [x] Nooa validates itself with 0 errors
+            - [x] New rule does not conflict with existing rules
+            - [x] Rule follows grammar format
+
+            Closes #${{ steps.issue.outputs.number }}" \
+                 --label "learning-evolution,enhancement"
+               ```
+
+            CONSTRAINTS:
+            - Never break existing tests
+            - Always maintain backwards compatibility
+            - Follow semantic versioning
+            - Include dogfooding validation
+
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh pr create:*),Bash(npm:*),Read,Write,Edit,Bash(git:*)"'
+
+      - name: Comment on issue
+        if: success()
+        run: |
+          gh issue comment ${{ steps.issue.outputs.number }} --body "✅ Grammar evolution completed! A pull request has been created to add this rule to the grammar.
+
+          Check the PR for review: https://github.com/${{ github.repository }}/pulls?q=is%3Apr+label%3Alearning-evolution
+
+          The rule will be included in the next release after review and approval."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
