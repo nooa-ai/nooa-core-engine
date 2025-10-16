@@ -767,6 +767,55 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # DOCKER BEST PRACTICE ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # Evidence: Issue #22 - Learning Insight Discovery (2025-10-16)
+  # Frequency: Common in development Dockerfiles
+  # Confidence: 0.88
+
+  # Critical: Unpinned Docker base images
+  - name: "docker-unpinned-base-image"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "^FROM\\s+[^:]+(:latest)?\\s*$|^FROM\\s+[^:]+\\s*$"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects unpinned Docker base images using :latest or no tag.
+
+      WHY: Unpinned images cause multiple problems:
+      - Non-deterministic builds (different results over time)
+      - Difficult vulnerability tracking and patching
+      - Hard to reproduce issues or rollback
+      - Breaks supply chain security visibility
+
+      SOLUTION:
+      - Always pin to specific version tags
+      - Use semantic versioning (major.minor.patch)
+      - Consider using digest for complete immutability
+      - Update pins explicitly and test changes
+
+      EXAMPLE:
+      Bad:
+        FROM node
+        FROM python:latest
+        FROM alpine
+
+      Good:
+        FROM node:18.19.0-alpine3.19
+        FROM python:3.11.7-slim
+        FROM alpine:3.19.1
+
+      Best (with digest):
+        FROM node:18.19.0@sha256:a1b2c3d4...
+
+      REFERENCES:
+      - CIS Docker Benchmark 4.11: "Ensure base device size is not changed"
+      - Docker Best Practices: Always use specific tags
+      - SLSA Supply Chain Security: Pin dependencies
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
