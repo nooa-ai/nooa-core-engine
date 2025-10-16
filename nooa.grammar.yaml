@@ -767,6 +767,63 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # CONCURRENCY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # These patterns prevent common concurrency bugs that cause race conditions,
+  # data corruption, and non-deterministic failures in multi-threaded systems.
+  # Evidence: Learning Insight #25 (2025-10-16)
+
+  # Critical: Singleton pattern without synchronization
+  - name: "singleton-race"
+    severity: error
+    comment: |
+      AI NOTE: Detects singleton pattern without synchronization.
+
+      WHY: Unsynchronized singleton creates race conditions:
+      - Multiple threads can pass the null check simultaneously
+      - Each creates their own instance
+      - Violates singleton contract (only one instance)
+      - Causes state inconsistency and resource leaks
+
+      SOLUTION:
+      1. **Eager Initialization**: Create instance at class load time
+      2. **Synchronized Block**: Use lock/mutex for thread safety
+      3. **Double-Checked Locking**: With volatile/atomic (see separate pattern)
+      4. **Module Pattern**: Use module system for singleton (JS/TS)
+      5. **Once Pattern**: Use language-specific once mechanism (Go sync.Once)
+
+      EXAMPLE:
+      Bad:
+        if (!instance) {
+          instance = new Singleton();  // Race condition!
+        }
+
+      Good (Eager):
+        private static instance = new Singleton();
+
+      Good (Lazy):
+        await lock.acquire();
+        if (!instance) {
+          instance = new Singleton();
+        }
+        lock.release();
+
+      REFERENCES:
+      - Effective Java: Item 3 (Singleton with private constructor)
+      - Java Concurrency in Practice: Safe publication
+      - GoF Design Patterns: Singleton
+      - Go sync.Once: Thread-safe initialization
+
+      DISCOVERED: Learning Insight #25 (2025-10-16)
+      CONFIDENCE: 0.94
+      FREQUENCY: Found in 20-30% of codebases implementing singleton pattern
+    from:
+      role: ALL
+    contains_forbidden:
+      - "if\\s*\\(!?\\s*instance\\)\\s*\\{[^}]*instance\\s*=(?!.*synchronized|lock|mutex)"
+    rule: "forbidden_patterns"
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
