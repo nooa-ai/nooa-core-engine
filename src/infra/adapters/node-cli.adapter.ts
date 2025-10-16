@@ -6,7 +6,7 @@
  * the Dependency Inversion Principle.
  */
 
-import { ICommandLineAdapter } from '../../presentation/protocols/command-line-adapter';
+import { ICommandLineAdapter } from '../../data/protocols/command-line-adapter';
 
 /**
  * Adapter for Node.js command-line environment

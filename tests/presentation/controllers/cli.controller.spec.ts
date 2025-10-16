@@ -3,7 +3,7 @@ import { CliController } from '../../../src/presentation/controllers/cli.control
 import { IAnalyzeCodebase } from '../../../src/domain/usecases';
 import { ArchitecturalViolationModel } from '../../../src/domain/models';
 import { IValidation } from '../../../src/presentation/protocols/validation';
-import { ICommandLineAdapter } from '../../../src/presentation/protocols/command-line-adapter';
+import { ICommandLineAdapter } from '../../../src/data/protocols/command-line-adapter';
 
 // Mock console methods
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});

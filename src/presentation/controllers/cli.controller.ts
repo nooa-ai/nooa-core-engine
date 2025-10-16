@@ -14,7 +14,7 @@
 import { IAnalyzeCodebase } from '../../domain/usecases';
 import { ArchitecturalViolationModel } from '../../domain/models';
 import { IValidation } from '../../validation/protocols';
-import { ICommandLineAdapter } from '../protocols/command-line-adapter';
+import { ICommandLineAdapter } from '../../data/protocols/command-line-adapter';
 
 /**
  * CLI Controller for the Nooa architectural analysis tool
