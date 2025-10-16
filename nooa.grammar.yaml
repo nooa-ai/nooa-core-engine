@@ -767,6 +767,68 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # ASYNC/AWAIT ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # These patterns prevent common async/await errors that cause production
+  # issues. Discovered through community pattern analysis and adapted to
+  # Nooa's architecture.
+  # Evidence: Issue #31 - Learning Insight Discovery (2025-10-16)
+  # Frequency: 35-45% of JS/TS codebases | Confidence: 0.89
+
+  # Critical: Promise chains without error handling
+  - name: "promise-no-catch"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\.then\\([^)]*\\)(?!\\.catch)"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects Promise chains without error handling.
+
+      WHY: Unhandled promise rejections cause critical issues:
+      - Silent failures - errors disappear completely
+      - Node.js process crashes (with --unhandled-rejections=strict)
+      - Partial data corruption without rollback
+      - No logs or stack traces for debugging
+
+      SOLUTION:
+      1. **Always .catch()**: Add .catch() to every .then() chain
+      2. **async/await + try-catch**: Prefer modern async/await with try-catch
+      3. **Global Handler**: Set process.on('unhandledRejection') as safety net
+      4. **Promise.allSettled**: Use for parallel operations with error handling
+      5. **Circuit Breaker**: Implement retry logic with exponential backoff
+
+      EXAMPLE:
+      Bad:
+        api.getUser(id)
+          .then(user => updateUI(user));
+        // Error = silent failure
+
+      Good:
+        api.getUser(id)
+          .then(user => updateUI(user))
+          .catch(error => {
+            console.error(error);
+            showErrorUI();
+          });
+
+      Better:
+        try {
+          const user = await api.getUser(id);
+          updateUI(user);
+        } catch (error) {
+          console.error(error);
+          showErrorUI();
+        }
+
+      REFERENCES:
+      - Node.js Unhandled Rejections documentation
+      - "Promise Anti-Patterns" by Nolan Lawson
+      - JavaScript Error Handling Best Practices
+      - TC39 Promise specification
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding

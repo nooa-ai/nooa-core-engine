@@ -5,6 +5,14 @@ All notable changes to the Nooa Core Engine will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added - Learning Evolution
+- feat(learning): add rule `promise-no-catch` - Detects Promise chains without error handling (discovered via #31)
+  - Prevents silent failures from unhandled promise rejections
+  - Encourages use of `.catch()` or async/await with try-catch
+  - Confidence: 0.89 | Frequency: 35-45% of JS/TS codebases
+
 ## [1.4.0] - 2025-10-16
 
 ### Added - Clean Architecture Refactoring & Test Coverage
