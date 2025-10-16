@@ -767,6 +767,65 @@ rules:
     rule: "forbidden_patterns"
 
   # ============================================================================
+  # DATABASE ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+  # Evidence: Issue #30 - Learning Insight Discovery (2025-10-16)
+  # Frequency: 15-25% of codebases with database access
+  # Confidence: 0.91
+
+  # Critical: Transactions that never commit or rollback
+  - name: "transaction-no-end"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(begin|beginTransaction|startTransaction)\\((?!.*?(commit|rollback|end))"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects transactions that begin but never commit/rollback.
+
+      WHY: Uncompleted transactions cause critical database issues:
+      - Hold row/table locks indefinitely (lock escalation)
+      - Block other transactions causing deadlocks
+      - Keep connection busy exhausting pool
+      - May cause data inconsistency (isolation level dependent)
+
+      SOLUTION:
+      1. **try-catch-finally**: Always rollback in catch, commit in try
+      2. **Transaction Wrapper**: Use db.transaction(callback) pattern
+      3. **ORM Helpers**: Use Knex/Prisma/TypeORM transaction methods
+      4. **Timeout**: Set transaction timeout to auto-rollback
+      5. **Monitor**: Track long-running transactions in production
+
+      EXAMPLE:
+      Bad:
+        const trx = await db.beginTransaction();
+        await trx.query('UPDATE ...');
+        // Missing commit/rollback!
+
+      Good:
+        const trx = await db.beginTransaction();
+        try {
+          await trx.query('UPDATE ...');
+          await trx.commit();
+        } catch (error) {
+          await trx.rollback();
+          throw error;
+        }
+
+      Best:
+        await db.transaction(async (trx) => {
+          await trx.query('UPDATE ...');
+          // Auto-managed
+        });
+
+      REFERENCES:
+      - ACID properties: Atomicity requires commit or rollback
+      - PostgreSQL transaction management
+      - MySQL InnoDB lock wait timeouts
+      - Knex.js transaction guide
+
+  # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
   # These rules document architectural insights discovered through dogfooding
