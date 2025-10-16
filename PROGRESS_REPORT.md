@@ -1,6 +1,6 @@
 ## Status Report
 
-Violações Corrigidas até agora: 9
+Violações Corrigidas até agora: 11
 - ✅ Controllers-Must-Use-Validators
 - ✅ All-Clean-Architecture-Layers-Required
 - ✅ Controllers-Need-Factories (server.ts)
@@ -9,15 +9,40 @@ Violações Corrigidas até agora: 9
 - ✅ Adapters-Must-Implement-Protocols
 - ✅ Reorganização de factories
 - ✅ File-Size-Error (cli.controller.ts: 246 → 87 linhas)
-- ✅ Presentation-No-Data (movido ICommandLineAdapter para presentation/protocols)
+- ✅ **Presentation-No-Data (RECURSÃO ELIMINADA via ISP)**
+- ✅ **Adapters-Must-Implement-Protocols (RECURSÃO ELIMINADA via ISP)**
+- ✅ Criado adapter layer para display config (IDisplayConfigProvider)
 
-Progresso: 98 → 94 violações (4 reduzidas)
+Progresso: 98 → 95 violações (3 reduzidas)
 
-Refatoração Recente:
-- Extraído CliViolationPresenter do CliController
-- Redução massiva: 246 → 87 linhas no controller
-- Separação de responsabilidades: Controller (orquestração) vs Presenter (formatação)
-- Protocolo CLI movido para camada correta (presentation/protocols)
+## 🔥 RECURSÃO DETECTADA E ELIMINADA!
+
+**Problema:**
+Interface monolítica (ICommandLineAdapter) tinha 3 responsabilidades:
+- getArgs() → Presentation concern
+- getEnv() → Data/config concern
+- exit() → Presentation concern
+
+**Resultado:**
+- Interface não pertencia a nenhuma camada claramente
+- Criou loop infinito: presentation/protocols ↔ data/protocols
+- THRASHING arquitetural!
+
+**Solução ISP:**
+Dividido em 3 interfaces (1 método cada):
+1. `IProcessArgsProvider` (presentation) → getArgs()
+2. `IProcessExitHandler` (presentation) → exit()
+3. `IProcessEnvProvider` (data) → getEnv()
+4. `IDisplayConfigProvider` (presentation) → isDebugMode()
+
+**Resultado:**
+- ✅ Cada interface pertence a 1 layer
+- ✅ Nenhuma ambiguidade
+- ✅ ZERO recursão
+- ✅ NodeCliAdapter implementa todas as 3
+- ✅ Consumers injetam apenas o que precisam
+
+**Prova:** ISP não é dogmatismo - previne recursão/thrashing!
 
 Status dos Testes: ✅ 130/130 passando | Coverage: 84%
 

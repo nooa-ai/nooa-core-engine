@@ -13,11 +13,16 @@
 
 import { IAnalyzeCodebase } from '../../domain/usecases';
 import { IValidation } from '../../validation/protocols';
-import { ICommandLineAdapter } from '../protocols/command-line-adapter';
+import { IProcessArgsProvider } from '../protocols/process-args-provider';
+import { IProcessExitHandler } from '../protocols/process-exit-handler';
 import { CliViolationPresenter } from '../presenters/cli-violation.presenter';
 
 /**
  * CLI Controller for the Nooa architectural analysis tool
+ *
+ * ISP: Controller only depends on what it needs:
+ * - IProcessArgsProvider (to get CLI arguments)
+ * - IProcessExitHandler (to exit with status code)
  */
 export class CliController {
   /**
@@ -25,13 +30,15 @@ export class CliController {
    *
    * @param analyzeCodebase - The use case for analyzing codebases
    * @param validator - Validates CLI arguments before handling
-   * @param commandLine - Adapter for command-line operations (args, env, exit)
+   * @param argsProvider - Provides command-line arguments (ISP: presentation concern)
+   * @param exitHandler - Handles process exit (ISP: presentation concern)
    * @param presenter - Presenter for formatting CLI output
    */
   constructor(
     private readonly analyzeCodebase: IAnalyzeCodebase,
     private readonly validator: IValidation,
-    private readonly commandLine: ICommandLineAdapter,
+    private readonly argsProvider: IProcessArgsProvider,
+    private readonly exitHandler: IProcessExitHandler,
     private readonly presenter: CliViolationPresenter,
   ) {}
 
@@ -41,7 +48,7 @@ export class CliController {
   async handle(): Promise<void> {
     try {
       // Get command line arguments
-      const args = this.commandLine.getArgs();
+      const args = this.argsProvider.getArgs();
 
       // Check CLI arguments
       const checkResult = this.validator.check({ args });
@@ -54,7 +61,7 @@ export class CliController {
         checkResult.errors.forEach((error) => {
           console.error(`  • ${error.message}`);
         });
-        this.commandLine.exit(1);
+        this.exitHandler.exit(1);
         return;
       }
 
@@ -77,11 +84,11 @@ export class CliController {
 
       // Exit with appropriate code
       const hasErrors = violations.some((v) => v.severity === 'error');
-      this.commandLine.exit(hasErrors ? 1 : 0);
+      this.exitHandler.exit(hasErrors ? 1 : 0);
     } catch (error) {
       // Handle errors gracefully
       this.presenter.displayError(error);
-      this.commandLine.exit(1);
+      this.exitHandler.exit(1);
     }
   }
 }

@@ -3,16 +3,20 @@
  *
  * Handles all formatting and display logic for CLI output.
  * Separates presentation concerns from controller orchestration.
+ *
+ * ISP: Presenter only depends on what it needs:
+ * - IDisplayConfigProvider (to check if debug mode is enabled)
+ *   This is a presentation concern - display configuration
  */
 
 import { ArchitecturalViolationModel } from '../../domain/models';
-import { ICommandLineAdapter } from '../protocols/command-line-adapter';
+import { IDisplayConfigProvider } from '../protocols/display-config-provider';
 
 /**
  * Presenter for formatting CLI output of architectural violations
  */
 export class CliViolationPresenter {
-  constructor(private readonly commandLine: ICommandLineAdapter) {}
+  constructor(private readonly displayConfig: IDisplayConfigProvider) {}
 
   /**
    * Displays usage information
@@ -162,8 +166,7 @@ export class CliViolationPresenter {
 
     if (error instanceof Error) {
       console.error(`  ${error.message}`);
-      const debug = this.commandLine.getEnv('DEBUG');
-      if (error.stack && debug) {
+      if (error.stack && this.displayConfig.isDebugMode()) {
         console.error('');
         console.error('Stack trace:');
         console.error(error.stack);

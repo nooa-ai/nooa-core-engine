@@ -3,7 +3,8 @@ import { CliController } from '../../../src/presentation/controllers/cli.control
 import { IAnalyzeCodebase } from '../../../src/domain/usecases';
 import { ArchitecturalViolationModel } from '../../../src/domain/models';
 import { IValidation } from '../../../src/presentation/protocols/validation';
-import { ICommandLineAdapter } from '../../../src/presentation/protocols/command-line-adapter';
+import { IProcessArgsProvider } from '../../../src/presentation/protocols/process-args-provider';
+import { IProcessExitHandler } from '../../../src/presentation/protocols/process-exit-handler';
 import { CliViolationPresenter } from '../../../src/presentation/presenters/cli-violation.presenter';
 
 // Mock console methods
@@ -14,7 +15,8 @@ describe('CliController', () => {
   let sut: CliController;
   let mockAnalyzeCodebase: IAnalyzeCodebase;
   let mockValidator: IValidation;
-  let mockCommandLine: ICommandLineAdapter;
+  let mockArgsProvider: IProcessArgsProvider;
+  let mockExitHandler: IProcessExitHandler;
   let mockPresenter: CliViolationPresenter;
 
   beforeEach(() => {
@@ -25,9 +27,10 @@ describe('CliController', () => {
     mockValidator = {
       check: vi.fn().mockReturnValue({ success: true, errors: [] })
     };
-    mockCommandLine = {
-      getArgs: vi.fn().mockReturnValue(['/test/project']),
-      getEnv: vi.fn(),
+    mockArgsProvider = {
+      getArgs: vi.fn().mockReturnValue(['/test/project'])
+    };
+    mockExitHandler = {
       exit: vi.fn()
     };
     mockPresenter = {
@@ -35,14 +38,15 @@ describe('CliController', () => {
       displayResults: vi.fn(),
       displayMetrics: vi.fn(),
       displayViolation: vi.fn(),
-      displayError: vi.fn()
+      displayError: vi.fn(),
+      displayConfig: { isDebugMode: vi.fn().mockReturnValue(false) }
     } as any;
-    sut = new CliController(mockAnalyzeCodebase, mockValidator, mockCommandLine, mockPresenter);
+    sut = new CliController(mockAnalyzeCodebase, mockValidator, mockArgsProvider, mockExitHandler, mockPresenter);
   });
 
   describe('handle', () => {
     it('should display usage when no arguments provided', async () => {
-      vi.mocked(mockCommandLine.getArgs).mockReturnValue([]);
+      vi.mocked(mockArgsProvider.getArgs).mockReturnValue([]);
       vi.mocked(mockValidator.check).mockReturnValue({
         success: false,
         errors: [{ field: 'args', message: 'At least one argument is required (project path)' }]
@@ -52,11 +56,11 @@ describe('CliController', () => {
 
       expect(mockPresenter.displayUsage).toHaveBeenCalled();
       expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Input errors'));
-      expect(mockCommandLine.exit).toHaveBeenCalledWith(1);
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(1);
     });
 
     it('should analyze the provided path from arguments', async () => {
-      vi.mocked(mockCommandLine.getArgs).mockReturnValue(['/custom/path']);
+      vi.mocked(mockArgsProvider.getArgs).mockReturnValue(['/custom/path']);
       vi.mocked(mockAnalyzeCodebase.analyze).mockResolvedValue([]);
 
       await sut.handle();
@@ -71,7 +75,7 @@ describe('CliController', () => {
       await sut.handle();
 
       expect(mockPresenter.displayResults).toHaveBeenCalledWith([], expect.any(Number));
-      expect(mockCommandLine.exit).toHaveBeenCalledWith(0);
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(0);
     });
 
     it('should display violations grouped by severity', async () => {
@@ -106,7 +110,7 @@ describe('CliController', () => {
       await sut.handle();
 
       expect(mockPresenter.displayResults).toHaveBeenCalledWith(violations, expect.any(Number));
-      expect(mockCommandLine.exit).toHaveBeenCalledWith(1); // Exit 1 because of errors
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(1); // Exit 1 because of errors
     });
 
     it('should display performance metrics', async () => {
@@ -133,11 +137,10 @@ describe('CliController', () => {
       await sut.handle();
 
       expect(mockPresenter.displayError).toHaveBeenCalledWith(error);
-      expect(mockCommandLine.exit).toHaveBeenCalledWith(1);
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(1);
     });
 
     it('should show stack trace when DEBUG env is set', async () => {
-      vi.mocked(mockCommandLine.getEnv).mockReturnValue('true');
       const error = new Error('Analysis failed');
       error.stack = 'Stack trace here';
       vi.mocked(mockAnalyzeCodebase.analyze).mockRejectedValue(error);
@@ -262,7 +265,7 @@ describe('CliController', () => {
 
       await sut.handle();
 
-      expect(mockCommandLine.exit).toHaveBeenCalledWith(0);
+      expect(mockExitHandler.exit).toHaveBeenCalledWith(0);
     });
   });
 });
