@@ -745,6 +745,65 @@ rules:
   # production systems. Discovered through community knowledge and adapted
   # to Nooa's architecture.
 
+  # ============================================================================
+  # RESOURCE MANAGEMENT ANTI-PATTERNS
+  # ============================================================================
+  # Evidence: Issue #33 - Learning Insight Discovery (2025-10-16)
+  # Frequency: Found in 25-30% of codebases using streams
+  # Confidence: 0.89
+
+  - name: "stream-no-close"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(?:createReadStream|createWriteStream|pipe|pipeline)\\([^)]*\\)(?!.*?(finally|defer|using|close|end|destroy))"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects streams created without cleanup in finally/using/defer.
+
+      WHY: Unclosed streams cause multiple issues:
+      - Leak file descriptors (OS limit exhaustion)
+      - Memory leaks from buffered data
+      - Data loss from unflushed write buffers
+      - File corruption from partial writes
+
+      SOLUTION:
+      1. **pipeline()**: Use stream.pipeline() for auto-cleanup (Node.js)
+      2. **try-finally**: Always destroy streams in finally block
+      3. **Context Managers**: Use with statement (Python)
+      4. **try-with-resources**: Use Java 7+ resource management
+      5. **defer**: Defer stream.Close() (Go)
+
+      EXAMPLE:
+      Bad:
+        const read = fs.createReadStream('input.txt');
+        const write = fs.createWriteStream('output.txt');
+        read.pipe(write);
+        // Streams leaked!
+
+      Good:
+        const read = fs.createReadStream('input.txt');
+        const write = fs.createWriteStream('output.txt');
+        try {
+          read.pipe(write);
+        } finally {
+          read.destroy();
+          write.destroy();
+        }
+
+      Best:
+        await pipeline(
+          fs.createReadStream('input.txt'),
+          fs.createWriteStream('output.txt')
+        );  // Auto-managed
+
+      REFERENCES:
+      - Node.js stream.pipeline() documentation
+      - Python context managers (PEP 343)
+      - Java try-with-resources (JSR 334)
+      - "Stream Handbook" by substack
+
   # Critical: Money calculations with floating point
   - name: "No-Float-For-Money-Calculations"
     severity: error
