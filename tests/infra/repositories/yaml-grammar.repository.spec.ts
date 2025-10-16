@@ -1,16 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as fs from 'fs/promises';
 import * as yaml from 'yaml';
 import { YamlGrammarRepository } from '../../../src/infra/repositories/yaml-grammar.repository';
+import { IFileSystem } from '../../../src/data/protocols';
 
-vi.mock('fs/promises');
 vi.mock('yaml');
 
 describe('YamlGrammarRepository', () => {
   let sut: YamlGrammarRepository;
+  let fileSystemMock: IFileSystem;
 
   beforeEach(() => {
-    sut = new YamlGrammarRepository();
+    // Create mock IFileSystem
+    fileSystemMock = {
+      readFileSync: vi.fn(),
+      existsSync: vi.fn(),
+    };
+
+    sut = new YamlGrammarRepository(fileSystemMock);
     vi.clearAllMocks();
   });
 
@@ -36,8 +42,8 @@ rules:
     rule: forbidden
 `;
 
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue(mockGrammarContent);
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue(mockGrammarContent);
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -66,8 +72,8 @@ rules:
 
       const result = await sut.load('/test/project');
 
-      expect(fs.access).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml');
-      expect(fs.readFile).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml', 'utf-8');
+      expect(fileSystemMock.existsSync).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml');
+      expect(fileSystemMock.readFileSync).toHaveBeenCalledWith('/test/project/nooa.grammar.yaml', 'utf-8');
       expect(result.version).toBe('1.0');
       expect(result.language).toBe('typescript');
       expect(result.roles).toHaveLength(2);
@@ -75,11 +81,11 @@ rules:
     });
 
     it('should try .yml extension if .yaml not found', async () => {
-      vi.mocked(fs.access)
-        .mockRejectedValueOnce(new Error('File not found'))
-        .mockResolvedValueOnce(undefined);
+      vi.mocked(fileSystemMock.existsSync)
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
 
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('version: "1.0"\nlanguage: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -89,13 +95,13 @@ rules:
 
       await sut.load('/test/project');
 
-      expect(fs.access).toHaveBeenCalledTimes(2);
-      expect(fs.access).toHaveBeenNthCalledWith(1, '/test/project/nooa.grammar.yaml');
-      expect(fs.access).toHaveBeenNthCalledWith(2, '/test/project/nooa.grammar.yml');
+      expect(fileSystemMock.existsSync).toHaveBeenCalledTimes(2);
+      expect(fileSystemMock.existsSync).toHaveBeenNthCalledWith(1, '/test/project/nooa.grammar.yaml');
+      expect(fileSystemMock.existsSync).toHaveBeenNthCalledWith(2, '/test/project/nooa.grammar.yml');
     });
 
     it('should throw error if no grammar file found', async () => {
-      vi.mocked(fs.access).mockRejectedValue(new Error('File not found'));
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(false);
 
       await expect(sut.load('/test/project')).rejects.toThrow(
         "Grammar file not found. Expected 'nooa.grammar.yaml' or 'nooa.grammar.yml'"
@@ -103,8 +109,8 @@ rules:
     });
 
     it('should throw error if YAML parsing fails', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('invalid: yaml: content:');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('invalid: yaml: content:');
       vi.mocked(yaml.parse).mockImplementation(() => {
         throw new Error('Invalid YAML');
       });
@@ -115,8 +121,8 @@ rules:
     });
 
     it('should throw error if version is missing', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('language: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('language: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         language: 'typescript',
         roles: [{ name: 'TEST', path: '^src' }],
@@ -129,8 +135,8 @@ rules:
     });
 
     it('should throw error if language is missing', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('version: "1.0"\nroles: [{name: "TEST", path: "^src"}]\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         roles: [{ name: 'TEST', path: '^src' }],
@@ -143,8 +149,8 @@ rules:
     });
 
     it('should throw error if roles is not an array', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: "invalid"\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('version: "1.0"\nlanguage: typescript\nroles: "invalid"\nrules: [{name: "R1", severity: "error", rule: "forbidden", from: {role: "TEST"}, to: {role: "TEST"}}]');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -158,8 +164,8 @@ rules:
     });
 
     it('should throw error if rules is not an array', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('version: "1.0"\nlanguage: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: "invalid"');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('version: "1.0"\nlanguage: typescript\nroles: [{name: "TEST", path: "^src"}]\nrules: "invalid"');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -173,8 +179,8 @@ rules:
     });
 
     it('should validate role with missing name', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -188,8 +194,8 @@ rules:
     });
 
     it('should validate role with missing path', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -203,8 +209,8 @@ rules:
     });
 
     it('should validate rule with missing name', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -218,8 +224,8 @@ rules:
     });
 
     it('should validate rule with invalid severity', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -233,8 +239,8 @@ rules:
     });
 
     it('should validate naming_pattern rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -253,8 +259,8 @@ rules:
     });
 
     it('should validate naming_pattern rule without pattern', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -273,8 +279,8 @@ rules:
     });
 
     it('should validate naming_pattern rule with invalid regex', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -294,8 +300,8 @@ rules:
     });
 
     it('should validate find_synonyms rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -317,8 +323,8 @@ rules:
     });
 
     it('should validate detect_unreferenced rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -339,8 +345,8 @@ rules:
     });
 
     it('should validate file_size rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -359,8 +365,8 @@ rules:
     });
 
     it('should validate test_coverage rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -379,8 +385,8 @@ rules:
     });
 
     it('should throw error for test_coverage rule without from.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -399,8 +405,8 @@ rules:
     });
 
     it('should throw error for test_coverage rule without to.test_file', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -420,8 +426,8 @@ rules:
     });
 
     it('should validate forbidden_keywords rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -440,8 +446,8 @@ rules:
     });
 
     it('should throw error for forbidden_keywords rule without from.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -460,8 +466,8 @@ rules:
     });
 
     it('should throw error for forbidden_keywords rule without contains_forbidden', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -480,8 +486,8 @@ rules:
     });
 
     it('should throw error for forbidden_keywords rule with empty contains_forbidden', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -501,8 +507,8 @@ rules:
     });
 
     it('should validate required_structure rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -520,8 +526,8 @@ rules:
     });
 
     it('should throw error for required_structure rule without required_directories', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -539,8 +545,8 @@ rules:
     });
 
     it('should throw error for required_structure rule with empty required_directories', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -559,8 +565,8 @@ rules:
     });
 
     it('should validate documentation_required rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -581,8 +587,8 @@ rules:
     });
 
     it('should validate class_complexity rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -603,8 +609,8 @@ rules:
     });
 
     it('should validate dependency rules (forbidden, allowed, required)', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -627,8 +633,8 @@ rules:
     });
 
     it('should handle circular dependency rule', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -647,8 +653,8 @@ rules:
     });
 
     it('should throw error for unknown rule type', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -666,8 +672,8 @@ rules:
     });
 
     it('should throw error for dependency rule with both role and circular in "to"', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -687,8 +693,8 @@ rules:
     });
 
     it('should throw error for dependency rule without from.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -708,8 +714,8 @@ rules:
     });
 
     it('should throw error for dependency rule without to.role or to.circular', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -729,8 +735,8 @@ rules:
     });
 
     it('should throw error for class_complexity rule with invalid max_public_methods', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -751,8 +757,8 @@ rules:
     });
 
     it('should throw error for class_complexity rule with negative max_public_methods', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -773,8 +779,8 @@ rules:
     });
 
     it('should throw error for class_complexity rule with invalid max_properties', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -795,8 +801,8 @@ rules:
     });
 
     it('should throw error for documentation_required rule without for.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -816,8 +822,8 @@ rules:
     });
 
     it('should throw error for documentation_required rule with invalid min_lines', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -838,8 +844,8 @@ rules:
     });
 
     it('should throw error for documentation_required rule with non-numeric min_lines', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -860,8 +866,8 @@ rules:
     });
 
     it('should throw error for documentation_required rule with invalid requires_jsdoc', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -882,8 +888,8 @@ rules:
     });
 
     it('should throw error for class_complexity rule without for.role', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -903,8 +909,8 @@ rules:
     });
 
     it('should throw error for class_complexity rule with zero max_properties', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',
@@ -925,8 +931,8 @@ rules:
     });
 
     it('should handle detect_unreferenced rule without options', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(fs.readFile).mockResolvedValue('mock');
+      vi.mocked(fileSystemMock.existsSync).mockReturnValue(true);
+      vi.mocked(fileSystemMock.readFileSync).mockReturnValue('mock');
       vi.mocked(yaml.parse).mockReturnValue({
         version: '1.0',
         language: 'typescript',

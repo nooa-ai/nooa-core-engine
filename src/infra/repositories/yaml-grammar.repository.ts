@@ -31,7 +31,7 @@ export class YamlGrammarRepository implements IGrammarRepository {
   private transformer: GrammarTransformerHelper;
 
   constructor(private readonly fileSystem: IFileSystem = new NodeFileSystemAdapter()) {
-    this.yamlParser = new YamlParserHelper();
+    this.yamlParser = new YamlParserHelper(this.fileSystem);
     this.schemaValidator = new SchemaValidator(this.fileSystem);
     this.semanticValidator = new SemanticGrammarValidator();
     this.transformer = new GrammarTransformerHelper();
@@ -57,8 +57,8 @@ export class YamlGrammarRepository implements IGrammarRepository {
    * @throws Error if grammar file is not found or invalid
    */
   async load(projectPath: string): Promise<GrammarModel> {
-    // Parse YAML file
-    const parsedContent = await this.yamlParser.parseGrammarFile(projectPath);
+    // Parse YAML file (synchronous via injected fileSystem adapter)
+    const parsedContent = this.yamlParser.parseGrammarFile(projectPath);
 
     // Validate and transform to GrammarModel
     const grammar = this.validateAndTransform(parsedContent, projectPath);

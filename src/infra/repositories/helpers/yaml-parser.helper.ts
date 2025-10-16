@@ -2,25 +2,28 @@
  * YAML Parser Helper
  *
  * Handles file system operations and YAML parsing for grammar files.
+ * Uses IFileSystem abstraction for DIP compliance (no direct fs usage).
  */
 
-import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as yaml from 'yaml';
+import { IFileSystem } from '../../../data/protocols';
 
 export class YamlParserHelper {
   private readonly possibleFilenames = ['nooa.grammar.yaml', 'nooa.grammar.yml'];
+
+  constructor(private readonly fileSystem: IFileSystem) {}
 
   /**
    * Finds and reads the grammar file from the project path
    *
    * @param projectPath - Root path of the project
-   * @returns Promise resolving to parsed YAML content
+   * @returns Parsed YAML content
    * @throws Error if grammar file is not found or cannot be parsed
    */
-  async parseGrammarFile(projectPath: string): Promise<any> {
-    const grammarFilePath = await this.findGrammarFile(projectPath);
-    const fileContent = await fs.readFile(grammarFilePath, 'utf-8');
+  parseGrammarFile(projectPath: string): any {
+    const grammarFilePath = this.findGrammarFile(projectPath);
+    const fileContent = this.fileSystem.readFileSync(grammarFilePath, 'utf-8');
     return this.parseYaml(fileContent);
   }
 
@@ -28,18 +31,14 @@ export class YamlParserHelper {
    * Finds the grammar file in the project path
    *
    * @param projectPath - Root path of the project
-   * @returns Promise resolving to the grammar file path
+   * @returns The grammar file path
    * @throws Error if grammar file is not found
    */
-  private async findGrammarFile(projectPath: string): Promise<string> {
+  private findGrammarFile(projectPath: string): string {
     for (const filename of this.possibleFilenames) {
       const testPath = path.join(projectPath, filename);
-      try {
-        await fs.access(testPath);
+      if (this.fileSystem.existsSync(testPath)) {
         return testPath;
-      } catch {
-        // File doesn't exist, try next
-        continue;
       }
     }
 
