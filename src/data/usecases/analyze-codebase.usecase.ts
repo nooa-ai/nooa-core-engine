@@ -154,6 +154,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    * Validates architectural dependencies and detects violations
    *
    * Performance: Runs validators in parallel using Promise.all()
+   * Optimization: Only creates and runs validators when rules exist
    *
    * @param symbols - Code symbols with assigned roles
    * @param grammar - Grammar configuration with rules
@@ -168,6 +169,13 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     fileCache: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const rules = this.ruleExtractor.extract(grammar.rules);
+
+    // Early return if no rules defined
+    const hasRules = Object.values(rules).some((ruleArray) => ruleArray.length > 0);
+    if (!hasRules) {
+      return [];
+    }
+
     const validationPromises: Promise<ArchitecturalViolationModel[]>[] = [];
 
     // Run all validators in parallel (performance optimization)
@@ -226,9 +234,19 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
       validationPromises.push(validator.validate(symbols, projectPath));
     }
 
+    // Early return if no validators to run
+    if (validationPromises.length === 0) {
+      return [];
+    }
+
     // Wait for all validators to complete in parallel
     const results = await Promise.all(validationPromises);
     const violations = results.flat();
+
+    // Only deduplicate if we have violations
+    if (violations.length === 0) {
+      return violations;
+    }
 
     return this.deduplicator.deduplicate(violations);
   }

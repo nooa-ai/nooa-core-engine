@@ -10,17 +10,22 @@
  * - Rule types defined as data in schema
  * - Validator checks grammar conforms to schema
  * - AI can iterate on schema.json + nooa.grammar.yaml only
+ *
+ * Clean Architecture:
+ * - Depends on IFileSystem abstraction (not concrete fs module)
+ * - Injected via constructor for testability
+ * - No direct infrastructure dependencies
  */
 import Ajv, { ValidateFunction, ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
-import * as fs from 'fs';
 import * as path from 'path';
+import { IFileSystem } from '../../data/protocols/i-file-system';
 
 export class SchemaValidator {
   private ajv: Ajv;
   private validator: ValidateFunction | null = null;
 
-  constructor() {
+  constructor(private readonly fileSystem: IFileSystem) {
     // Initialize AJV with strict mode for better validation
     this.ajv = new Ajv({
       allErrors: true,
@@ -37,7 +42,7 @@ export class SchemaValidator {
    */
   loadSchema(schemaPath: string): void {
     try {
-      const schemaContent = fs.readFileSync(schemaPath, 'utf-8');
+      const schemaContent = this.fileSystem.readFileSync(schemaPath, 'utf-8');
       const schema = JSON.parse(schemaContent);
 
       // Compile schema for validation
@@ -107,18 +112,32 @@ export class SchemaValidator {
 
   /**
    * Static helper: Load schema and validate grammar in one call
+   *
+   * Note: This static method creates its own dependencies (not ideal for testing).
+   * Prefer injecting SchemaValidator via constructor for better testability.
    */
-  static validateGrammarFile(grammarPath: string, schemaPath?: string): { valid: boolean; errors: string[] } {
+  static validateGrammarFile(
+    grammarPath: string,
+    schemaPath?: string,
+    fileSystem?: IFileSystem
+  ): { valid: boolean; errors: string[] } {
+    // Import dependencies only when needed
+    const yaml = require('yaml');
+
+    // Use provided fileSystem or create default (for backward compatibility)
+    const fs = fileSystem || (() => {
+      const { NodeFileSystemAdapter } = require('../adapters/node-file-system.adapter');
+      return new NodeFileSystemAdapter();
+    })();
+
     // Default schema path: nooa.schema.json in project root
     const defaultSchemaPath = path.join(process.cwd(), 'nooa.schema.json');
     const finalSchemaPath = schemaPath || defaultSchemaPath;
 
-    const validator = new SchemaValidator();
+    const validator = new SchemaValidator(fs);
     validator.loadSchema(finalSchemaPath);
 
     // Load grammar YAML (assuming it's already parsed)
-    const fs = require('fs');
-    const yaml = require('yaml');
     const grammarContent = fs.readFileSync(grammarPath, 'utf-8');
     const grammar = yaml.parse(grammarContent);
 

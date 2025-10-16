@@ -658,20 +658,60 @@ rules:
       - "while.*\\{"
     rule: "barrel_purity"
 
-  # ============================================================================
-  # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
-  # ============================================================================
-  # These rules document architectural insights discovered through dogfooding
-  # but cannot be enforced yet because the rule engine doesn't support these
-  # rule types. They serve as TODOs for future Nooa development.
-  
-  # 13. INTERFACE SEGREGATION PRINCIPLE (Priority: CRITICAL)
-  # Discovered through RECURSION BUG: interfaces with multiple methods can have
-  # mixed responsibilities, causing layer ambiguity and architectural thrashing.
-  # 
+  # 13. NO DIRECT NODE.JS MODULE ACCESS (Priority: CRITICAL)
+  # Enforces Dependency Inversion: use adapters instead of direct Node.js imports
+  - name: "Use-Adapters-Not-NodeJS-Modules"
+    severity: error
+    comment: "AI NOTE: File directly imports Node.js built-in modules (fs/http/crypto/path) outside infrastructure layer - violates Dependency Inversion Principle, creates tight coupling to Node.js runtime, prevents testing with mocks, breaks Clean Architecture, makes code non-portable to other runtimes (Deno/Bun/Browser). REFACTOR: Create protocol interface in data/protocols (IFileReader, IHttpClient, ICrypto). Implement adapter in infra/adapters (NodeFileSystemAdapter, NodeHttpAdapter). Inject protocol via constructor. Only infrastructure layer can import Node.js modules directly. EXAMPLE: If use case does 'import fs from fs' or 'import path from path', this is WRONG. Instead: Define IFileReader protocol. Use case: constructor(private fileReader: IFileReader). Infra implements with Node fs. Tests inject mock. BENEFIT: Runtime-agnostic code (works in Node/Deno/Bun), fully testable with mocks, swappable implementations (local FS vs cloud storage, Node http vs fetch API), follows DIP and Clean Architecture, enables edge deployment, supports progressive enhancement from Node to Web Standards."
+    from:
+      role:
+        - NOUN
+        - VERB_CONTRACT
+        - VERB_IMPLEMENTATION
+        - VERB_IMPLEMENTATION_ACTUAL
+        - ADVERB_ABSTRACT
+        - CONTEXT
+        - CONTEXT_CONTROLLER
+        - CONTEXT_ACTUAL
+        - CONTEXT_MIDDLEWARE
+        - CONTEXT_MIDDLEWARE_ACTUAL
+        - CONTEXT_PROTOCOL
+        - CONTEXT_HELPER
+        - CONTEXT_ERROR
+        - VALIDATION_IMPLEMENTATION
+        - VALIDATION_IMPLEMENTATION_ACTUAL
+        - VALIDATION_PROTOCOL
+    contains_forbidden:
+      - "import.*['\"]fs['\"]"
+      - "require\\(['\"]fs['\"]\\)"
+      - "import\\(['\"]fs['\"]\\)"
+      - "from ['\"]fs['\"]"
+      - "from ['\"]fs/promises['\"]"
+      - "import.*['\"]path['\"]"
+      - "require\\(['\"]path['\"]\\)"
+      - "from ['\"]path['\"]"
+      - "import.*['\"]http['\"]"
+      - "import.*['\"]https['\"]"
+      - "from ['\"]http['\"]"
+      - "from ['\"]https['\"]"
+      - "import.*['\"]crypto['\"]"
+      - "from ['\"]crypto['\"]"
+      - "import.*['\"]os['\"]"
+      - "from ['\"]os['\"]"
+      - "import.*['\"]child_process['\"]"
+      - "from ['\"]child_process['\"]"
+    rule: "forbidden_patterns"
+
+  # 14. INTERFACE SEGREGATION PRINCIPLE GUIDELINE (Priority: CRITICAL)
+  # NOTE: Manual validation required - automatic detection not yet implemented
+  #
+  # CRITICAL ARCHITECTURAL INSIGHT discovered through dogfooding:
+  # Interfaces with multiple methods can have mixed responsibilities, causing
+  # layer ambiguity and architectural thrashing (recursion bugs).
+  #
   # Real case: ICommandLineAdapter with 3 methods created infinite loop:
   # - getArgs() → Presentation concern
-  # - getEnv() → Data concern  
+  # - getEnv() → Data concern
   # - exit() → Presentation concern
   # Result: Interface belonged to NO layer clearly, creating recursion between
   # presentation/protocols ↔ data/protocols (THRASHING!)
@@ -682,15 +722,19 @@ rules:
   # - IProcessExitHandler (presentation)
   # Result: ZERO recursion, each interface in correct layer!
   #
-  # TODO: Implement 'interface_method_count' rule type
-  # - name: "Interface-Segregation-Principle"
-  #   severity: warning
-  #   comment: "Interfaces should have at most 2 methods to prevent mixed responsibilities and layer ambiguity. Multi-method interfaces can belong to multiple layers, causing architectural recursion/thrashing."
-  #   for:
-  #     role:
-  #       - ADVERB_ABSTRACT
-  #       - CONTEXT_PROTOCOL
-  #       - VALIDATION_PROTOCOL
-  #       - VERB_CONTRACT
-  #   max_methods_per_interface: 2
-  #   rule: "interface_method_count"
+  # GUIDELINE: Prefer interfaces with exactly 1 method (maximum 2 if tightly cohesive).
+  # If interface has >2 methods, review for mixed responsibilities.
+  #
+  # Examples to review manually:
+  # ✅ GOOD: IFileReader { readFileSync(path: string): string }
+  # ✅ GOOD: IFileExistenceChecker { existsSync(path: string): boolean }
+  # ❌ BAD:  IFileSystem { readFileSync(), existsSync() } - mixed concerns
+  #
+  # TODO: Implement 'interface_method_count' rule type for automatic detection
+
+  # ============================================================================
+  # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
+  # ============================================================================
+  # These rules document architectural insights discovered through dogfooding
+  # but cannot be enforced yet because the rule engine doesn't support these
+  # rule types. They serve as TODOs for future Nooa development.

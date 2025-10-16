@@ -10,7 +10,7 @@
  * - Can be replaced with another storage mechanism (JSON, database, etc.)
  */
 
-import { IGrammarRepository } from '../../data/protocols';
+import { IGrammarRepository, IFileSystem } from '../../data/protocols';
 import { GrammarModel } from '../../domain/models';
 import {
   YamlParserHelper,
@@ -18,6 +18,7 @@ import {
 } from './helpers';
 import { SchemaValidator } from '../validators/schema.validator';
 import { SemanticGrammarValidator } from '../validators/semantic-grammar.validator';
+import { NodeFileSystemAdapter } from '../adapters/node-file-system.adapter';
 import * as path from 'path';
 
 /**
@@ -29,9 +30,9 @@ export class YamlGrammarRepository implements IGrammarRepository {
   private semanticValidator: SemanticGrammarValidator;
   private transformer: GrammarTransformerHelper;
 
-  constructor() {
+  constructor(private readonly fileSystem: IFileSystem = new NodeFileSystemAdapter()) {
     this.yamlParser = new YamlParserHelper();
-    this.schemaValidator = new SchemaValidator();
+    this.schemaValidator = new SchemaValidator(this.fileSystem);
     this.semanticValidator = new SemanticGrammarValidator();
     this.transformer = new GrammarTransformerHelper();
 

@@ -27,11 +27,11 @@ import {
 } from './metrics';
 
 export class FileMetricsValidator extends BaseRuleValidator {
-  private readonly fileSizeValidator: FileSizeValidator;
-  private readonly testCoverageValidator: TestCoverageValidator;
-  private readonly documentationValidator: DocumentationValidator;
-  private readonly classComplexityValidator: ClassComplexityValidator;
-  private readonly granularityMetricValidator: GranularityMetricValidator;
+  private readonly fileSizeValidator?: FileSizeValidator;
+  private readonly testCoverageValidator?: TestCoverageValidator;
+  private readonly documentationValidator?: DocumentationValidator;
+  private readonly classComplexityValidator?: ClassComplexityValidator;
+  private readonly granularityMetricValidator?: GranularityMetricValidator;
 
   constructor(
     fileSizeRules: FileSizeRule[],
@@ -41,11 +41,12 @@ export class FileMetricsValidator extends BaseRuleValidator {
     granularityRules: GranularityMetricRule[]
   ) {
     super();
-    this.fileSizeValidator = new FileSizeValidator(fileSizeRules);
-    this.testCoverageValidator = new TestCoverageValidator(testCoverageRules);
-    this.documentationValidator = new DocumentationValidator(documentationRules);
-    this.classComplexityValidator = new ClassComplexityValidator(classComplexityRules);
-    this.granularityMetricValidator = new GranularityMetricValidator(granularityRules);
+    // Only create validators when rules exist (performance optimization)
+    this.fileSizeValidator = fileSizeRules.length > 0 ? new FileSizeValidator(fileSizeRules) : undefined;
+    this.testCoverageValidator = testCoverageRules.length > 0 ? new TestCoverageValidator(testCoverageRules) : undefined;
+    this.documentationValidator = documentationRules.length > 0 ? new DocumentationValidator(documentationRules) : undefined;
+    this.classComplexityValidator = classComplexityRules.length > 0 ? new ClassComplexityValidator(classComplexityRules) : undefined;
+    this.granularityMetricValidator = granularityRules.length > 0 ? new GranularityMetricValidator(granularityRules) : undefined;
   }
 
   async validate(
@@ -53,15 +54,30 @@ export class FileMetricsValidator extends BaseRuleValidator {
     projectPath: string,
     fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    // Run all validators in parallel (performance optimization)
-    const results = await Promise.all([
-      this.fileSizeValidator.validate(symbols, projectPath, fileCache),
-      this.testCoverageValidator.validate(symbols, projectPath),
-      this.documentationValidator.validate(symbols, projectPath, fileCache),
-      this.classComplexityValidator.validate(symbols, projectPath),
-      this.granularityMetricValidator.validate(symbols, projectPath),
-    ]);
+    const validationPromises: Promise<ArchitecturalViolationModel[]>[] = [];
 
+    // Only run validators that were created (performance optimization)
+    if (this.fileSizeValidator) {
+      validationPromises.push(this.fileSizeValidator.validate(symbols, projectPath, fileCache));
+    }
+    if (this.testCoverageValidator) {
+      validationPromises.push(this.testCoverageValidator.validate(symbols, projectPath));
+    }
+    if (this.documentationValidator) {
+      validationPromises.push(this.documentationValidator.validate(symbols, projectPath, fileCache));
+    }
+    if (this.classComplexityValidator) {
+      validationPromises.push(this.classComplexityValidator.validate(symbols, projectPath));
+    }
+    if (this.granularityMetricValidator) {
+      validationPromises.push(this.granularityMetricValidator.validate(symbols, projectPath, fileCache));
+    }
+
+    if (validationPromises.length === 0) {
+      return [];
+    }
+
+    const results = await Promise.all(validationPromises);
     return results.flat();
   }
 }
