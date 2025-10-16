@@ -30,6 +30,8 @@ import {
   ClassComplexityRule,
   MinimumTestRatioRule,
   GranularityMetricRule,
+  ForbiddenPatternsRule,
+  BarrelPurityRule,
 } from '../../domain/models';
 import { ICodeParser, IGrammarRepository } from '../protocols';
 
@@ -285,7 +287,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
 
     // Check for forbidden patterns rules
     const forbiddenPatternsRules = grammar.rules.filter(
-      (rule): rule is any => rule.rule === 'forbidden_patterns'
+      (rule): rule is ForbiddenPatternsRule => rule.rule === 'forbidden_patterns'
     );
     if (forbiddenPatternsRules.length > 0) {
       for (const rule of forbiddenPatternsRules) {
@@ -296,7 +298,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
 
     // Check for barrel purity rules
     const barrelPurityRules = grammar.rules.filter(
-      (rule): rule is any => rule.rule === 'barrel_purity'
+      (rule): rule is BarrelPurityRule => rule.rule === 'barrel_purity'
     );
     if (barrelPurityRules.length > 0) {
       for (const rule of barrelPurityRules) {
@@ -1354,7 +1356,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    */
   private async validateForbiddenPatterns(
     symbols: CodeSymbolModel[],
-    rule: any, // ForbiddenPatternsRule
+    rule: ForbiddenPatternsRule,
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
@@ -1409,7 +1411,7 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    */
   private async validateBarrelPurity(
     symbols: CodeSymbolModel[],
-    rule: any, // BarrelPurityRule
+    rule: BarrelPurityRule,
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
