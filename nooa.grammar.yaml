@@ -766,6 +766,58 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Resource Management: Connection leaks
+  # Evidence: Issue #29 - Learning Insight (2025-10-16)
+  # Frequency: Found in 25-35% of codebases | Confidence: 0.92
+  - name: "connection-no-close"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(connect|Connect|createConnection|getConnection)\\([^)]*\\)(?!.*?(close|disconnect|release))"
+    rule: "forbidden_patterns"
+    comment: |
+      AI NOTE: Detects database/network connections without explicit cleanup.
+
+      WHY: Connection leaks are the #1 cause of production outages:
+      - Connection pools have limited size (typically 10-100)
+      - Each leaked connection reduces available pool size
+      - Eventually all connections exhausted → service down
+      - Affects all services sharing the connection pool
+
+      SOLUTION:
+      1. **try-finally**: Always release in finally block
+      2. **Connection Wrapper**: Use pool.withConnection(callback) pattern
+      3. **Context Managers**: Use with/using statements (Python/C#)
+      4. **defer**: Defer connection.Close() (Go)
+      5. **Monitor Pool**: Log pool size metrics and alert on leaks
+
+      EXAMPLE:
+      Bad:
+        const conn = await pool.getConnection();
+        const result = await conn.query('SELECT ...');
+        return result;  // Connection leaked!
+
+      Good:
+        const conn = await pool.getConnection();
+        try {
+          const result = await conn.query('SELECT ...');
+          return result;
+        } finally {
+          conn.release();  // Always released
+        }
+
+      Best:
+        return await pool.withConnection(async (conn) => {
+          return await conn.query('SELECT ...');
+        });  // Auto-released
+
+      REFERENCES:
+      - HikariCP connection pool best practices
+      - "Connection Pool Sizing" by Oracle
+      - PostgreSQL connection management guide
+      - Node.js connection pool patterns
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
