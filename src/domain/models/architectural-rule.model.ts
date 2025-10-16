@@ -132,6 +132,161 @@ export type UnreferencedCodeRule = BaseRule & {
 };
 
 /**
+ * File size rule options
+ */
+export type FileSizeRuleOptions = {
+  /** Maximum number of lines allowed */
+  max_lines: number;
+};
+
+/**
+ * File size rule - validates that files don't exceed a certain size
+ */
+export type FileSizeRule = BaseRule & {
+  /** Which roles to check for file size */
+  for: RuleFor;
+
+  /** Rule type identifier for file size validation */
+  rule: 'file_size';
+
+  /** Maximum lines allowed */
+  max_lines: number;
+};
+
+/**
+ * Test coverage rule - ensures production files have corresponding tests
+ */
+export type TestCoverageRule = BaseRule & {
+  /** Source roles that need test coverage */
+  from: RuleFrom;
+
+  /** Indicates test files are required */
+  to: { test_file: 'required' };
+
+  /** Rule type identifier for test coverage */
+  rule: 'test_coverage';
+};
+
+/**
+ * Forbidden keywords rule - prevents certain patterns in code
+ */
+export type ForbiddenKeywordsRule = BaseRule & {
+  /** Which roles to check */
+  from: RuleFrom;
+
+  /** Keywords/patterns that are forbidden */
+  contains_forbidden: string[];
+
+  /** Rule type identifier */
+  rule: 'forbidden_keywords';
+};
+
+/**
+ * Required structure rule - ensures certain directories exist
+ */
+export type RequiredStructureRule = BaseRule & {
+  /** Required directory paths */
+  required_directories: string[];
+
+  /** Rule type identifier */
+  rule: 'required_structure';
+};
+
+/**
+ * Documentation required rule
+ */
+export type DocumentationRequiredRule = BaseRule & {
+  /** Which roles to check */
+  for: RuleFor;
+
+  /** Minimum lines that trigger documentation requirement */
+  min_lines: number;
+
+  /** Whether JSDoc is required */
+  requires_jsdoc: boolean;
+
+  /** Rule type identifier */
+  rule: 'documentation_required';
+};
+
+/**
+ * Class complexity rule - prevents God objects
+ */
+export type ClassComplexityRule = BaseRule & {
+  /** Which roles to check */
+  for: RuleFor;
+
+  /** Maximum public methods allowed */
+  max_public_methods: number;
+
+  /** Maximum properties allowed */
+  max_properties: number;
+
+  /** Rule type identifier */
+  rule: 'class_complexity';
+};
+
+/**
+ * Minimum test ratio rule - Enforces minimum percentage of test files
+ */
+export type MinimumTestRatioRule = BaseRule & {
+  /** Global configuration */
+  global: {
+    /** Minimum ratio of test files to production files (0.0 to 1.0) */
+    test_ratio: number;
+  };
+
+  /** Rule type identifier */
+  rule: 'minimum_test_ratio';
+};
+
+/**
+ * Granularity metric rule - Checks file granularity (lines per file)
+ */
+export type GranularityMetricRule = BaseRule & {
+  /** Global configuration */
+  global: {
+    /** Target lines of code per file */
+    target_loc_per_file: number;
+    /** Warning threshold multiplier */
+    warning_threshold_multiplier: number;
+  };
+
+  /** Rule type identifier */
+  rule: 'granularity_metric';
+};
+
+/**
+ * Forbidden patterns rule - Prevents specific regex patterns in code
+ */
+export type ForbiddenPatternsRule = BaseRule & {
+  /** Which roles to check */
+  from: RuleFrom;
+
+  /** Regex patterns that are forbidden */
+  contains_forbidden: string[];
+
+  /** Rule type identifier */
+  rule: 'forbidden_patterns';
+};
+
+/**
+ * Barrel purity rule - Ensures barrel exports (index.ts) only re-export
+ */
+export type BarrelPurityRule = BaseRule & {
+  /** File pattern to match (e.g., "/index\\.ts$") */
+  for: {
+    file_pattern: string;
+  };
+
+  /** Patterns that should not exist in barrel files */
+  contains_forbidden: string[];
+
+  /** Rule type identifier */
+  rule: 'barrel_purity';
+};
+
+/**
  * Complete architectural rule (discriminated union)
  * Can be a dependency rule, naming pattern rule, or hygiene rule
  */
@@ -139,4 +294,14 @@ export type ArchitecturalRuleModel =
   | DependencyRule
   | NamingPatternRule
   | SynonymDetectionRule
-  | UnreferencedCodeRule;
+  | UnreferencedCodeRule
+  | FileSizeRule
+  | TestCoverageRule
+  | ForbiddenKeywordsRule
+  | RequiredStructureRule
+  | DocumentationRequiredRule
+  | ClassComplexityRule
+  | MinimumTestRatioRule
+  | GranularityMetricRule
+  | ForbiddenPatternsRule
+  | BarrelPurityRule;
