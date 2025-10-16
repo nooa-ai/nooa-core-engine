@@ -503,7 +503,7 @@ rules:
   # NOTE: This rule requires a new rule type 'test_coverage' not yet implemented
   - name: "Test-Coverage-Required"
     severity: error
-    comment: "Every production file must have a corresponding test file (currently 0% coverage)"
+    comment: "AI NOTE: Production file has no corresponding test file - zero test coverage, unacceptable risk. REFACTOR: Create test file following naming convention. Mirror directory structure: src/path/file.ts → tests/path/file.spec.ts. Write unit tests covering: (1) happy path scenarios, (2) error cases with proper error handling, (3) edge cases and boundary conditions, (4) all public methods and interfaces. Use proper mocking for dependencies. Aim for >80% code coverage, 100% for critical paths. EXAMPLE: src/presentation/presenters/cli-violation.presenter.ts (no tests) → create tests/presentation/presenters/cli-violation.presenter.spec.ts with tests for: displayUsage() (verify console output), displayResults() (test formatting for 0/1/many violations), displayError() (test error formatting, stack traces), displayMetrics() (test performance display). Mock console.log/error. Verify output format. BENEFIT: Prevents regressions, enables confident refactoring, documents expected behavior, catches bugs early in development cycle, provides executable specification."
     from:
       role: [VERB_IMPLEMENTATION_ACTUAL, ADVERB_CONCRETE_ACTUAL, CONTEXT_ACTUAL]
     to:
@@ -523,7 +523,7 @@ rules:
 
   - name: "File-Size-Error"
     severity: error
-    comment: "Files exceeding 200 lines violate SRP and must be refactored"
+    comment: "AI NOTE: File exceeds 200 lines - violates Single Responsibility Principle. REFACTOR: Identify distinct responsibilities in file. Extract each responsibility into separate class/file. Apply Extract Class pattern. Split by functional cohesion. EXAMPLE: If analyze-codebase.usecase.ts has 1497 lines with validation+detection+transformation mixed, extract into: (1) NamingPatternValidator class (66 lines), (2) DependencyValidator class (224 lines), (3) HygieneValidator class (143 lines), (4) FileMetricsValidator class (66 lines), (5) StringSimilarityHelper class (163 lines). Main file becomes coordinator (178 lines). BENEFIT: Each file has single concern, easier to test in isolation, better maintainability, clearer responsibilities, enables parallel development, P2P-ready modular architecture."
     for:
       role: ALL
     max_lines: 200
@@ -556,7 +556,7 @@ rules:
   # NOTE: Requires 'forbidden_keywords' rule type not yet implemented
   - name: "No-Business-Logic-In-Controllers"
     severity: error
-    comment: "Controllers must not contain business logic - delegate to use cases"
+    comment: "AI NOTE: Controller contains business logic keywords (calculate/compute/transform/process/validate) - violates separation of concerns, breaks Clean Architecture boundaries. REFACTOR: Extract business logic to use case or domain service. Controller should ONLY: (1) receive input from external interface, (2) call use case with validated input, (3) format response for external interface. Controller is thin adapter, not business logic container. EXAMPLE: If CliController has 'process.exit(hasErrors ? 1 : 0)' logic, extract to use case: ExitCodeDeterminer.execute(violations). Controller becomes: exitCode = await this.determineExitCode.execute(violations); this.exitHandler.exit(exitCode). Business rule (violations → exit code mapping) moves to use case, testable independently. BENEFIT: Business logic reusable across interfaces (CLI/HTTP/GraphQL), testable in isolation without mocking presentation layer, controller stays thin and focused on interface adaptation, follows Clean Architecture dependency rule."
     from:
       role: CONTEXT_ACTUAL
     contains_forbidden:
@@ -612,7 +612,7 @@ rules:
   # NOTE: Requires 'class_complexity' rule type not yet implemented
   - name: "No-God-Objects"
     severity: error
-    comment: "Classes should not exceed 10 public methods (God Object anti-pattern)"
+    comment: "AI NOTE: Class has >10 public methods or >15 properties - God Object anti-pattern detected. REFACTOR: Apply Extract Class pattern. Group related methods/properties by responsibility. Create focused classes with single responsibility. Each class should do ONE thing well. EXAMPLE: If UserService has 20 methods (createUser, deleteUser, login, logout, updateProfile, getProfile, changePassword, resetPassword, sendNotification, etc), extract into: UserAuthService (login, logout, changePassword, resetPassword - 4 methods), UserProfileService (getProfile, updateProfile - 2 methods), UserCRUDService (createUser, deleteUser - 2 methods), UserNotificationService (sendNotification, subscribe - 2 methods). Each service has <5 methods, clear single responsibility. BENEFIT: Better testability (test each service independently), clearer responsibilities, easier maintenance, follows SRP, enables team parallelization, reduces cognitive load."
     for:
       role: ALL
     max_public_methods: 10
