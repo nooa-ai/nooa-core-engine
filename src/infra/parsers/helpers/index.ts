@@ -5,3 +5,4 @@
  */
 
 export * from './symbol-extractor.helper';
+export * from './dependency-resolver.helper';
