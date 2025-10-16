@@ -544,11 +544,11 @@ rules:
   # Current: 3 factories | Target: Factory for each controller/use case
   - name: "Controllers-Need-Factories"
     severity: error
-    comment: "AI NOTE: Main layer (composition root) doesn't import controller factories - controllers likely instantiated manually without proper DI, creates tight coupling, makes testing harder. REFACTOR: Create factory in main/factories/controllers for each controller. Factory builds controller with all dependencies. Export makeController() function. Server/routes import factory, not controller directly. Factory handles entire dependency graph construction. EXAMPLE: If server.ts has 'new CliController(new AnalyzeCodebaseUseCase(...), ...)', this is WRONG. Instead: Create makeCliController() factory. Factory: const useCase = makeAnalyzeCodebaseUseCase(); const validator = makeCliArgsValidation(); return new CliController(useCase, validator). Server: const controller = makeCliController(). BENEFIT: Centralized dependency wiring, easier to change implementations, testable composition, supports different configurations (dev/prod), follows Dependency Injection principle, prevents dependency hell in entry points."
+    comment: "AI NOTE: Controller factory doesn't import use case factories - likely instantiates use cases manually or bypasses composition pattern, creates tight coupling. REFACTOR: Controller factories must import and use use case factories. Never instantiate use cases directly in controller factory. Call makeUseCaseName() functions from COMPOSER layer. This ensures proper dependency injection throughout the stack. EXAMPLE: If makeCliController() does 'new AnalyzeCodebaseUseCase(new Parser(), new Repo())', this is WRONG. Instead: 'const useCase = makeAnalyzeCodebaseUseCase()'. Let use case factory handle its dependencies. Controller factory only wires controller-level dependencies. BENEFIT: Centralized dependency wiring, each factory manages its level, testable composition, supports different configurations (dev/prod), follows Dependency Injection principle, prevents dependency hell in factories."
     from:
-      role: COMPOSER
-    to:
       role: COMPOSER_CONTROLLER_FACTORY
+    to:
+      role: COMPOSER
     rule: "required"
 
   # 5. SINGLE RESPONSIBILITY ENFORCEMENT (Priority: HIGH)
