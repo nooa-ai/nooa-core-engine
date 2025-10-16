@@ -17,12 +17,13 @@ export class FileSizeValidator extends BaseRuleValidator {
 
   async validate(
     symbols: CodeSymbolModel[],
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
 
     for (const rule of this.rules) {
-      violations.push(...(await this.validateFileSize(symbols, rule, projectPath)));
+      violations.push(...(await this.validateFileSize(symbols, rule, projectPath, fileCache)));
     }
 
     return violations;
@@ -31,20 +32,28 @@ export class FileSizeValidator extends BaseRuleValidator {
   private async validateFileSize(
     symbols: CodeSymbolModel[],
     rule: FileSizeRule,
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
-
     const symbolsToCheck = symbols.filter((symbol) =>
       this.roleMatcher.matches(symbol.role, rule.for.role)
     );
 
-    // Performance: Parallelize file reading with Promise.all()
+    // Performance: Use cache if available, otherwise read from disk
     const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
-        const filePath = path.join(projectPath, symbol.path);
-        const content = await fs.readFile(filePath, 'utf-8');
+        // Use cache if available (eliminates redundant I/O)
+        let content: string;
+        if (fileCache && fileCache.has(symbol.path)) {
+          content = fileCache.get(symbol.path)!;
+        } else {
+          // Fallback to disk read if cache miss
+          const fs = await import('fs').then((m) => m.promises);
+          const path = await import('path');
+          const filePath = path.join(projectPath, symbol.path);
+          content = await fs.readFile(filePath, 'utf-8');
+        }
+
         const lines = content.split('\n').length;
 
         if (lines > rule.max_lines) {

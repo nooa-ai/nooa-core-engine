@@ -26,45 +26,53 @@ export class CodePatternValidator extends BaseRuleValidator {
 
   async validate(
     symbols: CodeSymbolModel[],
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
+    // Run all rule validations in parallel (performance optimization)
+    const validationPromises: Promise<ArchitecturalViolationModel[]>[] = [];
 
     // Validate forbidden keywords
     for (const rule of this.forbiddenKeywordsRules) {
-      violations.push(...(await this.validateForbiddenKeywords(symbols, rule, projectPath)));
+      validationPromises.push(this.validateForbiddenKeywords(symbols, rule, projectPath, fileCache));
     }
 
     // Validate forbidden patterns
     for (const rule of this.forbiddenPatternsRules) {
-      violations.push(...(await this.validateForbiddenPatterns(symbols, rule, projectPath)));
+      validationPromises.push(this.validateForbiddenPatterns(symbols, rule, projectPath, fileCache));
     }
 
     // Validate barrel purity
     for (const rule of this.barrelPurityRules) {
-      violations.push(...(await this.validateBarrelPurity(symbols, rule, projectPath)));
+      validationPromises.push(this.validateBarrelPurity(symbols, rule, projectPath, fileCache));
     }
 
-    return violations;
+    const results = await Promise.all(validationPromises);
+    return results.flat();
   }
 
   private async validateForbiddenKeywords(
     symbols: CodeSymbolModel[],
     rule: ForbiddenKeywordsRule,
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
-
     const symbolsToCheck = symbols.filter((symbol) =>
       this.roleMatcher.matches(symbol.role, rule.from.role)
     );
 
-    // Performance: Parallelize file reading with Promise.all()
+    // Performance: Use cache if available
     const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
-        const filePath = path.join(projectPath, symbol.path);
-        const content = await fs.readFile(filePath, 'utf-8');
+        let content: string;
+        if (fileCache && fileCache.has(symbol.path)) {
+          content = fileCache.get(symbol.path)!;
+        } else {
+          const fs = await import('fs').then((m) => m.promises);
+          const path = await import('path');
+          const filePath = path.join(projectPath, symbol.path);
+          content = await fs.readFile(filePath, 'utf-8');
+        }
 
         for (const keyword of rule.contains_forbidden) {
           if (content.includes(keyword)) {
@@ -93,20 +101,25 @@ export class CodePatternValidator extends BaseRuleValidator {
   private async validateForbiddenPatterns(
     symbols: CodeSymbolModel[],
     rule: ForbiddenPatternsRule,
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
-
     const symbolsToCheck = symbols.filter((symbol) =>
       this.roleMatcher.matches(symbol.role, rule.from.role)
     );
 
-    // Performance: Parallelize file reading with Promise.all()
+    // Performance: Use cache if available
     const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
-        const filePath = path.join(projectPath, symbol.path);
-        const content = await fs.readFile(filePath, 'utf-8');
+        let content: string;
+        if (fileCache && fileCache.has(symbol.path)) {
+          content = fileCache.get(symbol.path)!;
+        } else {
+          const fs = await import('fs').then((m) => m.promises);
+          const path = await import('path');
+          const filePath = path.join(projectPath, symbol.path);
+          content = await fs.readFile(filePath, 'utf-8');
+        }
 
         for (const pattern of rule.contains_forbidden) {
           try {
@@ -141,19 +154,24 @@ export class CodePatternValidator extends BaseRuleValidator {
   private async validateBarrelPurity(
     symbols: CodeSymbolModel[],
     rule: BarrelPurityRule,
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
-
     const filePattern = new RegExp(rule.for.file_pattern);
     const symbolsToCheck = symbols.filter((symbol) => filePattern.test(symbol.path));
 
-    // Performance: Parallelize file reading with Promise.all()
+    // Performance: Use cache if available
     const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
-        const filePath = path.join(projectPath, symbol.path);
-        const content = await fs.readFile(filePath, 'utf-8');
+        let content: string;
+        if (fileCache && fileCache.has(symbol.path)) {
+          content = fileCache.get(symbol.path)!;
+        } else {
+          const fs = await import('fs').then((m) => m.promises);
+          const path = await import('path');
+          const filePath = path.join(projectPath, symbol.path);
+          content = await fs.readFile(filePath, 'utf-8');
+        }
 
         for (const pattern of rule.contains_forbidden) {
           try {

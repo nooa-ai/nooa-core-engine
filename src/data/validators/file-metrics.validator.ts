@@ -50,17 +50,18 @@ export class FileMetricsValidator extends BaseRuleValidator {
 
   async validate(
     symbols: CodeSymbolModel[],
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
+    // Run all validators in parallel (performance optimization)
+    const results = await Promise.all([
+      this.fileSizeValidator.validate(symbols, projectPath, fileCache),
+      this.testCoverageValidator.validate(symbols, projectPath),
+      this.documentationValidator.validate(symbols, projectPath, fileCache),
+      this.classComplexityValidator.validate(symbols, projectPath),
+      this.granularityMetricValidator.validate(symbols, projectPath),
+    ]);
 
-    // Delegate to specialized validators
-    violations.push(...(await this.fileSizeValidator.validate(symbols, projectPath)));
-    violations.push(...(await this.testCoverageValidator.validate(symbols, projectPath)));
-    violations.push(...(await this.documentationValidator.validate(symbols, projectPath)));
-    violations.push(...(await this.classComplexityValidator.validate(symbols, projectPath)));
-    violations.push(...(await this.granularityMetricValidator.validate(symbols, projectPath)));
-
-    return violations;
+    return results.flat();
   }
 }

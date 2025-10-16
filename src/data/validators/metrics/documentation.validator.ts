@@ -17,12 +17,13 @@ export class DocumentationValidator extends BaseRuleValidator {
 
   async validate(
     symbols: CodeSymbolModel[],
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const violations: ArchitecturalViolationModel[] = [];
 
     for (const rule of this.rules) {
-      violations.push(...(await this.validateDocumentation(symbols, rule, projectPath)));
+      violations.push(...(await this.validateDocumentation(symbols, rule, projectPath, fileCache)));
     }
 
     return violations;
@@ -31,20 +32,26 @@ export class DocumentationValidator extends BaseRuleValidator {
   private async validateDocumentation(
     symbols: CodeSymbolModel[],
     rule: DocumentationRequiredRule,
-    projectPath: string
+    projectPath: string,
+    fileCache?: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
-    const fs = await import('fs').then((m) => m.promises);
-    const path = await import('path');
-
     const symbolsToCheck = symbols.filter((symbol) =>
       this.roleMatcher.matches(symbol.role, rule.for.role)
     );
 
-    // Performance: Parallelize file reading with Promise.all()
+    // Performance: Use cache if available
     const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
-        const filePath = path.join(projectPath, symbol.path);
-        const content = await fs.readFile(filePath, 'utf-8');
+        let content: string;
+        if (fileCache && fileCache.has(symbol.path)) {
+          content = fileCache.get(symbol.path)!;
+        } else {
+          const fs = await import('fs').then((m) => m.promises);
+          const path = await import('path');
+          const filePath = path.join(projectPath, symbol.path);
+          content = await fs.readFile(filePath, 'utf-8');
+        }
+
         const lines = content.split('\n').length;
 
         if (lines >= rule.min_lines) {

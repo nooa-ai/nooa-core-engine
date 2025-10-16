@@ -56,8 +56,9 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    * 1. Load the grammar configuration
    * 2. Parse the codebase to extract symbols
    * 3. Assign roles to symbols based on path patterns
-   * 4. Validate dependencies against architectural rules
-   * 5. Return all violations found
+   * 4. Cache file contents in memory (performance optimization)
+   * 5. Validate dependencies against architectural rules
+   * 6. Return all violations found
    */
   async analyze(params: IAnalyzeCodebase.Params): Promise<IAnalyzeCodebase.Result> {
     const { projectPath } = params;
@@ -71,10 +72,50 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
     // Step 3: Assign roles to symbols
     const symbolsWithRoles = this.assignRolesToSymbols(symbols, grammar);
 
-    // Step 4: Validate architecture and collect violations
-    const violations = await this.validateArchitecture(symbolsWithRoles, grammar, projectPath);
+    // Step 4: Cache all file contents in memory (eliminates redundant I/O)
+    const fileCache = await this.buildFileCache(symbolsWithRoles, projectPath);
+
+    // Step 5: Validate architecture and collect violations
+    const violations = await this.validateArchitecture(symbolsWithRoles, grammar, projectPath, fileCache);
 
     return violations;
+  }
+
+  /**
+   * Builds cache of file contents in memory
+   *
+   * Performance: Read all files once and cache in Map to eliminate redundant I/O.
+   * Multiple validators need the same file content, so we read once and share.
+   *
+   * @param symbols - Code symbols with file paths
+   * @param projectPath - Root project path
+   * @returns Map of filePath → fileContent
+   */
+  private async buildFileCache(
+    symbols: CodeSymbolModel[],
+    projectPath: string
+  ): Promise<Map<string, string>> {
+    const fs = await import('fs').then((m) => m.promises);
+    const path = await import('path');
+    const fileCache = new Map<string, string>();
+
+    // Get unique file paths
+    const uniqueFilePaths = [...new Set(symbols.map((s) => s.path))];
+
+    // Read all files in parallel
+    await Promise.all(
+      uniqueFilePaths.map(async (symbolPath) => {
+        try {
+          const fullPath = path.join(projectPath, symbolPath);
+          const content = await fs.readFile(fullPath, 'utf-8');
+          fileCache.set(symbolPath, content);
+        } catch (error) {
+          // File might not exist or be readable, skip (cache miss handled by validators)
+        }
+      })
+    );
+
+    return fileCache;
   }
 
   /**
@@ -117,12 +158,14 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
    * @param symbols - Code symbols with assigned roles
    * @param grammar - Grammar configuration with rules
    * @param projectPath - Project path for file system operations
+   * @param fileCache - Cached file contents (eliminates redundant I/O)
    * @returns Array of architectural violations
    */
   private async validateArchitecture(
     symbols: CodeSymbolModel[],
     grammar: GrammarModel,
-    projectPath: string
+    projectPath: string,
+    fileCache: Map<string, string>
   ): Promise<ArchitecturalViolationModel[]> {
     const rules = this.ruleExtractor.extract(grammar.rules);
     const validationPromises: Promise<ArchitecturalViolationModel[]>[] = [];
@@ -157,7 +200,8 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rules.classComplexityRules,
         rules.granularityMetricRules
       );
-      validationPromises.push(validator.validate(symbols, projectPath));
+      // Pass fileCache to eliminate redundant file reads
+      validationPromises.push(validator.validate(symbols, projectPath, fileCache));
     }
 
     if (
@@ -170,7 +214,8 @@ export class AnalyzeCodebaseUseCase implements IAnalyzeCodebase {
         rules.forbiddenPatternsRules,
         rules.barrelPurityRules
       );
-      validationPromises.push(validator.validate(symbols, projectPath));
+      // Pass fileCache to eliminate redundant file reads
+      validationPromises.push(validator.validate(symbols, projectPath, fileCache));
     }
 
     if (rules.requiredStructureRules.length > 0 || rules.minimumTestRatioRules.length > 0) {
