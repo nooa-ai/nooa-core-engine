@@ -33,7 +33,6 @@ export class DocumentationValidator extends BaseRuleValidator {
     rule: DocumentationRequiredRule,
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
     const fs = await import('fs').then((m) => m.promises);
     const path = await import('path');
 
@@ -41,7 +40,8 @@ export class DocumentationValidator extends BaseRuleValidator {
       this.roleMatcher.matches(symbol.role, rule.for.role)
     );
 
-    for (const symbol of symbolsToCheck) {
+    // Performance: Parallelize file reading with Promise.all()
+    const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
         const filePath = path.join(projectPath, symbol.path);
         const content = await fs.readFile(filePath, 'utf-8');
@@ -49,7 +49,7 @@ export class DocumentationValidator extends BaseRuleValidator {
 
         if (lines >= rule.min_lines) {
           if (rule.requires_jsdoc && !content.includes('/**')) {
-            violations.push({
+            return {
               ruleName: rule.name,
               severity: rule.severity,
               file: symbol.path,
@@ -57,14 +57,17 @@ export class DocumentationValidator extends BaseRuleValidator {
               fromRole: symbol.role,
               toRole: undefined,
               dependency: undefined,
-            });
+            };
           }
         }
+        return null;
       } catch (error) {
         // File might not exist or be readable, skip
+        return null;
       }
-    }
+    });
 
-    return violations;
+    const results = await Promise.all(validationPromises);
+    return results.filter((v) => v !== null) as ArchitecturalViolationModel[];
   }
 }

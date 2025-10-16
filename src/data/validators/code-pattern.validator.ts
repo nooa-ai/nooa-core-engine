@@ -53,7 +53,6 @@ export class CodePatternValidator extends BaseRuleValidator {
     rule: ForbiddenKeywordsRule,
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
     const fs = await import('fs').then((m) => m.promises);
     const path = await import('path');
 
@@ -61,14 +60,15 @@ export class CodePatternValidator extends BaseRuleValidator {
       this.roleMatcher.matches(symbol.role, rule.from.role)
     );
 
-    for (const symbol of symbolsToCheck) {
+    // Performance: Parallelize file reading with Promise.all()
+    const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
         const filePath = path.join(projectPath, symbol.path);
         const content = await fs.readFile(filePath, 'utf-8');
 
         for (const keyword of rule.contains_forbidden) {
           if (content.includes(keyword)) {
-            violations.push({
+            return {
               ruleName: rule.name,
               severity: rule.severity,
               file: symbol.path,
@@ -76,16 +76,18 @@ export class CodePatternValidator extends BaseRuleValidator {
               fromRole: symbol.role,
               toRole: undefined,
               dependency: undefined,
-            });
-            break;
+            };
           }
         }
+        return null;
       } catch (error) {
         // File might not exist or be readable, skip
+        return null;
       }
-    }
+    });
 
-    return violations;
+    const results = await Promise.all(validationPromises);
+    return results.filter((v) => v !== null) as ArchitecturalViolationModel[];
   }
 
   private async validateForbiddenPatterns(
@@ -93,7 +95,6 @@ export class CodePatternValidator extends BaseRuleValidator {
     rule: ForbiddenPatternsRule,
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
     const fs = await import('fs').then((m) => m.promises);
     const path = await import('path');
 
@@ -101,7 +102,8 @@ export class CodePatternValidator extends BaseRuleValidator {
       this.roleMatcher.matches(symbol.role, rule.from.role)
     );
 
-    for (const symbol of symbolsToCheck) {
+    // Performance: Parallelize file reading with Promise.all()
+    const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
         const filePath = path.join(projectPath, symbol.path);
         const content = await fs.readFile(filePath, 'utf-8');
@@ -110,7 +112,7 @@ export class CodePatternValidator extends BaseRuleValidator {
           try {
             const regex = new RegExp(pattern);
             if (regex.test(content)) {
-              violations.push({
+              return {
                 ruleName: rule.name,
                 severity: rule.severity,
                 file: symbol.path,
@@ -118,20 +120,22 @@ export class CodePatternValidator extends BaseRuleValidator {
                 fromRole: symbol.role,
                 toRole: undefined,
                 dependency: undefined,
-              });
-              break;
+              };
             }
           } catch (error) {
             // Invalid regex pattern, skip
             continue;
           }
         }
+        return null;
       } catch (error) {
         // File might not exist or be readable, skip
+        return null;
       }
-    }
+    });
 
-    return violations;
+    const results = await Promise.all(validationPromises);
+    return results.filter((v) => v !== null) as ArchitecturalViolationModel[];
   }
 
   private async validateBarrelPurity(
@@ -139,14 +143,14 @@ export class CodePatternValidator extends BaseRuleValidator {
     rule: BarrelPurityRule,
     projectPath: string
   ): Promise<ArchitecturalViolationModel[]> {
-    const violations: ArchitecturalViolationModel[] = [];
     const fs = await import('fs').then((m) => m.promises);
     const path = await import('path');
 
     const filePattern = new RegExp(rule.for.file_pattern);
     const symbolsToCheck = symbols.filter((symbol) => filePattern.test(symbol.path));
 
-    for (const symbol of symbolsToCheck) {
+    // Performance: Parallelize file reading with Promise.all()
+    const validationPromises = symbolsToCheck.map(async (symbol) => {
       try {
         const filePath = path.join(projectPath, symbol.path);
         const content = await fs.readFile(filePath, 'utf-8');
@@ -155,7 +159,7 @@ export class CodePatternValidator extends BaseRuleValidator {
           try {
             const regex = new RegExp(pattern);
             if (regex.test(content)) {
-              violations.push({
+              return {
                 ruleName: rule.name,
                 severity: rule.severity,
                 file: symbol.path,
@@ -163,19 +167,21 @@ export class CodePatternValidator extends BaseRuleValidator {
                 fromRole: symbol.role,
                 toRole: undefined,
                 dependency: undefined,
-              });
-              break;
+              };
             }
           } catch (error) {
             // Invalid regex pattern, skip
             continue;
           }
         }
+        return null;
       } catch (error) {
         // File might not exist or be readable, skip
+        return null;
       }
-    }
+    });
 
-    return violations;
+    const results = await Promise.all(validationPromises);
+    return results.filter((v) => v !== null) as ArchitecturalViolationModel[];
   }
 }
