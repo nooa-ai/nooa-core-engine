@@ -304,6 +304,7 @@ rules:
 
 ### Added
 - feat(learning): add rule Test-Pattern-Rule (discovered via #7)
+- feat(learning): add rule No-Email-Regex-Validation (discovered via #12)
 
 ### Planned Features
 - Multiple language support (JavaScript, Python, Java)

@@ -766,6 +766,18 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Evidence: Learning Insight #12 - Email Regex Validation Pattern
+  # Discovered: 2025-10-16 | Confidence: High | Pattern: RFC 5322 compliance issues
+  - name: "No-Email-Regex-Validation"
+    severity: warning
+    comment: "AI NOTE: Using regex for email validation - regex cannot properly validate email RFC spec, causes false positives/negatives, maintenance burden. REFACTOR: Use proper email validation library or built-in validation. Libraries: validator.js, email-validator, or native HTML5 validation. Regex seems simple but email spec is complex (comments, quoted strings, international domains). EXAMPLE: If code has regex like '/^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$/' for email, this is WRONG (rejects valid emails like name+tag@domain.co.uk). Instead: use library: 'import validator from 'validator'; validator.isEmail(email)'. Handles edge cases correctly. BENEFIT: Correct validation per RFC 5322 spec, handles international domains (IDN), accepts all valid emails, rejects invalid ones accurately, maintained by community, reduces bug reports from legitimate users."
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\b(RegExp|new RegExp|/.*\\\\@.*/).*\\b(email|mail)\\b"
+      - "\\b(email|mail).*\\b(RegExp|new RegExp|/.*\\\\@.*/)"
+    rule: "forbidden_patterns"
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
