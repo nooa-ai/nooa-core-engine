@@ -1,6 +1,12 @@
 name: Claude Learning - Grammar Evolution
 
 on:
+  # TEMPORARY: Push trigger for testing on feature branch
+  push:
+    branches: [feature/continuous-learning]
+    paths:
+      - '.github/workflows/claude-learning-evolution.yml'
+
   # Quando uma issue de learning-insight é aprovada
   issues:
     types: [labeled]
