@@ -7,7 +7,7 @@
 
 import { CliController } from '../../../presentation/controllers';
 import { CliArgsValidation } from '../../../validation/validators';
-import { makeAnalyzeCodebaseUseCase } from '../analyze-codebase.factory';
+import { makeAnalyzeCodebaseUseCase } from '../usecases/analyze-codebase.factory';
 
 /**
  * Creates a CLI controller instance with all dependencies injected

@@ -12,10 +12,10 @@
  * - Returns an interface (from Domain), hiding implementation details
  */
 
-import { IAnalyzeCodebase } from '../../domain/usecases';
-import { AnalyzeCodebaseUseCase } from '../../data/usecases';
-import { TSMorphParserAdapter } from '../../infra/parsers';
-import { YamlGrammarRepository } from '../../infra/repositories';
+import { IAnalyzeCodebase } from '../../../domain/usecases';
+import { AnalyzeCodebaseUseCase } from '../../../data/usecases';
+import { TSMorphParserAdapter } from '../../../infra/parsers';
+import { YamlGrammarRepository } from '../../../infra/repositories';
 
 /**
  * Factory function that creates and configures the Analyze Codebase use case

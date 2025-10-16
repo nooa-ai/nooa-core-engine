@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { makeAnalyzeCodebaseUseCase } from '../../../src/main/factories/analyze-codebase.factory';
+import { makeAnalyzeCodebaseUseCase } from '../../../src/main/factories/usecases/analyze-codebase.factory';
 import { AnalyzeCodebaseUseCase } from '../../../src/data/usecases/analyze-codebase.usecase';
 import { TSMorphParserAdapter } from '../../../src/infra/parsers/ts-morph-parser.adapter';
 import { YamlGrammarRepository } from '../../../src/infra/repositories/yaml-grammar.repository';

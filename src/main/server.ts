@@ -11,7 +11,7 @@
  * - Delegates execution to the Presentation layer
  */
 
-import { makeCliController } from './factories';
+import { makeCliController } from './factories/controllers/cli-controller.factory';
 
 /**
  * Bootstrap the application
