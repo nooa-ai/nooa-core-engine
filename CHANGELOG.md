@@ -302,6 +302,9 @@ rules:
 
 ## [Unreleased]
 
+### Added
+- feat(learning): add rule Test-Pattern-Rule (discovered via #7)
+
 ### Planned Features
 - Multiple language support (JavaScript, Python, Java)
 - Custom role matchers (not just path-based)
