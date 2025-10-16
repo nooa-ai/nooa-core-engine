@@ -179,7 +179,7 @@ Closes #42
 ### Dogfooding Data (`.nooa/dogfooding/`)
 
 ```json
-// validation-2025-10-16T03:00:00Z.json
+// validation-2025-10-16_03-00-00.json
 {
   "timestamp": "2025-10-16T03:00:00Z",
   "commit": "abc123",
@@ -210,7 +210,7 @@ Closes #42
 ```json
 // patterns.json
 {
-  "discoveredAt": "2025-10-16T02:00:00Z",
+  "discoveredAt": "2025-10-16_02-00-00",
   "patterns": [
     {
       "id": "pattern-001",

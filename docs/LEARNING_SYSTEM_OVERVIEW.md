@@ -126,7 +126,7 @@ gh pr list --label learning-evolution
 ### Dogfooding Data
 
 ```json
-// .nooa/dogfooding/validation-2025-10-16T03:00:00Z.json
+// .nooa/dogfooding/validation-2025-10-16_03-00-00.json
 {
   "violations": 16,
   "errors": 0,
