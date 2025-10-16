@@ -319,3 +319,8 @@ Inspired by:
 - Clean Architecture by Robert C. Martin
 - Rodrigo Manguinho's Clean Architecture approach
 - The concept of architectural "grammar" as a formal validation system
+
+## 🧪 Testing Automated Reviews
+
+This is a test to verify that Claude Code Review and Dogfooding workflows are working correctly.
+
