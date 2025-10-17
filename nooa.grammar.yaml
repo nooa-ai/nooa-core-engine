@@ -772,3 +772,280 @@ rules:
   # These rules document architectural insights discovered through dogfooding
   # but cannot be enforced yet because the rule engine doesn't support these
   # rule types. They serve as TODOs for future Nooa development.
+  # ============================================================================
+  # DATABASE SECURITY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+
+  # Critical: SQL string concatenation vulnerability
+  # Evidence: Learning Insight #15 | Discovered: 2025-10-16 | Confidence: Critical
+  - name: "sql-string-concat"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(query|sql|execute|run).*['\"`].*\\+.*['\"`]"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: SQL query built with string concatenation - creates SQL injection vulnerability, OWASP #1 risk. REFACTOR: Use parameterized queries/prepared statements. NEVER concatenate user input into SQL. Use query builders (Knex, TypeORM) or ORM with parameterized queries. EXAMPLE: If code has 'query = \"SELECT * FROM users WHERE id = \" + userId', this is CRITICAL VULNERABILITY. Instead: use prepared statement: 'db.query(\"SELECT * FROM users WHERE id = ?\", [userId])' or ORM: 'repository.findOne({ where: { id: userId } })'. Parameters are escaped automatically. BENEFIT: Eliminates SQL injection attacks, separates data from code, automatic escaping, prevents database compromise, protects user data, meets OWASP security standards, enables safe dynamic queries."
+
+  # ============================================================================
+  # DATABASE SAFETY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+
+  # High: Transaction not rolled back
+  # Evidence: Learning Insight #16 | Discovered: 2025-10-16 | Confidence: High
+  - name: "transaction-not-rolled-back"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(BEGIN|begin).*TRANSACTION.*catch.*(?!ROLLBACK)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Transaction begun but not rolled back in error handler - causes resource leaks, database locks held indefinitely. REFACTOR: Always rollback transactions in catch blocks. Use try-catch-finally pattern. EXAMPLE: Bad: 'BEGIN TRANSACTION; try { ... } catch { log(error); }'. Good: 'try { BEGIN; ... COMMIT; } catch { ROLLBACK; throw; }'. BENEFIT: Prevents database deadlocks, releases locks on error, ensures ACID properties, prevents connection pool exhaustion."
+
+  # High: UPDATE without WHERE clause
+  # Evidence: Learning Insight #17 | Discovered: 2025-10-16 | Confidence: High
+  - name: "missing-where-clause-update"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "UPDATE\\s+\\w+\\s+SET.*(?!WHERE)(?!LIMIT)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: UPDATE without WHERE clause - will modify ALL rows, likely unintentional mass data corruption. REFACTOR: Always include WHERE clause to specify which rows to update. Add safeguards in code review. EXAMPLE: Bad: 'UPDATE users SET status = \"active\"' (updates ALL users!). Good: 'UPDATE users SET status = \"active\" WHERE id = 123'. BENEFIT: Prevents accidental mass updates, protects data integrity, requires explicit intent, reduces human error risk."
+
+  # High: DELETE without WHERE clause
+  # Evidence: Learning Insight #18 | Discovered: 2025-10-16 | Confidence: High
+  - name: "missing-where-clause-delete"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "DELETE\\s+FROM\\s+\\w+(?!.*WHERE)(?!.*LIMIT)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: DELETE without WHERE clause - will delete ALL rows, catastrophic data loss risk. REFACTOR: Always include WHERE clause or use TRUNCATE for intentional full deletion. EXAMPLE: Bad: 'DELETE FROM users' (deletes entire table!). Good: 'DELETE FROM users WHERE id = 123' or 'TRUNCATE TABLE temp_users'. BENEFIT: Prevents accidental data loss, requires explicit confirmation for mass deletion, protects production data."
+
+  # Medium: Unbounded query
+  # Evidence: Learning Insight #19 | Discovered: 2025-10-16 | Confidence: Medium
+  - name: "unbounded-query"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "SELECT\\s+.*FROM(?!.*\\bLIMIT\\b)(?!.*\\bTOP\\b)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: SELECT query without LIMIT clause - can return millions of rows, causing memory exhaustion and performance issues. REFACTOR: Always add LIMIT clause for safety. Use pagination for large datasets. EXAMPLE: Bad: 'SELECT * FROM users'. Good: 'SELECT * FROM users LIMIT 100' or implement cursor-based pagination. BENEFIT: Prevents OOM errors, ensures predictable performance, forces pagination thinking, protects against denial of service."
+
+  # ============================================================================
+  # DOCKER SECURITY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+
+  # Critical: Docker hardcoded secrets
+  # Evidence: Learning Insight #20 | Discovered: 2025-10-16 | Confidence: Critical
+  - name: "docker-hardcoded-secrets"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(ARG|ENV)\\s+.*(SECRET|TOKEN|PASSWORD|KEY|API_KEY|PRIVATE|CREDENTIAL|AUTH)\\s*="
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Detects hardcoded secrets in Dockerfile instructions. WHY: Secrets embedded in Docker images are a critical security risk - exposed in image layers, accessible to anyone with image access, persist in registries permanently. SOLUTION: Use Docker BuildKit secrets, runtime environment variables, secret management systems. EXAMPLE: Bad: ENV API_KEY=abc123. Good: RUN --mount=type=secret,id=api_key. REFERENCES: Docker BuildKit Secrets, CIS Docker Benchmark 4.10, OWASP Docker Security."
+
+  # High: Docker root user
+  # Evidence: Learning Insight #21 | Discovered: 2025-10-16 | Confidence: High
+  - name: "docker-root-user"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "^(?!.*USER\\s+(?!root)\\w+).*FROM.*"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Container running as root user - security risk, violates principle of least privilege. SOLUTION: Create non-root user in Dockerfile, use USER instruction. EXAMPLE: Bad: FROM node:18 (runs as root). Good: RUN groupadd -r appuser && useradd -r -g appuser appuser; USER appuser. REFERENCES: CIS Docker Benchmark 4.1, OWASP Docker Security."
+
+  # Medium: Docker unpinned base image
+  # Evidence: Learning Insight #22 | Discovered: 2025-10-16 | Confidence: Medium
+  - name: "docker-unpinned-base-image"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "^FROM\\s+[^:]+(:latest)?\\s*$|^FROM\\s+[^:]+\\s*$"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Docker base image using :latest or no tag - non-deterministic builds, difficult vulnerability tracking. SOLUTION: Always pin to specific version tags, use semantic versioning. EXAMPLE: Bad: FROM node or FROM python:latest. Good: FROM node:18.19.0-alpine3.19. REFERENCES: CIS Docker Benchmark, SLSA Supply Chain Security."
+
+  # ============================================================================
+  # CONCURRENCY ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+
+  # Critical: Nested locks
+  # Evidence: Learning Insight #23 | Discovered: 2025-10-16 | Confidence: Critical
+  - name: "nested-locks"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(lock|Lock|mutex|Mutex)\\.(acquire|lock).*\\n.*?(lock|Lock|mutex|Mutex)\\.(acquire|lock)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Nested lock acquisitions create potential deadlock risk - classic AB-BA deadlock cause. SOLUTION: Lock ordering (always acquire in consistent order), single lock, lock-free data structures, try-lock with timeout. EXAMPLE: Bad: await lockA.acquire(); await lockB.acquire(); (can deadlock!). Good: const [first, second] = sortByID(lockA, lockB); await first.acquire(); await second.acquire();. REFERENCES: Dining Philosophers Problem, Java Concurrency in Practice Chapter 10."
+
+  # Critical: AB-BA deadlock pattern
+  # Evidence: Learning Insight #24 | Discovered: 2025-10-16 | Confidence: Critical
+  - name: "lock-order-ab-ba"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(lockA|mutexA|lock1).*?(lockB|mutexB|lock2).*?\\|.*?(lockB|mutexB|lock2).*?(lockA|mutexA|lock1)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Classic AB-BA deadlock pattern detected - locks acquired in different orders in different code paths. SOLUTION: Total ordering, lock hierarchy, try-lock pattern, single lock, lock manager. EXAMPLE: Bad: Function1: lock(A); lock(B); Function2: lock(B); lock(A); (DEADLOCK!). Good: const sorted = [A, B].sort(by_id); lock(sorted[0]); lock(sorted[1]);. REFERENCES: Coffman Conditions (1971), The Little Book of Semaphores."
+
+  # Critical: Singleton race condition
+  # Evidence: Learning Insight #25 | Discovered: 2025-10-16 | Confidence: Critical
+  - name: "singleton-race"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "if\\s*\\(!?\\s*instance\\)\\s*\\{[^}]*instance\\s*=(?!.*synchronized|lock|mutex)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Singleton pattern without synchronization - race condition creates multiple instances. SOLUTION: Eager initialization, synchronized block, double-checked locking with volatile, module pattern, Once pattern (Go). EXAMPLE: Bad: if (!instance) { instance = new Singleton(); } (race!). Good: private static instance = new Singleton(); or use sync.Once. REFERENCES: Effective Java Item 3, GoF Design Patterns."
+
+  # Critical: Broken double-checked locking
+  # Evidence: Learning Insight #26 | Discovered: 2025-10-16 | Confidence: Critical
+  - name: "double-checked-lock-broken"
+    severity: error
+    from:
+      role: ALL
+    contains_forbidden:
+      - "if\\s*\\([^)]*==\\s*null\\)\\s*\\{[^}]*synchronized[^}]*if\\s*\\([^)]*==\\s*null\\)(?!.*volatile)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Double-checked locking without volatile - broken optimization, threads can see partially constructed objects. SOLUTION: Add volatile, use holder pattern, use enum singleton. EXAMPLE: Bad: private static Singleton instance; (no volatile!). Good: private static volatile Singleton instance;. REFERENCES: Java Memory Model JSR-133, 'Double-Checked Locking is Broken' paper."
+
+  # High: Lock without timeout
+  # Evidence: Learning Insight #27 | Discovered: 2025-10-16 | Confidence: High
+  - name: "lock-no-timeout"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\.(acquire|lock|Lock)\\(\\s*\\)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Lock acquisition without timeout - can wait forever if deadlock or lock holder crashes. SOLUTION: Always use timeout, try-lock pattern, deadlock detection, circuit breaker. EXAMPLE: Bad: await lock.acquire(); (infinite wait). Good: if (!await lock.acquire(5000)) { throw new TimeoutError(); }. REFERENCES: Java ReentrantLock.tryLock, POSIX pthread_mutex_timedlock."
+
+  # ============================================================================
+  # RESOURCE MANAGEMENT ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+
+  # High: File not closed in finally
+  # Evidence: Learning Insight #28 | Discovered: 2025-10-16 | Confidence: High
+  - name: "file-no-close-finally"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(?<!with\\s)open\\([^)]+\\)(?!.*?(finally|defer|using).*?close)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: File opened without cleanup in finally/defer/using block - resource leak, file handles exhausted over time. SOLUTION: try-finally, with statement (Python), using statement (C#), defer (Go), RAII pattern. EXAMPLE: Bad: const file = open('data.txt'); process(file); close(file); (never reached if exception). Good: try { const file = open('data.txt'); process(file); } finally { close(file); }. REFERENCES: Python PEP 343, C# IDisposable, Go defer."
+
+  # High: Connection not closed
+  # Evidence: Learning Insight #29 | Discovered: 2025-10-16 | Confidence: High
+  - name: "connection-no-close"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(connect|Connect|createConnection|getConnection)\\([^)]*\\)(?!.*?(close|disconnect|release))"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Database/network connection opened without explicit cleanup - connection pool exhaustion, #1 cause of production outages. SOLUTION: try-finally, connection wrapper, context managers, defer. EXAMPLE: Bad: const conn = await pool.getConnection(); const result = await conn.query(); return result; (leaked!). Good: try { const conn = await pool.getConnection(); return await conn.query(); } finally { conn.release(); }. REFERENCES: HikariCP best practices, PostgreSQL connection management."
+
+  # High: Socket not closed
+  # Evidence: Learning Insight #32 | Discovered: 2025-10-16 | Confidence: High
+  - name: "socket-no-close"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(?:socket|Socket|createSocket|new\\s+Socket)\\([^)]*\\)(?!.*?(close|end|destroy|disconnect))"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Network socket opened without proper cleanup - file descriptor exhaustion, port exhaustion, memory leaks. SOLUTION: try-finally, timeout, connection pooling, event handlers, graceful shutdown. EXAMPLE: Bad: const socket = new Socket(); socket.connect(port, host); socket.write(data); (leaked!). Good: try { const socket = new Socket(); socket.connect(port, host); socket.write(data); } finally { socket.destroy(); }. REFERENCES: Node.js net.Socket, Linux file descriptor limits."
+
+  # High: Stream not closed
+  # Evidence: Learning Insight #33 | Discovered: 2025-10-16 | Confidence: High
+  - name: "stream-no-close"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(?:createReadStream|createWriteStream|pipe|pipeline)\\([^)]*\\)(?!.*?(finally|defer|using|close|end|destroy))"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Stream created without cleanup in finally/using/defer - file descriptor leaks, memory buffer leaks, data loss from unflushed buffers. SOLUTION: pipeline() for auto-cleanup, try-finally, context managers, try-with-resources, defer. EXAMPLE: Bad: const read = fs.createReadStream('input.txt'); const write = fs.createWriteStream('output.txt'); read.pipe(write); (leaked!). Good: await pipeline(fs.createReadStream('input.txt'), fs.createWriteStream('output.txt'));. REFERENCES: Node.js stream.pipeline(), Python PEP 343."
+
+  # ============================================================================
+  # DATABASE ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+
+  # High: Transaction not ended
+  # Evidence: Learning Insight #30 | Discovered: 2025-10-16 | Confidence: High
+  - name: "transaction-no-end"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "(begin|beginTransaction|startTransaction)\\((?!.*?(commit|rollback|end))"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Transaction begun but never committed or rolled back - locks held indefinitely, causes database deadlocks, connection pool exhaustion. SOLUTION: try-catch-finally with commit/rollback, transaction wrapper, ORM helpers, timeout. EXAMPLE: Bad: const trx = await db.beginTransaction(); await trx.query('UPDATE ...'); (missing commit!). Good: try { const trx = await db.beginTransaction(); await trx.query(); await trx.commit(); } catch { await trx.rollback(); throw; }. REFERENCES: ACID properties, PostgreSQL transaction management."
+
+  # ============================================================================
+  # ASYNC/AWAIT ANTI-PATTERNS (Added via Continuous Learning)
+  # ============================================================================
+
+  # High: Promise without catch
+  # Evidence: Learning Insight #31 | Discovered: 2025-10-16 | Confidence: High
+  - name: "promise-no-catch"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\.then\\([^)]*\\)(?!\\.catch)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Promise chain without error handling - silent failures, process crashes (Node.js strict mode), impossible debugging. SOLUTION: Always .catch(), async/await + try-catch, global handler, Promise.allSettled. EXAMPLE: Bad: api.getUser(id).then(user => updateUI(user)); (error = silent failure). Good: api.getUser(id).then(user => updateUI(user)).catch(error => { console.error(error); showErrorUI(); }). REFERENCES: Node.js Unhandled Rejections, Promise Anti-Patterns."
+
+  # ============================================================================
+  # BUSINESS LOGIC ANTI-PATTERNS (Added via Continuous Learning - Earlier)
+  # ============================================================================
+
+  # Warning: Timezone-naive datetime
+  # Evidence: Learning Insight #11 | Discovered: 2025-10-16 | Confidence: Warning
+  - name: "Timezone-Naive-Datetime"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "new Date\\(\\)"
+      - "Date\\.now\\(\\)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Creating date without timezone information - leads to timezone bugs, incorrect date calculations across regions. SOLUTION: Always use timezone-aware libraries (date-fns-tz, luxon, moment-timezone). Store dates in UTC, convert to user timezone for display. EXAMPLE: Bad: new Date() (uses system timezone!). Good: DateTime.now().setZone('UTC') or DateTime.fromISO(dateString, { zone: 'UTC' }). BENEFIT: Prevents timezone bugs, consistent date handling across servers, correct DST handling."
+
+  # Warning: Email regex validation
+  # Evidence: Learning Insight #12 | Discovered: 2025-10-16 | Confidence: Warning
+  - name: "Email-Regex-Validation"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\w+@\\w+\\.\\w+"
+      - "[a-z0-9]+@[a-z0-9]+"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Overly simplistic email regex validation - fails to handle valid email formats, creates false negatives. SOLUTION: Use email validation library (validator.js, email-validator) or HTML5 email type. Never write email regex from scratch. EXAMPLE: Bad: /\\w+@\\w+\\.\\w+/ (rejects valid emails!). Good: validator.isEmail(email) or <input type='email'>. BENEFIT: Handles all RFC-compliant emails, reduces support tickets, better UX."
+
+  # Warning: Divide by zero risk
+  # Evidence: Learning Insight #13 | Discovered: 2025-10-16 | Confidence: Warning
+  - name: "Divide-By-Zero-Risk"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\/\\s*\\("
+      - "\\/\\s*[a-z]"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations."
+

@@ -302,7 +302,38 @@ rules:
 
 ## [Unreleased]
 
-### Added
+### Added - Continuous Learning System
+- feat(learning): add 22 new pattern rules discovered via continuous learning system
+  - **Database Security Anti-Patterns** (1 rule):
+    - `sql-string-concat` (critical) - SQL injection prevention via parameterized queries (#15)
+  - **Database Safety Anti-Patterns** (4 rules):
+    - `transaction-not-rolled-back` (high) - Resource leak prevention in error handlers (#16)
+    - `missing-where-clause-update` (high) - Data corruption prevention for UPDATE (#17)
+    - `missing-where-clause-delete` (high) - Data loss prevention for DELETE (#18)
+    - `unbounded-query` (medium) - Memory exhaustion prevention for SELECT (#19)
+  - **Docker Security Anti-Patterns** (3 rules):
+    - `docker-hardcoded-secrets` (critical) - Prevents secrets in Dockerfile ENV/ARG (#20)
+    - `docker-root-user` (high) - Enforces non-root containers (#21)
+    - `docker-unpinned-base-image` (medium) - Requires version-pinned base images (#22)
+  - **Concurrency Anti-Patterns** (5 rules):
+    - `nested-locks` (critical) - Deadlock prevention for nested lock acquisitions (#23)
+    - `lock-order-ab-ba` (critical) - Classic AB-BA deadlock pattern detection (#24)
+    - `singleton-race` (critical) - Singleton pattern synchronization enforcement (#25)
+    - `double-checked-lock-broken` (critical) - Volatile enforcement for double-checked locking (#26)
+    - `lock-no-timeout` (high) - Timeout enforcement for lock acquisitions (#27)
+  - **Resource Management Anti-Patterns** (4 rules):
+    - `file-no-close-finally` (high) - File handle leak prevention (#28)
+    - `connection-no-close` (high) - Connection pool leak prevention (#29)
+    - `socket-no-close` (high) - Socket handle leak prevention (#32)
+    - `stream-no-close` (high) - Stream handle leak prevention (#33)
+  - **Database Anti-Patterns** (1 rule):
+    - `transaction-no-end` (high) - Transaction completion enforcement (#30)
+  - **Async/Await Anti-Patterns** (1 rule):
+    - `promise-no-catch` (high) - Promise error handling enforcement (#31)
+  - **Business Logic Anti-Patterns** (3 rules):
+    - `Timezone-Naive-Datetime` (warning) - Timezone-aware datetime enforcement (#11)
+    - `Email-Regex-Validation` (warning) - Library-based email validation (#12)
+    - `Divide-By-Zero-Risk` (warning) - Zero-check enforcement for division (#13)
 - feat(learning): add rule Test-Pattern-Rule (discovered via #7)
 
 ### Planned Features
