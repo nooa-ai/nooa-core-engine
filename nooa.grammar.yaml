@@ -766,6 +766,17 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Critical: DELETE query without WHERE clause (discovered via continuous learning)
+  # Evidence: Issue #18 | Discovery: 2025-10-17 | Severity: HIGH - Catastrophic data loss risk
+  - name: "missing-where-clause-delete"
+    severity: error
+    comment: "AI NOTE: DELETE query without WHERE clause - will delete ALL rows from table, causes complete data loss, irreversible without backups, potential legal violations. REFACTOR: ALWAYS add WHERE clause to DELETE statements. Specify exact condition for rows to delete. Consider soft delete (status flag) instead of hard delete. Add confirmation for bulk deletes. EXAMPLE: If code has 'DELETE FROM users;' this deletes ALL USERS - CATASTROPHIC DATA LOSS. Instead: add WHERE: 'DELETE FROM users WHERE id = ?;' or 'DELETE FROM sessions WHERE expires_at < ?;' or soft delete: 'UPDATE users SET deleted_at = NOW() WHERE id = ?;'. Always specify which rows to delete. BENEFIT: Prevents catastrophic data loss, protects against accidental deletion, enables data recovery via soft delete, follows SQL best practices, reduces production disasters, maintains audit trails, protects business continuity."
+    from:
+      role: ALL
+    contains_forbidden:
+      - "DELETE\\s+FROM\\s+[\\w.]+\\s*[^;]*;(?![\\s\\S]*WHERE)"
+    rule: "forbidden_patterns"
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
