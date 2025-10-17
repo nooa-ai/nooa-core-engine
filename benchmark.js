@@ -17,8 +17,8 @@ const PROJECT_NAME = TARGET_PROJECT === '.' ? 'nooa-core-engine' : path.basename
 const IS_CANDIDATE = TARGET_PROJECT !== '.';
 
 const BENCHMARK_DIR = IS_CANDIDATE
-  ? path.join(__dirname, 'docs', 'whitepaper-version-1-4-0', 'benchmark', 'candidate', PROJECT_NAME)
-  : path.join(__dirname, 'docs', 'whitepaper-version-1-4-0', 'benchmark');
+  ? path.join(__dirname, 'docs', 'whitepaper-version-1-5-0', 'benchmark', 'candidate', PROJECT_NAME)
+  : path.join(__dirname, 'docs', 'whitepaper-version-1-5-0', 'benchmark', 'nooa-core-engine');
 
 const ITERATIONS = 100;
 

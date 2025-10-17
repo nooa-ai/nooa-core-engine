@@ -1,0 +1,413 @@
+
+> nooa-core-engine@1.4.0 start
+> node dist/main/server.js .
+
+🔍 Nooa Core Engine - Architectural Analysis
+==================================================
+📁 Analyzing project: .
+
+❌ Found 97 architectural violation(s):
+
+🟡 WARNINGS (97):
+  1. [Timezone-Naive-Datetime]
+     File: src/presentation/controllers/cli.controller.ts
+     Timezone-Naive-Datetime: src/presentation/controllers/cli.controller.ts contains forbidden pattern 'Date\.now\(\)' - AI NOTE: Creating date without timezone information - leads to timezone bugs, incorrect date calculations across regions. SOLUTION: Always use timezone-aware libraries (date-fns-tz, luxon, moment-timezone). Store dates in UTC, convert to user timezone for display. EXAMPLE: Bad: new Date() (uses system timezone!). Good: DateTime.now().setZone('UTC') or DateTime.fromISO(dateString, { zone: 'UTC' }). BENEFIT: Prevents timezone bugs, consistent date handling across servers, correct DST handling.
+
+  2. [Divide-By-Zero-Risk]
+     File: src/main/server.ts
+     Divide-By-Zero-Risk: src/main/server.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  3. [Divide-By-Zero-Risk]
+     File: src/data/helpers/file-cache-builder.helper.ts
+     Divide-By-Zero-Risk: src/data/helpers/file-cache-builder.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  4. [Divide-By-Zero-Risk]
+     File: src/data/helpers/file-content.helper.ts
+     Divide-By-Zero-Risk: src/data/helpers/file-content.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  5. [Divide-By-Zero-Risk]
+     File: src/data/helpers/index.ts
+     Divide-By-Zero-Risk: src/data/helpers/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  6. [Divide-By-Zero-Risk]
+     File: src/data/helpers/jaro-winkler.calculator.ts
+     Divide-By-Zero-Risk: src/data/helpers/jaro-winkler.calculator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  7. [Divide-By-Zero-Risk]
+     File: src/data/helpers/role-assignment.helper.ts
+     Divide-By-Zero-Risk: src/data/helpers/role-assignment.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  8. [Divide-By-Zero-Risk]
+     File: src/data/helpers/role-matcher.helper.ts
+     Divide-By-Zero-Risk: src/data/helpers/role-matcher.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  9. [Divide-By-Zero-Risk]
+     File: src/data/helpers/rule-extractor.helper.ts
+     Divide-By-Zero-Risk: src/data/helpers/rule-extractor.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  10. [Divide-By-Zero-Risk]
+     File: src/data/helpers/string-similarity.helper.ts
+     Divide-By-Zero-Risk: src/data/helpers/string-similarity.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  11. [Divide-By-Zero-Risk]
+     File: src/data/helpers/violation-deduplicator.helper.ts
+     Divide-By-Zero-Risk: src/data/helpers/violation-deduplicator.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  12. [Divide-By-Zero-Risk]
+     File: src/data/protocols/i-code-parser.ts
+     Divide-By-Zero-Risk: src/data/protocols/i-code-parser.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  13. [Divide-By-Zero-Risk]
+     File: src/data/protocols/i-file-system.ts
+     Divide-By-Zero-Risk: src/data/protocols/i-file-system.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  14. [Divide-By-Zero-Risk]
+     File: src/data/protocols/i-grammar-repository.ts
+     Divide-By-Zero-Risk: src/data/protocols/i-grammar-repository.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  15. [Divide-By-Zero-Risk]
+     File: src/data/protocols/index.ts
+     Divide-By-Zero-Risk: src/data/protocols/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  16. [Divide-By-Zero-Risk]
+     File: src/data/protocols/process-env-provider.ts
+     Divide-By-Zero-Risk: src/data/protocols/process-env-provider.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  17. [Divide-By-Zero-Risk]
+     File: src/data/usecases/analyze-codebase.usecase.ts
+     Divide-By-Zero-Risk: src/data/usecases/analyze-codebase.usecase.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  18. [Divide-By-Zero-Risk]
+     File: src/data/usecases/index.ts
+     Divide-By-Zero-Risk: src/data/usecases/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  19. [Divide-By-Zero-Risk]
+     File: src/data/validators/base-rule.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/base-rule.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  20. [Divide-By-Zero-Risk]
+     File: src/data/validators/code-pattern.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/code-pattern.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  21. [Divide-By-Zero-Risk]
+     File: src/data/validators/dependency.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/dependency.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  22. [Divide-By-Zero-Risk]
+     File: src/data/validators/file-metrics.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/file-metrics.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  23. [Divide-By-Zero-Risk]
+     File: src/data/validators/hygiene.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/hygiene.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  24. [Divide-By-Zero-Risk]
+     File: src/data/validators/index.ts
+     Divide-By-Zero-Risk: src/data/validators/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  25. [Divide-By-Zero-Risk]
+     File: src/data/validators/naming-pattern.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/naming-pattern.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  26. [Divide-By-Zero-Risk]
+     File: src/data/validators/structure.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/structure.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  27. [Divide-By-Zero-Risk]
+     File: src/domain/mocks/architectural-rule.mock.ts
+     Divide-By-Zero-Risk: src/domain/mocks/architectural-rule.mock.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  28. [Divide-By-Zero-Risk]
+     File: src/domain/mocks/architectural-violation.mock.ts
+     Divide-By-Zero-Risk: src/domain/mocks/architectural-violation.mock.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  29. [Divide-By-Zero-Risk]
+     File: src/domain/mocks/code-symbol.mock.ts
+     Divide-By-Zero-Risk: src/domain/mocks/code-symbol.mock.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  30. [Divide-By-Zero-Risk]
+     File: src/domain/mocks/grammar.mock.ts
+     Divide-By-Zero-Risk: src/domain/mocks/grammar.mock.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  31. [Divide-By-Zero-Risk]
+     File: src/domain/mocks/index.ts
+     Divide-By-Zero-Risk: src/domain/mocks/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  32. [Divide-By-Zero-Risk]
+     File: src/domain/mocks/role-definition.mock.ts
+     Divide-By-Zero-Risk: src/domain/mocks/role-definition.mock.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  33. [Divide-By-Zero-Risk]
+     File: src/domain/models/architectural-rule.model.ts
+     Divide-By-Zero-Risk: src/domain/models/architectural-rule.model.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  34. [Divide-By-Zero-Risk]
+     File: src/domain/models/architectural-violation.model.ts
+     Divide-By-Zero-Risk: src/domain/models/architectural-violation.model.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  35. [Divide-By-Zero-Risk]
+     File: src/domain/models/code-symbol.model.ts
+     Divide-By-Zero-Risk: src/domain/models/code-symbol.model.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  36. [Divide-By-Zero-Risk]
+     File: src/domain/models/grammar.model.ts
+     Divide-By-Zero-Risk: src/domain/models/grammar.model.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  37. [Divide-By-Zero-Risk]
+     File: src/domain/models/index.ts
+     Divide-By-Zero-Risk: src/domain/models/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  38. [Divide-By-Zero-Risk]
+     File: src/domain/models/role-definition.model.ts
+     Divide-By-Zero-Risk: src/domain/models/role-definition.model.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  39. [Divide-By-Zero-Risk]
+     File: src/domain/usecases/analyze-codebase.ts
+     Divide-By-Zero-Risk: src/domain/usecases/analyze-codebase.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  40. [Divide-By-Zero-Risk]
+     File: src/domain/usecases/index.ts
+     Divide-By-Zero-Risk: src/domain/usecases/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  41. [Divide-By-Zero-Risk]
+     File: src/infra/adapters/env-display-config.adapter.ts
+     Divide-By-Zero-Risk: src/infra/adapters/env-display-config.adapter.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  42. [Divide-By-Zero-Risk]
+     File: src/infra/adapters/node-cli.adapter.ts
+     Divide-By-Zero-Risk: src/infra/adapters/node-cli.adapter.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  43. [Divide-By-Zero-Risk]
+     File: src/infra/adapters/node-file-system.adapter.ts
+     Divide-By-Zero-Risk: src/infra/adapters/node-file-system.adapter.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  44. [Divide-By-Zero-Risk]
+     File: src/infra/parsers/index.ts
+     Divide-By-Zero-Risk: src/infra/parsers/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  45. [Divide-By-Zero-Risk]
+     File: src/infra/parsers/ts-morph-parser.adapter.ts
+     Divide-By-Zero-Risk: src/infra/parsers/ts-morph-parser.adapter.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  46. [Divide-By-Zero-Risk]
+     File: src/infra/repositories/index.ts
+     Divide-By-Zero-Risk: src/infra/repositories/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  47. [Divide-By-Zero-Risk]
+     File: src/infra/repositories/yaml-grammar.repository.ts
+     Divide-By-Zero-Risk: src/infra/repositories/yaml-grammar.repository.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  48. [Divide-By-Zero-Risk]
+     File: src/infra/validators/schema.validator.ts
+     Divide-By-Zero-Risk: src/infra/validators/schema.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  49. [Divide-By-Zero-Risk]
+     File: src/infra/validators/semantic-grammar.validator.ts
+     Divide-By-Zero-Risk: src/infra/validators/semantic-grammar.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  50. [Divide-By-Zero-Risk]
+     File: src/main/factories/index.ts
+     Divide-By-Zero-Risk: src/main/factories/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  51. [Divide-By-Zero-Risk]
+     File: src/presentation/components/error-formatter.component.ts
+     Divide-By-Zero-Risk: src/presentation/components/error-formatter.component.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  52. [Divide-By-Zero-Risk]
+     File: src/presentation/components/index.ts
+     Divide-By-Zero-Risk: src/presentation/components/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  53. [Divide-By-Zero-Risk]
+     File: src/presentation/components/metrics-formatter.component.ts
+     Divide-By-Zero-Risk: src/presentation/components/metrics-formatter.component.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  54. [Divide-By-Zero-Risk]
+     File: src/presentation/components/summary-formatter.component.ts
+     Divide-By-Zero-Risk: src/presentation/components/summary-formatter.component.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  55. [Divide-By-Zero-Risk]
+     File: src/presentation/components/usage.component.ts
+     Divide-By-Zero-Risk: src/presentation/components/usage.component.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  56. [Divide-By-Zero-Risk]
+     File: src/presentation/components/violation-formatter.component.ts
+     Divide-By-Zero-Risk: src/presentation/components/violation-formatter.component.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  57. [Divide-By-Zero-Risk]
+     File: src/presentation/controllers/cli.controller.ts
+     Divide-By-Zero-Risk: src/presentation/controllers/cli.controller.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  58. [Divide-By-Zero-Risk]
+     File: src/presentation/controllers/index.ts
+     Divide-By-Zero-Risk: src/presentation/controllers/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  59. [Divide-By-Zero-Risk]
+     File: src/presentation/presenters/cli-violation.presenter.ts
+     Divide-By-Zero-Risk: src/presentation/presenters/cli-violation.presenter.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  60. [Divide-By-Zero-Risk]
+     File: src/presentation/protocols/display-config-provider.ts
+     Divide-By-Zero-Risk: src/presentation/protocols/display-config-provider.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  61. [Divide-By-Zero-Risk]
+     File: src/presentation/protocols/process-args-provider.ts
+     Divide-By-Zero-Risk: src/presentation/protocols/process-args-provider.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  62. [Divide-By-Zero-Risk]
+     File: src/presentation/protocols/process-exit-handler.ts
+     Divide-By-Zero-Risk: src/presentation/protocols/process-exit-handler.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  63. [Divide-By-Zero-Risk]
+     File: src/presentation/protocols/validation.ts
+     Divide-By-Zero-Risk: src/presentation/protocols/validation.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  64. [Divide-By-Zero-Risk]
+     File: src/validation/protocols/index.ts
+     Divide-By-Zero-Risk: src/validation/protocols/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  65. [Divide-By-Zero-Risk]
+     File: src/validation/validators/cli-args-validation.ts
+     Divide-By-Zero-Risk: src/validation/validators/cli-args-validation.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  66. [Divide-By-Zero-Risk]
+     File: src/validation/validators/index.ts
+     Divide-By-Zero-Risk: src/validation/validators/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  67. [Divide-By-Zero-Risk]
+     File: src/data/validators/dependencies/circular-dependency.detector.ts
+     Divide-By-Zero-Risk: src/data/validators/dependencies/circular-dependency.detector.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  68. [Divide-By-Zero-Risk]
+     File: src/data/validators/dependencies/forbidden-dependency.checker.ts
+     Divide-By-Zero-Risk: src/data/validators/dependencies/forbidden-dependency.checker.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  69. [Divide-By-Zero-Risk]
+     File: src/data/validators/dependencies/index.ts
+     Divide-By-Zero-Risk: src/data/validators/dependencies/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  70. [Divide-By-Zero-Risk]
+     File: src/data/validators/dependencies/required-dependency.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/dependencies/required-dependency.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  71. [Divide-By-Zero-Risk]
+     File: src/data/validators/metrics/class-complexity.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/metrics/class-complexity.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  72. [Divide-By-Zero-Risk]
+     File: src/data/validators/metrics/documentation.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/metrics/documentation.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  73. [Divide-By-Zero-Risk]
+     File: src/data/validators/metrics/file-size.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/metrics/file-size.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  74. [Divide-By-Zero-Risk]
+     File: src/data/validators/metrics/granularity-metric.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/metrics/granularity-metric.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  75. [Divide-By-Zero-Risk]
+     File: src/data/validators/metrics/index.ts
+     Divide-By-Zero-Risk: src/data/validators/metrics/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  76. [Divide-By-Zero-Risk]
+     File: src/data/validators/metrics/test-coverage.validator.ts
+     Divide-By-Zero-Risk: src/data/validators/metrics/test-coverage.validator.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  77. [Divide-By-Zero-Risk]
+     File: src/data/validators/patterns/pattern-checker.helper.ts
+     Divide-By-Zero-Risk: src/data/validators/patterns/pattern-checker.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  78. [Divide-By-Zero-Risk]
+     File: src/domain/models/rules/base-rule.types.ts
+     Divide-By-Zero-Risk: src/domain/models/rules/base-rule.types.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  79. [Divide-By-Zero-Risk]
+     File: src/domain/models/rules/content-rule.types.ts
+     Divide-By-Zero-Risk: src/domain/models/rules/content-rule.types.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  80. [Divide-By-Zero-Risk]
+     File: src/domain/models/rules/dependency-rule.types.ts
+     Divide-By-Zero-Risk: src/domain/models/rules/dependency-rule.types.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  81. [Divide-By-Zero-Risk]
+     File: src/domain/models/rules/hygiene-rule.types.ts
+     Divide-By-Zero-Risk: src/domain/models/rules/hygiene-rule.types.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  82. [Divide-By-Zero-Risk]
+     File: src/domain/models/rules/metrics-rule.types.ts
+     Divide-By-Zero-Risk: src/domain/models/rules/metrics-rule.types.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  83. [Divide-By-Zero-Risk]
+     File: src/domain/models/rules/naming-rule.types.ts
+     Divide-By-Zero-Risk: src/domain/models/rules/naming-rule.types.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  84. [Divide-By-Zero-Risk]
+     File: src/domain/models/rules/project-rule.types.ts
+     Divide-By-Zero-Risk: src/domain/models/rules/project-rule.types.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  85. [Divide-By-Zero-Risk]
+     File: src/domain/models/rules/structure-rule.types.ts
+     Divide-By-Zero-Risk: src/domain/models/rules/structure-rule.types.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  86. [Divide-By-Zero-Risk]
+     File: src/infra/parsers/helpers/dependency-resolver.helper.ts
+     Divide-By-Zero-Risk: src/infra/parsers/helpers/dependency-resolver.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  87. [Divide-By-Zero-Risk]
+     File: src/infra/parsers/helpers/index.ts
+     Divide-By-Zero-Risk: src/infra/parsers/helpers/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  88. [Divide-By-Zero-Risk]
+     File: src/infra/parsers/helpers/symbol-extractor.helper.ts
+     Divide-By-Zero-Risk: src/infra/parsers/helpers/symbol-extractor.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  89. [Divide-By-Zero-Risk]
+     File: src/infra/repositories/helpers/grammar-transformer.helper.ts
+     Divide-By-Zero-Risk: src/infra/repositories/helpers/grammar-transformer.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  90. [Divide-By-Zero-Risk]
+     File: src/infra/repositories/helpers/index.ts
+     Divide-By-Zero-Risk: src/infra/repositories/helpers/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  91. [Divide-By-Zero-Risk]
+     File: src/infra/repositories/helpers/yaml-parser.helper.ts
+     Divide-By-Zero-Risk: src/infra/repositories/helpers/yaml-parser.helper.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  92. [Divide-By-Zero-Risk]
+     File: src/main/factories/controllers/cli-controller.factory.ts
+     Divide-By-Zero-Risk: src/main/factories/controllers/cli-controller.factory.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  93. [Divide-By-Zero-Risk]
+     File: src/main/factories/usecases/analyze-codebase.factory.ts
+     Divide-By-Zero-Risk: src/main/factories/usecases/analyze-codebase.factory.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  94. [Divide-By-Zero-Risk]
+     File: src/infra/repositories/helpers/rule-transformers/hygiene-rule.transformer.ts
+     Divide-By-Zero-Risk: src/infra/repositories/helpers/rule-transformers/hygiene-rule.transformer.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  95. [Divide-By-Zero-Risk]
+     File: src/infra/repositories/helpers/rule-transformers/index.ts
+     Divide-By-Zero-Risk: src/infra/repositories/helpers/rule-transformers/index.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  96. [Divide-By-Zero-Risk]
+     File: src/infra/repositories/helpers/rule-transformers/metrics-rule.transformer.ts
+     Divide-By-Zero-Risk: src/infra/repositories/helpers/rule-transformers/metrics-rule.transformer.ts contains forbidden pattern '\/\s*[a-z]' - AI NOTE: Division operation without zero check - can cause NaN, Infinity, or runtime errors. SOLUTION: Always check divisor is not zero before division. Use guard clauses or safe division helpers. EXAMPLE: Bad: const avg = total / count; (count could be 0!). Good: const avg = count === 0 ? 0 : total / count; or if (count === 0) throw new Error('Division by zero'). BENEFIT: Prevents NaN propagation, clearer error messages, safer calculations.
+
+  97. [Minimum-Test-File-Ratio]
+     File: PROJECT
+     Minimum-Test-File-Ratio: Test ratio is 0.00 (0 test files / 116 production files), minimum required: 0.2 - AI NOTE: Project has insufficient test coverage (test file ratio below 20%) - indicates undertested codebase, high risk of regressions, poor safety net for refactoring. REFACTOR: Systematically add tests for critical paths first. Prioritize: (1) domain logic and use cases, (2) complex validators and transformers, (3) adapters with external dependencies, (4) controllers with edge cases. Aim for 20-30% test file ratio minimum (1 test file per 3-5 production files). Write focused unit tests. EXAMPLE: If project has 50 production files but only 5 test files (10% ratio), INCREASE testing. Add tests/data/usecases for each use case, tests/infra for each adapter, tests/presentation for each controller. Target: 50 production files → 12-15 test files minimum. BENEFIT: Confident refactoring without breaking functionality, catches regressions early, documents expected behavior, enables TDD workflow, reduces debugging time, improves code design through testability requirements.
+
+
+==================================================
+Summary: 0 errors, 97 warnings, 0 info
+
+📊 Performance Metrics
+──────────────────────────────────────────────────
+⏱️  Analysis Time: 767ms
+📋 Rules Triggered: 3
+🔍 Total Violations: 97
+📌 Most Common Issues:
+   • Divide-By-Zero-Risk: 95 violations
+   • Timezone-Naive-Datetime: 1 violation
+   • Minimum-Test-File-Ratio: 1 violation
+──────────────────────────────────────────────────
