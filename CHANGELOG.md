@@ -304,6 +304,7 @@ rules:
 
 ### Added
 - feat(learning): add rule Test-Pattern-Rule (discovered via #7)
+- feat(learning): add rule missing-where-clause-update (discovered via #17) - Prevents catastrophic database UPDATE operations without WHERE clause
 
 ### Planned Features
 - Multiple language support (JavaScript, Python, Java)

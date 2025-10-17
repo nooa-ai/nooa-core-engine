@@ -766,6 +766,19 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Critical: Database safety - UPDATE without WHERE clause
+  # Evidence: Learning Insight #17 (2025-10-17)
+  # Pattern frequency: Common in development/migrations
+  # Impact: Catastrophic - can destroy entire database tables
+  - name: "missing-where-clause-update"
+    severity: error
+    comment: "AI NOTE: UPDATE query without WHERE clause - will affect ALL rows in table, causes catastrophic data corruption, irreversible without backups. REFACTOR: ALWAYS add WHERE clause to UPDATE statements. Specify exact condition for rows to update. Add safety check for affected row count. EXAMPLE: If code has 'UPDATE users SET status = \"active\";' this affects ALL USERS - CATASTROPHIC. Instead: add WHERE: 'UPDATE users SET status = \"active\" WHERE id = ?;' or 'UPDATE users SET status = \"active\" WHERE last_login < ?;'. Always specify which rows to update. BENEFIT: Prevents mass data corruption, protects against accidental updates, enables safe database operations, follows SQL best practices, reduces production incidents, allows targeted updates only, protects business-critical data."
+    from:
+      role: ALL
+    contains_forbidden:
+      - "\\b[Uu][Pp][Dd][Aa][Tt][Ee]\\s+[\\w\\.]+\\s+[Ss][Ee][Tt]\\s+(?:(?![Ww][Hh][Ee][Rr][Ee]\\b)[^;])+;"
+    rule: "forbidden_patterns"
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
