@@ -766,6 +766,19 @@ rules:
       - "\\*\\s*\\d+\\s*\\/\\s*100(?!\\s*\\))"
     rule: "forbidden_patterns"
 
+  # Critical: Unbounded database queries (Memory exhaustion risk)
+  # Evidence: Learning Insight #19 (2025-10-17)
+  # Frequency: Very common in early development
+  # Impact: Can cause production outages, memory exhaustion, DoS
+  - name: "unbounded-query"
+    severity: warning
+    from:
+      role: ALL
+    contains_forbidden:
+      - "SELECT\\s+.*FROM(?!.*\\bLIMIT\\b)(?!.*\\bTOP\\b)"
+    rule: "forbidden_patterns"
+    comment: "AI NOTE: Query without LIMIT clause - can load millions of rows into memory, causes OutOfMemoryError, application crashes, database overload, DoS. REFACTOR: Always add LIMIT clause to SELECT queries. Use pagination for large result sets. Set reasonable max limit (100-1000). Stream results for large datasets. EXAMPLE: If code has 'SELECT * FROM orders WHERE status = \"pending\"' without LIMIT, this loads ALL pending orders - could be millions. Instead: add LIMIT: 'SELECT * FROM orders WHERE status = ? LIMIT 100' or pagination: 'SELECT * FROM orders WHERE status = ? LIMIT ? OFFSET ?' or cursor-based: 'SELECT * FROM orders WHERE status = ? AND id > ? ORDER BY id LIMIT 100'. Always bound result sets. BENEFIT: Prevents memory exhaustion, faster query execution, predictable resource usage, enables pagination, protects against DoS, improves response times, allows efficient data processing, follows database best practices."
+
   # ============================================================================
   # FUTURE RULES (Not Yet Implemented - Require New Rule Types)
   # ============================================================================
